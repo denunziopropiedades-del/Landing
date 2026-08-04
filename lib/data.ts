@@ -37,8 +37,8 @@ export const siteTextosSeed: SiteTextos = {
 
 export const proyectoSeed: Proyecto = {
   id: PROYECTO_DEMO_ID,
-  nombre: "Ayres de Guernica – Etapa 2",
-  slug: "ayres-de-guernica-etapa-2",
+  nombre: "Ayres de Guernica",
+  slug: "ayres-de-guernica",
   descripcion:
     "Lotes con escritura garantizada en una de las zonas con mayor crecimiento del sur del Gran Buenos Aires.",
   ubicacion: "Guernica, Buenos Aires",
@@ -87,7 +87,7 @@ export const galeriaSeed: ItemGaleria[] = [
   { id: "demo-drone-2", proyectoId: PROYECTO_DEMO_ID, categoria: "drone", url: "https://images.unsplash.com/photo-1444858291040-58f756a3bdd6?q=80&w=1600&auto=format&fit=crop", titulo: "Toma aérea del acceso" },
   { id: "demo-video-1", proyectoId: PROYECTO_DEMO_ID, categoria: "videos", url: "https://www.youtube.com/embed/dQw4w9WgXcQ", titulo: "Recorrido por el barrio" },
   { id: "demo-plano-1", proyectoId: PROYECTO_DEMO_ID, categoria: "plano", url: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=1600&auto=format&fit=crop", titulo: "Plano del barrio" },
-  { id: "demo-masterplan-1", proyectoId: PROYECTO_DEMO_ID, categoria: "masterplan", url: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1600&auto=format&fit=crop", titulo: "Masterplan Etapa 2" },
+  { id: "demo-masterplan-1", proyectoId: PROYECTO_DEMO_ID, categoria: "masterplan", url: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1600&auto=format&fit=crop", titulo: "Masterplan" },
 ];
 
 export const progresoSeed: ProgresoItem[] = [

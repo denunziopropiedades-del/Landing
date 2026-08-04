@@ -414,7 +414,7 @@ create policy "Staff gestiona visitas" on visitas for all using (mi_rol() is not
 create policy "Admin/supervisor leen actividad" on actividad_log for select using (mi_rol() in ('administrador', 'supervisor'));
 
 -- ═══════════════════════════════════════════════════════════════════════
--- Datos semilla: proyecto insignia "Ayres de Guernica – Etapa 2"
+-- Datos semilla: proyecto insignia "Ayres de Guernica"
 -- ═══════════════════════════════════════════════════════════════════════
 
 insert into site_textos (id, hero_titulo, hero_subtitulo, whatsapp_numero, whatsapp_mensaje_default, email, instagram, facebook, youtube)
@@ -433,8 +433,8 @@ values (
 with proyecto_seed as (
   insert into proyectos (nombre, slug, descripcion, ubicacion, publicado, destacado, whatsapp_numero, orden)
   values (
-    'Ayres de Guernica – Etapa 2',
-    'ayres-de-guernica-etapa-2',
+    'Ayres de Guernica',
+    'ayres-de-guernica',
     'Lotes con escritura garantizada en una de las zonas con mayor crecimiento del sur del Gran Buenos Aires.',
     'Guernica, Buenos Aires',
     true,
@@ -458,11 +458,11 @@ from proyecto_seed,
   ) as v(nombre, manzana, numero, superficie_m2, dimensiones, precio_usd, estado, destacado, pos_x, pos_y, orden);
 
 insert into financiacion_config (proyecto_id, anticipo_minimo_pct, anticipo_maximo_pct, cuotas_opciones, interes_anual_pct)
-select id, 20, 50, '{12,24,36,48,60}', 6 from proyectos where slug = 'ayres-de-guernica-etapa-2';
+select id, 20, 50, '{12,24,36,48,60}', 6 from proyectos where slug = 'ayres-de-guernica';
 
 insert into promociones (proyecto_id, activa, titulo, bajada, fecha_fin)
 select id, true, '¡Últimos días con estos precios!', 'Promoción especial por tiempo limitado.', '2026-08-31 23:59:59-03'
-from proyectos where slug = 'ayres-de-guernica-etapa-2';
+from proyectos where slug = 'ayres-de-guernica';
 
 insert into progreso_desarrollo (proyecto_id, etapa, porcentaje, orden)
 select id, v.etapa, v.porcentaje, v.orden
@@ -474,7 +474,7 @@ from proyectos, (values
   ('Obras', 75, 5),
   ('Lotes entregados', 40, 6)
 ) as v(etapa, porcentaje, orden)
-where proyectos.slug = 'ayres-de-guernica-etapa-2';
+where proyectos.slug = 'ayres-de-guernica';
 
 insert into faqs (proyecto_id, pregunta, respuesta, orden)
 values
@@ -497,6 +497,6 @@ from proyectos, (values
   ('drone', 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1600&auto=format&fit=crop', 'Toma aérea general', 3),
   ('drone', 'https://images.unsplash.com/photo-1444858291040-58f756a3bdd6?q=80&w=1600&auto=format&fit=crop', 'Toma aérea del acceso', 4),
   ('plano', 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=1600&auto=format&fit=crop', 'Plano del barrio', 5),
-  ('masterplan', 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1600&auto=format&fit=crop', 'Masterplan Etapa 2', 6)
+  ('masterplan', 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1600&auto=format&fit=crop', 'Masterplan', 6)
 ) as v(categoria, url, titulo, orden)
-where proyectos.slug = 'ayres-de-guernica-etapa-2';
+where proyectos.slug = 'ayres-de-guernica';
