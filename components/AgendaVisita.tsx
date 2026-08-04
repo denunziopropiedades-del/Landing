@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { CalendarCheck, Loader2 } from "lucide-react";
 import { visitaSchema, type VisitaInput } from "@/lib/schemas";
 
-const HORARIOS = ["09:00", "10:30", "12:00", "14:00", "15:30", "17:00"];
+const HORARIOS = ["09:00", "10:30", "12:00", "14:00", "15:30", "17:00", "19:00", "20:30", "22:00"];
 
 export default function AgendaVisita({ proyectoId }: { proyectoId?: string }) {
   const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
