@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-playfair);
+
+  /* Institutional palette */
+  --color-brand-black: #0b0f0d;
+  --color-brand-black-soft: #161b18;
+  --color-brand-green-950: #06120c;
+  --color-brand-green-900: #0a2318;
+  --color-brand-green-800: #0f3823;
+  --color-brand-green-700: #154a2e;
+  --color-brand-green-600: #1c5c39;
+  --color-brand-green-500: #237046;
+  --color-brand-gold-100: #faf1d9;
+  --color-brand-gold-300: #eed49a;
+  --color-brand-gold-400: #e2bd6c;
+  --color-brand-gold-500: #d4af37;
+  --color-brand-gold-600: #b8912a;
+  --color-brand-gold-700: #96741f;
+  --color-brand-cream: #f7f5f0;
+
+  --animate-fade-up: fade-up 0.7s ease-out both;
+  --animate-marquee: marquee 30s linear infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+::selection {
+  background-color: var(--color-brand-gold-400);
+  color: var(--color-brand-black);
+}
