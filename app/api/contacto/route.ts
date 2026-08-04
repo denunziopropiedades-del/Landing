@@ -2,8 +2,14 @@ import { NextResponse } from "next/server";
 import { contactoSchema } from "@/lib/schemas";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const rate = await checkRateLimit(request, "contacto");
+  if (!rate.success) {
+    return NextResponse.json({ error: "Demasiadas solicitudes. Probá de nuevo en unos minutos." }, { status: 429 });
+  }
+
   const body = await request.json();
   const parsed = contactoSchema.safeParse(body);
 

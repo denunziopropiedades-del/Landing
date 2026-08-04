@@ -17,7 +17,7 @@ export default function Faq({ faqs }: { faqs: FaqItem[] }) {
 
         <div className="mt-12 space-y-3">
           {faqs.map((faq, i) => (
-            <div key={faq.pregunta} className="overflow-hidden rounded-xl border border-black/5 bg-white">
+            <div key={faq.id} className="overflow-hidden rounded-xl border border-black/5 bg-white">
               <button
                 type="button"
                 onClick={() => setOpen(open === i ? null : i)}

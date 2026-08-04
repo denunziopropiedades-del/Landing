@@ -8,7 +8,7 @@ import { visitaSchema, type VisitaInput } from "@/lib/schemas";
 
 const HORARIOS = ["09:00", "10:30", "12:00", "14:00", "15:30", "17:00"];
 
-export default function AgendaVisita() {
+export default function AgendaVisita({ proyectoId }: { proyectoId?: string }) {
   const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
 
   const {
@@ -16,7 +16,7 @@ export default function AgendaVisita() {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<VisitaInput>({ resolver: zodResolver(visitaSchema) });
+  } = useForm<VisitaInput>({ resolver: zodResolver(visitaSchema), defaultValues: { proyectoId } });
 
   const onSubmit = async (data: VisitaInput) => {
     setEstado("enviando");
@@ -56,6 +56,7 @@ export default function AgendaVisita() {
             </div>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5 rounded-2xl border border-black/5 bg-white p-8 shadow-sm sm:grid-cols-2">
+              <input type="hidden" {...register("proyectoId")} />
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-brand-black/80">Nombre</label>
                 <input {...register("nombre")} className="w-full rounded-lg border border-black/10 px-4 py-2.5 focus:border-brand-green-600 focus:outline-none" />

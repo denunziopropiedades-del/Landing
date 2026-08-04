@@ -15,20 +15,22 @@ function getRemaining(fechaFin: string) {
   };
 }
 
-export default function PromoCountdown({ promo }: { promo: Promocion }) {
+export default function PromoCountdown({ promo }: { promo: Promocion | null }) {
   const [remaining, setRemaining] = useState<ReturnType<typeof getRemaining> | null>(null);
+  const fechaFin = promo?.fechaFin;
 
   useEffect(() => {
-    const tick = () => setRemaining(getRemaining(promo.fechaFin));
+    if (!fechaFin) return;
+    const tick = () => setRemaining(getRemaining(fechaFin));
     const interval = setInterval(tick, 1000);
     const initial = setTimeout(tick, 0);
     return () => {
       clearInterval(interval);
       clearTimeout(initial);
     };
-  }, [promo.fechaFin]);
+  }, [fechaFin]);
 
-  if (!promo.activa || !remaining || remaining.total <= 0) return null;
+  if (!promo || !promo.activa || !remaining || remaining.total <= 0) return null;
 
   const unidades = [
     { label: "Días", value: remaining.dias },

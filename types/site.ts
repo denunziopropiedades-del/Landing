@@ -1,11 +1,6 @@
-export type LoteTipo = {
-  id: string;
-  nombre: string;
-  superficieM2: number;
-  dimensiones: string;
-  precioUsd: number;
-  destacado?: boolean;
-  disponibles?: number;
+export type DistanciaAcceso = {
+  destino: string;
+  tiempo: string;
 };
 
 export type Beneficio = {
@@ -13,25 +8,100 @@ export type Beneficio = {
   titulo: string;
 };
 
-export type DistanciaAcceso = {
-  destino: string;
-  tiempo: string;
+export type Rol = "administrador" | "vendedor" | "supervisor";
+
+export type Perfil = {
+  id: string;
+  email: string;
+  nombre: string | null;
+  rol: Rol;
+  activo: boolean;
+  creadoEn: string;
+};
+
+export type Proyecto = {
+  id: string;
+  nombre: string;
+  slug: string;
+  descripcion: string;
+  ubicacion: string;
+  imagenPortada: string | null;
+  publicado: boolean;
+  destacado: boolean;
+  whatsappNumero: string | null;
+  orden: number;
+};
+
+export type EstadoLote = "disponible" | "reservado" | "vendido" | "no_disponible";
+
+export type Lote = {
+  id: string;
+  proyectoId: string;
+  nombre: string;
+  manzana: string;
+  numero: string;
+  superficieM2: number;
+  dimensiones: string;
+  precioUsd: number;
+  estado: EstadoLote;
+  destacado: boolean;
+  posX: number | null;
+  posY: number | null;
+};
+
+/** Agrupación comercial de lotes por tipología (para las tarjetas de la landing). */
+export type LoteTipo = {
+  nombre: string;
+  superficieM2: number;
+  dimensiones: string;
+  precioUsd: number;
+  disponibles: number;
+  destacado: boolean;
+};
+
+export type Banner = {
+  id: string;
+  proyectoId: string | null;
+  titulo: string;
+  imagenUrl: string;
+  linkUrl: string | null;
+  activo: boolean;
+};
+
+export type Promocion = {
+  id: string;
+  proyectoId: string;
+  activa: boolean;
+  titulo: string;
+  bajada: string;
+  fechaFin: string;
+};
+
+export type ConfigFinanciacion = {
+  anticipoMinimoPct: number;
+  anticipoMaximoPct: number;
+  cuotasOpciones: number[];
+  interesAnualPct: number;
 };
 
 export type ItemGaleria = {
   id: string;
+  proyectoId: string;
   categoria: "fotos" | "videos" | "drone" | "plano" | "masterplan";
   url: string;
   titulo: string;
 };
 
 export type ProgresoItem = {
+  id: string;
+  proyectoId: string;
   etapa: string;
   porcentaje: number;
 };
 
 export type Testimonio = {
   id: string;
+  proyectoId: string | null;
   nombre: string;
   ubicacion: string;
   foto: string;
@@ -40,22 +110,10 @@ export type Testimonio = {
 };
 
 export type FaqItem = {
+  id: string;
+  proyectoId: string | null;
   pregunta: string;
   respuesta: string;
-};
-
-export type Promocion = {
-  activa: boolean;
-  titulo: string;
-  bajada: string;
-  fechaFin: string; // ISO date
-};
-
-export type ConfigFinanciacion = {
-  anticipoMinimoPct: number;
-  anticipoMaximoPct: number;
-  cuotasOpciones: number[];
-  interesAnualPct: number;
 };
 
 export type SiteTextos = {
@@ -69,10 +127,17 @@ export type SiteTextos = {
   youtube: string;
 };
 
+export type EstadoLead = "nuevo" | "contactado" | "visita_programada" | "reservado" | "vendido" | "descartado";
+
 export type Lead = {
   id: string;
   creadoEn: string;
-  tipo: "reserva" | "contacto" | "visita";
+  actualizadoEn: string;
+  tipo: "reserva" | "contacto";
+  proyectoId: string | null;
+  proyectoNombre?: string;
+  loteId: string | null;
+  loteNombre?: string;
   nombre: string;
   apellido?: string;
   dni?: string;
@@ -80,6 +145,33 @@ export type Lead = {
   telefono: string;
   mensaje?: string;
   manzana?: string;
-  lote?: string;
-  estado?: "nuevo" | "contactado" | "reservado" | "descartado";
+  observaciones: string;
+  estado: EstadoLead;
+  asignadoA: string | null;
+  asignadoNombre?: string;
+};
+
+export type EstadoVisita = "pendiente" | "confirmada" | "cancelada" | "realizada";
+
+export type Visita = {
+  id: string;
+  creadoEn: string;
+  leadId: string | null;
+  proyectoId: string | null;
+  nombre: string;
+  email: string;
+  telefono: string;
+  fecha: string;
+  horario: string;
+  estado: EstadoVisita;
+};
+
+export type ActividadLog = {
+  id: string;
+  creadoEn: string;
+  usuarioEmail: string | null;
+  accion: string;
+  entidad: string;
+  entidadId: string | null;
+  detalle: Record<string, unknown> | null;
 };

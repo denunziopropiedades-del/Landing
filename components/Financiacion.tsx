@@ -6,26 +6,26 @@ import type { ConfigFinanciacion, LoteTipo } from "@/types/site";
 import { formatUsd } from "@/lib/utils";
 
 export default function Financiacion({
-  lotes,
+  tiposLotes,
   config,
 }: {
-  lotes: LoteTipo[];
+  tiposLotes: LoteTipo[];
   config: ConfigFinanciacion;
 }) {
-  const [loteId, setLoteId] = useState(lotes[0]?.id);
+  const [nombreLote, setNombreLote] = useState(tiposLotes[0]?.nombre);
   const [anticipoPct, setAnticipoPct] = useState(config.anticipoMinimoPct);
   const [cuotas, setCuotas] = useState(config.cuotasOpciones[0]);
 
-  const lote = lotes.find((l) => l.id === loteId) ?? lotes[0];
+  const lote = tiposLotes.find((l) => l.nombre === nombreLote) ?? tiposLotes[0];
 
   const resultado = useMemo(() => {
     if (!lote) return null;
     const anticipo = Math.round((lote.precioUsd * anticipoPct) / 100);
-    const saldo = lote.precioUsd - anticipo;
-    const interesTotal = saldo * (config.interesAnualPct / 100) * (cuotas / 12);
-    const totalFinanciado = saldo + interesTotal;
+    const saldoRestante = lote.precioUsd - anticipo;
+    const interesTotal = saldoRestante * (config.interesAnualPct / 100) * (cuotas / 12);
+    const totalFinanciado = saldoRestante + interesTotal;
     const valorCuota = totalFinanciado / cuotas;
-    return { anticipo, saldo, valorCuota, totalAPagar: anticipo + totalFinanciado };
+    return { anticipo, saldoRestante, interesTotal, valorCuota, totalAPagar: anticipo + totalFinanciado };
   }, [lote, anticipoPct, cuotas, config.interesAnualPct]);
 
   if (!lote || !resultado) return null;
@@ -43,12 +43,12 @@ export default function Financiacion({
             <div>
               <label className="mb-2 block text-sm font-medium text-white/80">Tipo de lote</label>
               <select
-                value={loteId}
-                onChange={(e) => setLoteId(e.target.value)}
+                value={nombreLote}
+                onChange={(e) => setNombreLote(e.target.value)}
                 className="w-full rounded-lg border border-white/15 bg-brand-black px-4 py-3 text-white focus:border-brand-gold-400 focus:outline-none"
               >
-                {lotes.map((l) => (
-                  <option key={l.id} value={l.id}>
+                {tiposLotes.map((l) => (
+                  <option key={l.nombre} value={l.nombre}>
                     {l.nombre} — {formatUsd(l.precioUsd)}
                   </option>
                 ))}
@@ -100,21 +100,29 @@ export default function Financiacion({
               <Calculator className="h-5 w-5" />
               <span className="text-sm font-semibold uppercase tracking-wide">Tu plan estimado</span>
             </div>
-            <dl className="space-y-4 text-brand-black">
-              <div className="flex items-center justify-between border-b border-black/5 pb-3">
+            <dl className="space-y-3 text-brand-black">
+              <div className="flex items-center justify-between border-b border-black/5 pb-2.5">
                 <dt className="text-sm text-brand-black/60">Precio del lote</dt>
                 <dd className="font-semibold">{formatUsd(lote.precioUsd)}</dd>
               </div>
-              <div className="flex items-center justify-between border-b border-black/5 pb-3">
+              <div className="flex items-center justify-between border-b border-black/5 pb-2.5">
                 <dt className="text-sm text-brand-black/60">Anticipo ({anticipoPct}%)</dt>
                 <dd className="font-semibold">{formatUsd(resultado.anticipo)}</dd>
               </div>
-              <div className="flex items-center justify-between border-b border-black/5 pb-3">
-                <dt className="text-sm text-brand-black/60">Saldo a financiar</dt>
-                <dd className="font-semibold">{formatUsd(resultado.saldo)}</dd>
+              <div className="flex items-center justify-between border-b border-black/5 pb-2.5">
+                <dt className="text-sm text-brand-black/60">Saldo restante a financiar</dt>
+                <dd className="font-semibold">{formatUsd(resultado.saldoRestante)}</dd>
+              </div>
+              <div className="flex items-center justify-between border-b border-black/5 pb-2.5">
+                <dt className="text-sm text-brand-black/60">Interés total ({config.interesAnualPct}% anual)</dt>
+                <dd className="font-semibold">{formatUsd(Math.round(resultado.interesTotal))}</dd>
+              </div>
+              <div className="flex items-center justify-between border-b border-black/5 pb-2.5">
+                <dt className="text-sm text-brand-black/60">Cantidad de cuotas</dt>
+                <dd className="font-semibold">{cuotas}</dd>
               </div>
               <div className="flex items-center justify-between pt-1">
-                <dt className="font-display text-lg text-brand-black">Cuota estimada</dt>
+                <dt className="font-display text-lg text-brand-black">Valor de la cuota</dt>
                 <dd className="font-display text-3xl font-extrabold text-brand-green-700">
                   {formatUsd(Math.round(resultado.valorCuota))}
                   <span className="ml-1 text-sm font-normal text-brand-black/50">/mes</span>

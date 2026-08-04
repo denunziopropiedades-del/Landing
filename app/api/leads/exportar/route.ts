@@ -3,7 +3,7 @@ import ExcelJS from "exceljs";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getLeads, getVisitas } from "@/lib/admin/data";
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await getSupabaseServerClient();
   const {
     data: { user },
@@ -13,16 +13,32 @@ export async function GET() {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  const [leads, visitas] = await Promise.all([getLeads(), getVisitas()]);
+  const { searchParams } = new URL(request.url);
+  const proyectoId = searchParams.get("proyecto");
+  const estado = searchParams.get("estado");
+  const desde = searchParams.get("desde");
+  const hasta = searchParams.get("hasta");
+
+  let [leads, visitas] = await Promise.all([getLeads(), getVisitas()]);
+
+  if (proyectoId) leads = leads.filter((l) => l.proyectoId === proyectoId);
+  if (estado) leads = leads.filter((l) => l.estado === estado);
+  if (desde) leads = leads.filter((l) => l.creadoEn >= desde);
+  if (hasta) leads = leads.filter((l) => l.creadoEn <= `${hasta}T23:59:59`);
+
+  if (proyectoId) visitas = visitas.filter((v) => v.proyectoId === proyectoId);
+  if (desde) visitas = visitas.filter((v) => v.creadoEn >= desde);
+  if (hasta) visitas = visitas.filter((v) => v.creadoEn <= `${hasta}T23:59:59`);
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Ayres de Guernica";
+  workbook.creator = "Panel Inmobiliario";
   workbook.created = new Date();
 
   const hojaLeads = workbook.addWorksheet("Leads");
   hojaLeads.columns = [
     { header: "Fecha", key: "fecha", width: 20 },
     { header: "Tipo", key: "tipo", width: 12 },
+    { header: "Proyecto", key: "proyecto", width: 24 },
     { header: "Nombre", key: "nombre", width: 20 },
     { header: "Apellido", key: "apellido", width: 20 },
     { header: "DNI", key: "dni", width: 14 },
@@ -30,22 +46,27 @@ export async function GET() {
     { header: "Teléfono", key: "telefono", width: 18 },
     { header: "Manzana", key: "manzana", width: 10 },
     { header: "Lote", key: "lote", width: 16 },
+    { header: "Vendedor asignado", key: "vendedor", width: 20 },
     { header: "Mensaje", key: "mensaje", width: 40 },
-    { header: "Estado", key: "estado", width: 14 },
+    { header: "Observaciones", key: "observaciones", width: 40 },
+    { header: "Estado", key: "estado", width: 16 },
   ];
   hojaLeads.getRow(1).font = { bold: true };
   leads.forEach((l) =>
     hojaLeads.addRow({
       fecha: new Date(l.creadoEn).toLocaleString("es-AR"),
       tipo: l.tipo,
+      proyecto: l.proyectoNombre ?? "",
       nombre: l.nombre,
       apellido: l.apellido ?? "",
       dni: l.dni ?? "",
       email: l.email,
       telefono: l.telefono,
       manzana: l.manzana ?? "",
-      lote: l.lote ?? "",
+      lote: l.loteNombre ?? "",
+      vendedor: l.asignadoNombre ?? "",
       mensaje: l.mensaje ?? "",
+      observaciones: l.observaciones,
       estado: l.estado,
     })
   );
@@ -78,7 +99,7 @@ export async function GET() {
   return new NextResponse(buffer, {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="ayres-de-guernica-leads-${Date.now()}.xlsx"`,
+      "Content-Disposition": `attachment; filename="leads-${Date.now()}.xlsx"`,
     },
   });
 }

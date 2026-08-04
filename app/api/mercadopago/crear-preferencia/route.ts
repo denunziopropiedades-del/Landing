@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { lotes } from "@/lib/data";
+import { lotesSeed } from "@/lib/data";
 import { getPreferenceClient, isMercadoPagoConfigured } from "@/lib/mercadopago";
+import { getSupabaseAdminClient } from "@/lib/supabase/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const SENA_PORCENTAJE = 10;
 
@@ -12,6 +14,11 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const rate = await checkRateLimit(request, "mercadopago", 5, 60);
+  if (!rate.success) {
+    return NextResponse.json({ error: "Demasiadas solicitudes. Probá de nuevo en unos minutos." }, { status: 429 });
+  }
+
   if (!isMercadoPagoConfigured()) {
     return NextResponse.json(
       { error: "Mercado Pago no está configurado. Definí MERCADOPAGO_ACCESS_TOKEN para habilitar el pago online de la seña." },
@@ -26,7 +33,18 @@ export async function POST(request: Request) {
   }
 
   const { loteId, nombre, email } = parsed.data;
-  const lote = lotes.find((l) => l.id === loteId);
+
+  const supabase = await getSupabaseAdminClient();
+  let lote: { id: string; nombre: string; precioUsd: number } | undefined;
+
+  if (supabase) {
+    const { data } = await supabase.from("lotes").select("id, nombre, precio_usd").eq("id", loteId).maybeSingle();
+    if (data) lote = { id: data.id, nombre: data.nombre, precioUsd: Number(data.precio_usd) };
+  } else {
+    const seed = lotesSeed.find((l) => l.id === loteId);
+    if (seed) lote = { id: seed.id, nombre: seed.nombre, precioUsd: seed.precioUsd };
+  }
+
   if (!lote) {
     return NextResponse.json({ error: "Lote inválido" }, { status: 400 });
   }
@@ -40,7 +58,7 @@ export async function POST(request: Request) {
       items: [
         {
           id: lote.id,
-          title: `Seña reserva ${lote.nombre} — Ayres de Guernica`,
+          title: `Seña reserva ${lote.nombre}`,
           quantity: 1,
           unit_price: monto,
           currency_id: "USD",

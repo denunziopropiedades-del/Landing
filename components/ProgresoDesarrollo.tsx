@@ -14,7 +14,7 @@ export default function ProgresoDesarrollo({ progreso }: { progreso: ProgresoIte
 
         <div className="mt-14 space-y-8">
           {progreso.map((item, i) => (
-            <div key={item.etapa}>
+            <div key={item.id}>
               <div className="mb-2 flex items-center justify-between text-sm">
                 <span className="font-semibold text-brand-black">{item.etapa}</span>
                 <span className="font-semibold text-brand-green-700">{item.porcentaje}%</span>

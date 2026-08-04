@@ -2,18 +2,24 @@
 
 import { useTransition } from "react";
 import { Download, Trash2 } from "lucide-react";
-import { deleteLeadAction, updateLeadEstadoAction } from "@/lib/admin/actions";
-import type { Lead } from "@/types/site";
-import type { Visita } from "@/lib/admin/data";
+import { actualizarEstadoLeadAction, actualizarEstadoVisitaAction, deleteLeadAction } from "@/lib/admin/actions";
+import type { EstadoLead, EstadoVisita, Lead, Visita } from "@/types/site";
 
-const ESTADOS = ["nuevo", "contactado", "reservado", "descartado"];
+const ESTADOS: EstadoLead[] = ["nuevo", "contactado", "visita_programada", "reservado", "vendido", "descartado"];
+const ESTADOS_VISITA: EstadoVisita[] = ["pendiente", "confirmada", "cancelada", "realizada"];
 
 export default function ConsultasManager({ leads, visitas }: { leads: Lead[]; visitas: Visita[] }) {
   const [pending, startTransition] = useTransition();
 
-  const cambiarEstado = (id: string, estado: string) => {
+  const cambiarEstado = (id: string, estado: EstadoLead) => {
     startTransition(() => {
-      updateLeadEstadoAction(id, estado);
+      actualizarEstadoLeadAction(id, estado);
+    });
+  };
+
+  const cambiarEstadoVisita = (id: string, estado: EstadoVisita) => {
+    startTransition(() => {
+      actualizarEstadoVisitaAction(id, estado);
     });
   };
 
@@ -38,14 +44,15 @@ export default function ConsultasManager({ leads, visitas }: { leads: Lead[]; vi
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-black/5 bg-white shadow-sm">
-        <table className="w-full min-w-[820px] text-left text-sm">
+        <table className="w-full min-w-[900px] text-left text-sm">
           <thead className="border-b border-black/10 text-brand-black/50">
             <tr>
               <th className="px-4 py-3 font-medium">Fecha</th>
               <th className="px-4 py-3 font-medium">Tipo</th>
               <th className="px-4 py-3 font-medium">Nombre</th>
               <th className="px-4 py-3 font-medium">Contacto</th>
-              <th className="px-4 py-3 font-medium">Lote / Mensaje</th>
+              <th className="px-4 py-3 font-medium">Proyecto / Lote</th>
+              <th className="px-4 py-3 font-medium">Vendedor</th>
               <th className="px-4 py-3 font-medium">Estado</th>
               <th className="px-4 py-3 font-medium text-right">Acciones</th>
             </tr>
@@ -53,7 +60,7 @@ export default function ConsultasManager({ leads, visitas }: { leads: Lead[]; vi
           <tbody>
             {leads.map((l) => (
               <tr key={l.id} className="border-b border-black/5 last:border-0 align-top">
-                <td className="px-4 py-3 whitespace-nowrap">{new Date(l.creadoEn).toLocaleDateString("es-AR")}</td>
+                <td className="whitespace-nowrap px-4 py-3">{new Date(l.creadoEn).toLocaleDateString("es-AR")}</td>
                 <td className="px-4 py-3 capitalize">{l.tipo}</td>
                 <td className="px-4 py-3">
                   {l.nombre} {l.apellido ?? ""}
@@ -63,14 +70,16 @@ export default function ConsultasManager({ leads, visitas }: { leads: Lead[]; vi
                   <p className="text-brand-black/50">{l.telefono}</p>
                 </td>
                 <td className="max-w-[220px] px-4 py-3 text-brand-black/70">
-                  {l.lote && <p>{l.lote} {l.manzana ? `— Mzna ${l.manzana}` : ""}</p>}
-                  {l.mensaje && <p className="truncate">{l.mensaje}</p>}
+                  {l.proyectoNombre && <p>{l.proyectoNombre}</p>}
+                  {l.loteNombre && <p className="text-xs text-brand-black/50">{l.loteNombre}</p>}
+                  {l.mensaje && <p className="truncate text-xs">{l.mensaje}</p>}
                 </td>
+                <td className="px-4 py-3 text-brand-black/70">{l.asignadoNombre ?? "Sin asignar"}</td>
                 <td className="px-4 py-3">
                   <select
                     defaultValue={l.estado}
                     disabled={pending}
-                    onChange={(e) => cambiarEstado(l.id, e.target.value)}
+                    onChange={(e) => cambiarEstado(l.id, e.target.value as EstadoLead)}
                     className="rounded-lg border border-black/10 px-2 py-1 text-xs"
                   >
                     {ESTADOS.map((e) => (
@@ -89,7 +98,7 @@ export default function ConsultasManager({ leads, visitas }: { leads: Lead[]; vi
             ))}
             {leads.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-brand-black/50">
+                <td colSpan={8} className="px-4 py-8 text-center text-brand-black/50">
                   Todavía no hay consultas registradas.
                 </td>
               </tr>
@@ -121,7 +130,20 @@ export default function ConsultasManager({ leads, visitas }: { leads: Lead[]; vi
                   </td>
                   <td className="px-4 py-3">{v.fecha}</td>
                   <td className="px-4 py-3">{v.horario}</td>
-                  <td className="px-4 py-3 capitalize">{v.estado}</td>
+                  <td className="px-4 py-3">
+                    <select
+                      defaultValue={v.estado}
+                      disabled={pending}
+                      onChange={(e) => cambiarEstadoVisita(v.id, e.target.value as EstadoVisita)}
+                      className="rounded-lg border border-black/10 px-2 py-1 text-xs"
+                    >
+                      {ESTADOS_VISITA.map((e) => (
+                        <option key={e} value={e}>
+                          {e}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
                 </tr>
               ))}
               {visitas.length === 0 && (

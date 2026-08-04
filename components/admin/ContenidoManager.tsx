@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { upsertFinanciacionAction, upsertPromocionAction, upsertTextosAction } from "@/lib/admin/actions";
-import type { ConfigFinanciacion, Promocion, SiteTextos } from "@/types/site";
+import { upsertFinanciacionAction, upsertTextosAction } from "@/lib/admin/actions";
+import type { ConfigFinanciacion, SiteTextos } from "@/types/site";
 
 const inputClass =
   "w-full rounded-lg border border-black/10 px-3 py-2 text-sm focus:border-brand-green-600 focus:outline-none";
@@ -20,54 +20,12 @@ function SaveButton({ pending, label }: { pending: boolean; label?: string }) {
   );
 }
 
-function toLocalDatetime(iso: string) {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function PromocionForm({ promocion }: { promocion: Promocion }) {
-  const [state, formAction, pending] = useActionState(upsertPromocionAction, null);
-
-  return (
-    <form action={formAction} className="grid gap-4 sm:grid-cols-2">
-      <div className="flex items-center gap-2 sm:col-span-2">
-        <input type="checkbox" name="activa" id="promo-activa" defaultChecked={promocion.activa} />
-        <label htmlFor="promo-activa" className="text-sm text-brand-black/70">
-          Promoción activa (muestra el bloque de &quot;últimos días&quot;)
-        </label>
-      </div>
-      <div>
-        <label className={labelClass}>Título</label>
-        <input name="titulo" defaultValue={promocion.titulo} required className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass}>Bajada</label>
-        <input name="bajada" defaultValue={promocion.bajada} required className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass}>Fecha y hora de fin</label>
-        <input
-          type="datetime-local"
-          name="fechaFin"
-          defaultValue={toLocalDatetime(promocion.fechaFin)}
-          required
-          className={inputClass}
-        />
-      </div>
-      <div className="flex items-end gap-3">
-        <SaveButton pending={pending} />
-        {state && !state.ok && <span className="text-xs text-red-600">{state.error}</span>}
-      </div>
-    </form>
-  );
-}
-
-function FinanciacionForm({ config }: { config: ConfigFinanciacion }) {
+function FinanciacionForm({ proyectoId, config }: { proyectoId: string; config: ConfigFinanciacion }) {
   const [state, formAction, pending] = useActionState(upsertFinanciacionAction, null);
 
   return (
     <form action={formAction} className="grid gap-4 sm:grid-cols-2">
+      <input type="hidden" name="proyectoId" value={proyectoId} />
       <div>
         <label className={labelClass}>Anticipo mínimo (%)</label>
         <input type="number" name="anticipoMinimoPct" defaultValue={config.anticipoMinimoPct} required className={inputClass} />
@@ -98,7 +56,7 @@ function TextosForm({ textos }: { textos: SiteTextos }) {
   return (
     <form action={formAction} className="grid gap-4 sm:grid-cols-2">
       <div className="sm:col-span-2">
-        <label className={labelClass}>Título del hero</label>
+        <label className={labelClass}>Título del hero (home general)</label>
         <input name="heroTitulo" defaultValue={textos.heroTitulo} required className={inputClass} />
       </div>
       <div className="sm:col-span-2">
@@ -106,7 +64,7 @@ function TextosForm({ textos }: { textos: SiteTextos }) {
         <textarea name="heroSubtitulo" defaultValue={textos.heroSubtitulo} required rows={2} className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>Número de WhatsApp (sin espacios, con código de país)</label>
+        <label className={labelClass}>Número de WhatsApp general (sin espacios, con código de país)</label>
         <input name="whatsappNumero" defaultValue={textos.whatsappNumero} required className={inputClass} />
       </div>
       <div>
@@ -138,28 +96,23 @@ function TextosForm({ textos }: { textos: SiteTextos }) {
 }
 
 export default function ContenidoManager({
-  promocion,
+  proyectoId,
   financiacion,
   textos,
 }: {
-  promocion: Promocion;
+  proyectoId: string;
   financiacion: ConfigFinanciacion;
   textos: SiteTextos;
 }) {
   return (
     <div className="space-y-8">
       <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 font-display text-lg font-bold text-brand-black">Promoción / contador regresivo</h2>
-        <PromocionForm promocion={promocion} />
+        <h2 className="mb-4 font-display text-lg font-bold text-brand-black">Financiación del proyecto</h2>
+        <FinanciacionForm proyectoId={proyectoId} config={financiacion} />
       </div>
 
       <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 font-display text-lg font-bold text-brand-black">Financiación</h2>
-        <FinanciacionForm config={financiacion} />
-      </div>
-
-      <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 font-display text-lg font-bold text-brand-black">Textos y datos de contacto</h2>
+        <h2 className="mb-4 font-display text-lg font-bold text-brand-black">Textos generales de la plataforma</h2>
         <TextosForm textos={textos} />
       </div>
     </div>

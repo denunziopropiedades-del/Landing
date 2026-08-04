@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 export const reservaSchema = z.object({
+  proyectoId: z.string().min(1, "Proyecto inválido"),
+  loteId: z.string().min(1, "Seleccioná un lote"),
   nombre: z.string().trim().min(2, "Ingresá tu nombre"),
   apellido: z.string().trim().min(2, "Ingresá tu apellido"),
   dni: z
@@ -11,8 +13,6 @@ export const reservaSchema = z.object({
     .regex(/^\d+$/, "El DNI debe contener solo números"),
   email: z.string().trim().email("Email inválido"),
   telefono: z.string().trim().min(6, "Teléfono inválido"),
-  manzana: z.string().min(1, "Seleccioná una manzana"),
-  lote: z.string().min(1, "Seleccioná un lote"),
   terminos: z.literal(true, {
     error: "Debés aceptar los términos y condiciones",
   }),
@@ -30,6 +30,7 @@ export const contactoSchema = z.object({
 export type ContactoInput = z.infer<typeof contactoSchema>;
 
 export const visitaSchema = z.object({
+  proyectoId: z.string().optional(),
   nombre: z.string().trim().min(2, "Ingresá tu nombre"),
   email: z.string().trim().email("Email inválido"),
   telefono: z.string().trim().min(6, "Teléfono inválido"),

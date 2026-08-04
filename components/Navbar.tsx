@@ -6,16 +6,34 @@ import { Menu, X, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
-const links = [
+export type NavLink = { href: string; label: string };
+
+export const NAV_LINKS_PORTAL: NavLink[] = [
+  { href: "/#inicio", label: "Inicio" },
+  { href: "/proyectos", label: "Proyectos" },
+  { href: "/#testimonios", label: "Testimonios" },
+  { href: "/#contacto", label: "Contacto" },
+];
+
+export const NAV_LINKS_PROYECTO: NavLink[] = [
   { href: "#inicio", label: "Inicio" },
-  { href: "#proyecto", label: "Proyecto" },
   { href: "#lotes", label: "Lotes" },
   { href: "#ubicacion", label: "Ubicación" },
   { href: "#financiacion", label: "Financiación" },
   { href: "#contacto", label: "Contacto" },
 ];
 
-export default function Navbar({ numero }: { numero?: string } = {}) {
+export default function Navbar({
+  numero,
+  marca = "Ayres de Guernica",
+  links = NAV_LINKS_PORTAL,
+  logoHref = "/",
+}: {
+  numero?: string;
+  marca?: string;
+  links?: NavLink[];
+  logoHref?: string;
+}) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -26,6 +44,8 @@ export default function Navbar({ numero }: { numero?: string } = {}) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const [primero, ...resto] = marca.split(" ");
+
   return (
     <header
       className={cn(
@@ -34,16 +54,16 @@ export default function Navbar({ numero }: { numero?: string } = {}) {
       )}
     >
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="#inicio" className="font-display text-lg font-bold tracking-wide text-white sm:text-xl">
-          Ayres <span className="text-brand-gold-400">de Guernica</span>
+        <Link href={logoHref} className="font-display text-lg font-bold tracking-wide text-white sm:text-xl">
+          {primero} <span className="text-brand-gold-400">{resto.join(" ")}</span>
         </Link>
 
         <ul className="hidden items-center gap-8 lg:flex">
           {links.map((link) => (
             <li key={link.href}>
-              <a href={link.href} className="text-sm font-medium text-white/90 transition hover:text-brand-gold-400">
+              <Link href={link.href} className="text-sm font-medium text-white/90 transition hover:text-brand-gold-400">
                 {link.label}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -75,13 +95,13 @@ export default function Navbar({ numero }: { numero?: string } = {}) {
           <ul className="flex flex-col gap-1">
             {links.map((link) => (
               <li key={link.href}>
-                <a
+                <Link
                   href={link.href}
                   onClick={() => setOpen(false)}
                   className="block rounded-lg px-3 py-3 text-white/90 hover:bg-white/5 hover:text-brand-gold-400"
                 >
                   {link.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

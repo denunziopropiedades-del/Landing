@@ -2,8 +2,14 @@ import { NextResponse } from "next/server";
 import { visitaSchema } from "@/lib/schemas";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const rate = await checkRateLimit(request, "visitas");
+  if (!rate.success) {
+    return NextResponse.json({ error: "Demasiadas solicitudes. Probá de nuevo en unos minutos." }, { status: 429 });
+  }
+
   const body = await request.json();
   const parsed = visitaSchema.safeParse(body);
 
@@ -16,6 +22,7 @@ export async function POST(request: Request) {
   const supabase = await getSupabaseAdminClient();
   if (supabase) {
     const { error } = await supabase.from("visitas").insert({
+      proyecto_id: data.proyectoId || null,
       nombre: data.nombre,
       email: data.email,
       telefono: data.telefono,
@@ -43,9 +50,6 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("No se pudo enviar el email de notificación", err);
   }
-
-  // Integración con Google Calendar: ver README (sección "Google Calendar")
-  // para conectar este endpoint a un calendario compartido vía Service Account.
 
   return NextResponse.json({ ok: true });
 }

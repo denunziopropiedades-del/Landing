@@ -7,7 +7,7 @@ import type { LoteTipo } from "@/types/site";
 import { cn, formatUsd } from "@/lib/utils";
 import { buildWhatsappUrl, mensajeConsultaLote } from "@/lib/whatsapp";
 
-export default function LotesGrid({ lotes, numero }: { lotes: LoteTipo[]; numero?: string }) {
+export default function LotesGrid({ tiposLotes, numero }: { tiposLotes: LoteTipo[]; numero?: string }) {
   const [comparar, setComparar] = useState<string[]>([]);
 
   const toggleComparar = (id: string) => {
@@ -15,8 +15,8 @@ export default function LotesGrid({ lotes, numero }: { lotes: LoteTipo[]; numero
   };
 
   const lotesComparados = useMemo(
-    () => lotes.filter((l) => comparar.includes(l.id)),
-    [lotes, comparar]
+    () => tiposLotes.filter((l) => comparar.includes(l.nombre)),
+    [tiposLotes, comparar]
   );
 
   return (
@@ -30,9 +30,9 @@ export default function LotesGrid({ lotes, numero }: { lotes: LoteTipo[]; numero
         </div>
 
         <div className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {lotes.map((lote, i) => (
+          {tiposLotes.map((lote, i) => (
             <motion.div
-              key={lote.id}
+              key={lote.nombre}
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-80px" }}
@@ -82,16 +82,16 @@ export default function LotesGrid({ lotes, numero }: { lotes: LoteTipo[]; numero
                 </a>
                 <button
                   type="button"
-                  onClick={() => toggleComparar(lote.id)}
+                  onClick={() => toggleComparar(lote.nombre)}
                   className={cn(
                     "inline-flex items-center justify-center gap-2 rounded-full border px-6 py-2.5 text-sm font-medium transition",
-                    comparar.includes(lote.id)
+                    comparar.includes(lote.nombre)
                       ? "border-brand-gold-500 bg-brand-gold-100 text-brand-gold-700"
                       : "border-black/10 text-brand-black/70 hover:border-brand-black/30"
                   )}
                 >
                   <Scale className="h-4 w-4" />
-                  {comparar.includes(lote.id) ? "Quitar de comparación" : "Comparar"}
+                  {comparar.includes(lote.nombre) ? "Quitar de comparación" : "Comparar"}
                 </button>
               </div>
             </motion.div>
@@ -116,7 +116,7 @@ export default function LotesGrid({ lotes, numero }: { lotes: LoteTipo[]; numero
               </thead>
               <tbody>
                 {lotesComparados.map((lote) => (
-                  <tr key={lote.id} className="border-b border-black/5 last:border-0">
+                  <tr key={lote.nombre} className="border-b border-black/5 last:border-0">
                     <td className="py-3 pr-4 font-semibold text-brand-black">{lote.nombre}</td>
                     <td className="py-3 pr-4">{lote.superficieM2} m²</td>
                     <td className="py-3 pr-4">{formatUsd(lote.precioUsd)}</td>

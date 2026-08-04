@@ -18,7 +18,7 @@ const inputClass =
   "w-full rounded-lg border border-black/10 px-3 py-2 text-sm focus:border-brand-green-600 focus:outline-none";
 const labelClass = "mb-1 block text-xs font-medium text-brand-black/70";
 
-export default function GaleriaManager({ items }: { items: ItemGaleria[] }) {
+export default function GaleriaManager({ proyectoId, items }: { proyectoId: string; items: ItemGaleria[] }) {
   const [state, formAction, pending] = useActionState(addGaleriaItemAction, null);
   const [subiendo, setSubiendo] = useState(false);
   const [urlSubida, setUrlSubida] = useState("");
@@ -74,6 +74,7 @@ export default function GaleriaManager({ items }: { items: ItemGaleria[] }) {
         )}
 
         <form action={formAction} className="grid gap-4 sm:grid-cols-2">
+          <input type="hidden" name="proyectoId" value={proyectoId} />
           <div>
             <label className={labelClass}>Categoría</label>
             <select name="categoria" required className={inputClass} defaultValue="fotos">

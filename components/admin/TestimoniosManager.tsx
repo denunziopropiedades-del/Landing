@@ -3,13 +3,21 @@
 import { Fragment, useActionState, useState, useTransition } from "react";
 import { Pencil, Star, Trash2 } from "lucide-react";
 import { deleteTestimonioAction, upsertTestimonioAction } from "@/lib/admin/actions";
-import type { Testimonio } from "@/types/site";
+import type { Proyecto, Testimonio } from "@/types/site";
 
 const inputClass =
   "w-full rounded-lg border border-black/10 px-3 py-2 text-sm focus:border-brand-green-600 focus:outline-none";
 const labelClass = "mb-1 block text-xs font-medium text-brand-black/70";
 
-function TestimonioForm({ testimonio, onDone }: { testimonio?: Testimonio; onDone?: () => void }) {
+function TestimonioForm({
+  proyectos,
+  testimonio,
+  onDone,
+}: {
+  proyectos: Proyecto[];
+  testimonio?: Testimonio;
+  onDone?: () => void;
+}) {
   const [state, formAction, pending] = useActionState(upsertTestimonioAction, null);
 
   return (
@@ -38,6 +46,17 @@ function TestimonioForm({ testimonio, onDone }: { testimonio?: Testimonio; onDon
         <input type="number" min={1} max={5} name="estrellas" defaultValue={testimonio?.estrellas ?? 5} className={inputClass} />
       </div>
       <div className="sm:col-span-2">
+        <label className={labelClass}>Proyecto</label>
+        <select name="proyectoId" defaultValue={testimonio?.proyectoId ?? ""} className={inputClass}>
+          <option value="">Global (todos los proyectos)</option>
+          {proyectos.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.nombre}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="sm:col-span-2">
         <label className={labelClass}>Comentario</label>
         <textarea name="comentario" defaultValue={testimonio?.comentario} required rows={3} className={inputClass} />
       </div>
@@ -55,7 +74,7 @@ function TestimonioForm({ testimonio, onDone }: { testimonio?: Testimonio; onDon
   );
 }
 
-export default function TestimoniosManager({ testimonios }: { testimonios: Testimonio[] }) {
+export default function TestimoniosManager({ proyectos, testimonios }: { proyectos: Proyecto[]; testimonios: Testimonio[] }) {
   const [editando, setEditando] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -66,11 +85,13 @@ export default function TestimoniosManager({ testimonios }: { testimonios: Testi
     });
   };
 
+  const nombreProyecto = (id: string | null) => proyectos.find((p) => p.id === id)?.nombre ?? "Global";
+
   return (
     <div className="space-y-8">
       <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
         <h2 className="mb-4 font-display text-lg font-bold text-brand-black">Agregar testimonio</h2>
-        <TestimonioForm />
+        <TestimonioForm proyectos={proyectos} />
       </div>
 
       <div className="space-y-3">
@@ -82,6 +103,9 @@ export default function TestimoniosManager({ testimonios }: { testimonios: Testi
                   {Array.from({ length: t.estrellas }).map((_, i) => (
                     <Star key={i} className="h-3.5 w-3.5 fill-brand-gold-500 text-brand-gold-500" />
                   ))}
+                  <span className="ml-2 rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-medium text-brand-black/50">
+                    {nombreProyecto(t.proyectoId)}
+                  </span>
                 </div>
                 <p className="mt-1 font-semibold text-brand-black">{t.nombre}</p>
                 <p className="text-xs text-brand-black/50">{t.ubicacion}</p>
@@ -98,7 +122,7 @@ export default function TestimoniosManager({ testimonios }: { testimonios: Testi
             </div>
             {editando === t.id && (
               <div className="rounded-2xl border border-black/5 bg-brand-cream/60 p-5">
-                <TestimonioForm testimonio={t} onDone={() => setEditando(null)} />
+                <TestimonioForm proyectos={proyectos} testimonio={t} onDone={() => setEditando(null)} />
               </div>
             )}
           </Fragment>

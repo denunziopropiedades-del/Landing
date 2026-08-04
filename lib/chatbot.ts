@@ -1,4 +1,4 @@
-import { faqs, lotes, siteTextos } from "@/lib/data";
+import { faqsSeed, lotesSeed, siteTextosSeed } from "@/lib/data";
 import { formatUsd } from "@/lib/utils";
 
 export type TemaChat = {
@@ -6,7 +6,7 @@ export type TemaChat = {
   respuesta: string;
 };
 
-const temasBase: TemaChat[] = faqs.map((f) => ({
+const temasBase: TemaChat[] = faqsSeed.map((f) => ({
   keywords: f.pregunta
     .toLowerCase()
     .replace(/[¿?]/g, "")
@@ -15,25 +15,29 @@ const temasBase: TemaChat[] = faqs.map((f) => ({
   respuesta: f.respuesta,
 }));
 
+const precios = lotesSeed.map((l) => l.precioUsd);
+const precioMin = Math.min(...precios);
+const precioMax = Math.max(...precios);
+
 const temasExtra: TemaChat[] = [
   {
     keywords: ["precio", "precios", "cuesta", "cuanto", "vale", "valor"],
-    respuesta: `Los lotes van desde ${formatUsd(lotes[0].precioUsd)} (300 m²) hasta ${formatUsd(
-      lotes[lotes.length - 1].precioUsd
-    )} (900 m²). Contamos con financiación propia. ¿Querés que te pase el detalle por WhatsApp?`,
+    respuesta: `Los lotes van desde ${formatUsd(precioMin)} hasta ${formatUsd(
+      precioMax
+    )} según el proyecto y la superficie. Contamos con financiación propia. ¿Querés que te pase el detalle por WhatsApp?`,
   },
   {
     keywords: ["ubicacion", "donde", "direccion", "zona"],
     respuesta:
-      "Ayres de Guernica está en Guernica, Buenos Aires, con excelente acceso a Ruta 210, Presidente Perón, Canning, San Vicente y CABA.",
+      "Tenemos desarrollos en distintas zonas del Gran Buenos Aires. Contanos qué zona te interesa y te compartimos las opciones disponibles.",
   },
   {
     keywords: ["contacto", "telefono", "whatsapp", "hablar", "asesor", "vendedor"],
-    respuesta: `Podés escribirnos por WhatsApp o al mail ${siteTextos.email}, con gusto te atendemos.`,
+    respuesta: `Podés escribirnos por WhatsApp o al mail ${siteTextosSeed.email}, con gusto te atendemos.`,
   },
   {
     keywords: ["hola", "buenas", "buenos", "dias", "tardes", "noches"],
-    respuesta: "¡Hola! Soy el asistente virtual de Ayres de Guernica. ¿En qué te puedo ayudar hoy?",
+    respuesta: "¡Hola! Soy el asistente virtual de la plataforma. ¿En qué te puedo ayudar hoy?",
   },
 ];
 

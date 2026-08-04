@@ -4,12 +4,21 @@ import { Fragment, useActionState, useState, useTransition } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { deleteNovedadAction, upsertNovedadAction } from "@/lib/admin/actions";
 import type { Novedad } from "@/lib/content";
+import type { Proyecto } from "@/types/site";
 
 const inputClass =
   "w-full rounded-lg border border-black/10 px-3 py-2 text-sm focus:border-brand-green-600 focus:outline-none";
 const labelClass = "mb-1 block text-xs font-medium text-brand-black/70";
 
-function NovedadForm({ novedad, onDone }: { novedad?: Novedad; onDone?: () => void }) {
+function NovedadForm({
+  proyectos,
+  novedad,
+  onDone,
+}: {
+  proyectos: Proyecto[];
+  novedad?: Novedad;
+  onDone?: () => void;
+}) {
   const [state, formAction, pending] = useActionState(upsertNovedadAction, null);
 
   return (
@@ -24,6 +33,17 @@ function NovedadForm({ novedad, onDone }: { novedad?: Novedad; onDone?: () => vo
       <div>
         <label className={labelClass}>Título</label>
         <input name="titulo" defaultValue={novedad?.titulo} required className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Proyecto</label>
+        <select name="proyectoId" defaultValue={novedad?.proyectoId ?? ""} className={inputClass}>
+          <option value="">Global (todos los proyectos)</option>
+          {proyectos.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.nombre}
+            </option>
+          ))}
+        </select>
       </div>
       <div>
         <label className={labelClass}>Contenido</label>
@@ -49,7 +69,7 @@ function NovedadForm({ novedad, onDone }: { novedad?: Novedad; onDone?: () => vo
   );
 }
 
-export default function NovedadesManager({ novedades }: { novedades: Novedad[] }) {
+export default function NovedadesManager({ proyectos, novedades }: { proyectos: Proyecto[]; novedades: Novedad[] }) {
   const [editando, setEditando] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -64,7 +84,7 @@ export default function NovedadesManager({ novedades }: { novedades: Novedad[] }
     <div className="space-y-8">
       <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
         <h2 className="mb-4 font-display text-lg font-bold text-brand-black">Nueva novedad</h2>
-        <NovedadForm />
+        <NovedadForm proyectos={proyectos} />
       </div>
 
       <div className="space-y-3">
@@ -93,7 +113,7 @@ export default function NovedadesManager({ novedades }: { novedades: Novedad[] }
             </div>
             {editando === n.id && (
               <div className="rounded-2xl border border-black/5 bg-brand-cream/60 p-5">
-                <NovedadForm novedad={n} onDone={() => setEditando(null)} />
+                <NovedadForm proyectos={proyectos} novedad={n} onDone={() => setEditando(null)} />
               </div>
             )}
           </Fragment>
