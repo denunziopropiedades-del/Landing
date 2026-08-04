@@ -254,6 +254,7 @@ export async function getVisitas(): Promise<Visita[]> {
     fecha: v.fecha,
     horario: v.horario,
     estado: v.estado,
+    googleEventId: v.google_event_id,
   }));
 }
 

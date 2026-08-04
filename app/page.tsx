@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
+import Banners from "@/components/Banners";
 import ProyectoCard from "@/components/ProyectoCard";
 import Testimonios from "@/components/Testimonios";
 import Faq from "@/components/Faq";
@@ -7,15 +8,16 @@ import Contacto from "@/components/Contacto";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { getFaqs, getProyectos, getSiteTextos, getTestimonios } from "@/lib/content";
+import { getBanners, getFaqs, getProyectos, getSiteTextos, getTestimonios } from "@/lib/content";
 
 export const revalidate = 60;
 
 export default async function PortalHome() {
-  const [proyectos, testimonios, faqs, textos] = await Promise.all([
+  const [proyectos, testimonios, faqs, banners, textos] = await Promise.all([
     getProyectos(),
     getTestimonios(),
     getFaqs(),
+    getBanners(),
     getSiteTextos(),
   ]);
 
@@ -35,6 +37,8 @@ export default async function PortalHome() {
           whatsappNumero={textos.whatsappNumero}
           ctaSecundario={{ label: "Ver proyectos", href: "#proyectos" }}
         />
+
+        <Banners items={banners} numero={textos.whatsappNumero} />
 
         <section id="proyectos" className="bg-brand-cream py-20 sm:py-28">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

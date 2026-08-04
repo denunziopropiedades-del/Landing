@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Navbar, { NAV_LINKS_PROYECTO } from "@/components/Navbar";
 import Hero from "@/components/Hero";
+import Banners from "@/components/Banners";
 import PromoCountdown from "@/components/PromoCountdown";
 import LotesGrid from "@/components/LotesGrid";
 import MapaLotes from "@/components/MapaLotes";
@@ -20,6 +21,7 @@ import ReservaForm from "@/components/ReservaForm";
 import { accesos, beneficios } from "@/lib/data";
 import {
   agruparLotesPorTipo,
+  getBanners,
   getFaqs,
   getFinanciacionConfig,
   getGaleria,
@@ -67,7 +69,7 @@ export default async function ProyectoPage({ params }: { params: Promise<Params>
   const proyecto = await getProyectoBySlug(slug);
   if (!proyecto || !proyecto.publicado) notFound();
 
-  const [lotes, promocion, financiacion, galeria, progreso, testimonios, faqs, novedades, textos] =
+  const [lotes, promocion, financiacion, galeria, progreso, testimonios, faqs, novedades, banners, textos] =
     await Promise.all([
       getLotes(proyecto.id),
       getPromocionActiva(proyecto.id),
@@ -77,6 +79,7 @@ export default async function ProyectoPage({ params }: { params: Promise<Params>
       getTestimonios(proyecto.id),
       getFaqs(proyecto.id),
       getNovedades(proyecto.id),
+      getBanners(proyecto.id),
       getSiteTextos(),
     ]);
 
@@ -115,6 +118,7 @@ export default async function ProyectoPage({ params }: { params: Promise<Params>
           whatsappNumero={numero}
           ctaSecundario={{ label: "Ver lotes disponibles", href: "#lotes" }}
         />
+        <Banners items={banners} numero={numero} />
         <PromoCountdown promo={promocion} />
         <LotesGrid tiposLotes={tiposLotes} numero={numero} />
 

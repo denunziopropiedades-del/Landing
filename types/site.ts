@@ -164,6 +164,7 @@ export type Visita = {
   fecha: string;
   horario: string;
   estado: EstadoVisita;
+  googleEventId: string | null;
 };
 
 export type ActividadLog = {

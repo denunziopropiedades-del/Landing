@@ -1,6 +1,6 @@
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const EMAIL_FROM = process.env.EMAIL_FROM ?? "Ayres de Guernica <no-reply@ayresdeguernica.com.ar>";
-const EMAIL_TO = process.env.EMAIL_TO ?? "info@ayresdeguernica.com.ar";
+const EMAIL_FROM = process.env.EMAIL_FROM ?? "Matu Lotes <no-reply@matulotes.com.ar>";
+const EMAIL_TO = process.env.EMAIL_TO ?? "denunziopropiedades@gmail.com";
 
 /**
  * Envía un email de notificación vía Resend (https://resend.com).

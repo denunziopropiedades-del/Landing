@@ -130,7 +130,16 @@ El asistente virtual flotante usa un motor propio de coincidencia por palabras c
 
 ## Agenda de visitas y Google Calendar
 
-El formulario "Coordiná tu visita" guarda la solicitud en la tabla `visitas` y notifica por email. La sincronización automática con Google Calendar no está conectada (requiere OAuth de Google Workspace o una Service Account con calendario compartido); la forma más simple de conectarla sin escribir código adicional es un flujo de Zapier/Make disparado por un webhook de base de datos de Supabase cuando se inserta una fila nueva en `visitas`.
+El formulario "Coordiná tu visita" guarda la solicitud en la tabla `visitas`, notifica por email, y —si Google Calendar está configurado— crea automáticamente un evento en el calendario elegido, etiquetado **"VISITA ONLINE"** y en color **rojo**. Si el administrador marca la visita como "cancelada" desde `/admin/consultas`, el evento se borra del calendario automáticamente.
+
+### Configurar Google Calendar
+
+1. En [Google Cloud Console](https://console.cloud.google.com/), creá (o reutilizá) un proyecto y habilitá la **Google Calendar API**.
+2. Andá a **IAM y administración > Cuentas de servicio** → "Crear cuenta de servicio". Una vez creada, generá una clave nueva en formato **JSON** y descargala.
+3. Del JSON descargado, copiá `client_email` → `GOOGLE_SERVICE_ACCOUNT_EMAIL`, y `private_key` → `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` (pegalo tal cual, con los `\n` incluidos).
+4. En [Google Calendar](https://calendar.google.com), abrí el calendario que querés sincronizar → **Configuración y uso compartido** → "Compartir con determinadas personas" → agregá el email de la cuenta de servicio (el `client_email`) con permiso **"Hacer cambios en los eventos"**.
+5. Copiá el **ID del calendario** (en la misma pantalla de configuración, sección "Integrar calendario") → `GOOGLE_CALENDAR_ID`. Para el calendario principal de una cuenta de Gmail, el ID suele ser directamente esa dirección de Gmail.
+6. Sin esto configurado, la agenda sigue funcionando igual (queda guardada en Supabase y se notifica por email); simplemente no se crea el evento en Calendar.
 
 ## Meta Ads y Google Ads
 

@@ -18,7 +18,7 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.ayresdeguernica.com.ar";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.matulotes.com.ar";
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID;
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
 const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
@@ -26,33 +26,33 @@ const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Ayres de Guernica – Etapa 2 | Lotes con escritura garantizada",
-    template: "%s | Ayres de Guernica",
+    default: "Matu Lotes | Lotes con escritura garantizada",
+    template: "%s | Matu Lotes",
   },
   description:
-    "Invertí en tu lote en Ayres de Guernica, Buenos Aires. Lotes de 300, 600 y 900 m² con escritura garantizada, financiación propia y excelente ubicación en una de las zonas de mayor crecimiento del sur del GBA.",
+    "Matu Lotes: encontrá tu lote ideal en los desarrollos inmobiliarios con escritura garantizada de mayor crecimiento del Gran Buenos Aires.",
   keywords: [
-    "lotes en Guernica",
-    "Ayres de Guernica",
+    "lotes en venta Buenos Aires",
+    "Matu Lotes",
     "terrenos en venta Buenos Aires",
     "lotes con escritura",
-    "inversión inmobiliaria sur GBA",
+    "inversión inmobiliaria Gran Buenos Aires",
   ],
-  authors: [{ name: "Ayres de Guernica" }],
+  authors: [{ name: "Matu Lotes" }],
   openGraph: {
     type: "website",
     locale: "es_AR",
     url: SITE_URL,
-    siteName: "Ayres de Guernica",
-    title: "Ayres de Guernica – Etapa 2 | Lotes con escritura garantizada",
+    siteName: "Matu Lotes",
+    title: "Matu Lotes | Lotes con escritura garantizada",
     description:
-      "Lotes con escritura garantizada en una de las zonas con mayor crecimiento del sur del Gran Buenos Aires.",
+      "Encontrá tu lote ideal en los desarrollos inmobiliarios con escritura garantizada de mayor crecimiento del Gran Buenos Aires.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Ayres de Guernica – Etapa 2",
+    title: "Matu Lotes",
     description:
-      "Lotes con escritura garantizada en una de las zonas con mayor crecimiento del sur del Gran Buenos Aires.",
+      "Encontrá tu lote ideal en los desarrollos inmobiliarios con escritura garantizada de mayor crecimiento del Gran Buenos Aires.",
   },
   robots: {
     index: true,
@@ -62,22 +62,16 @@ export const metadata: Metadata = {
 
 const realEstateSchema = {
   "@context": "https://schema.org",
-  "@type": "RealEstateListing",
-  name: "Ayres de Guernica – Etapa 2",
+  "@type": "RealEstateAgent",
+  name: "Matu Lotes",
   description:
-    "Lotes con escritura garantizada en Guernica, Buenos Aires. Financiación propia disponible.",
+    "Plataforma inmobiliaria especializada en venta de lotes con escritura garantizada en el Gran Buenos Aires.",
   url: SITE_URL,
+  email: "denunziopropiedades@gmail.com",
   address: {
     "@type": "PostalAddress",
-    addressLocality: "Guernica",
     addressRegion: "Buenos Aires",
     addressCountry: "AR",
-  },
-  offers: {
-    "@type": "AggregateOffer",
-    priceCurrency: "USD",
-    lowPrice: 2700,
-    highPrice: 8100,
   },
 };
 

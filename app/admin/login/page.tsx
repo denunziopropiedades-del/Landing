@@ -17,7 +17,7 @@ export default function AdminLoginPage() {
             <Lock className="h-6 w-6 text-brand-gold-400" />
           </span>
           <h1 className="mt-4 font-display text-xl font-bold text-white">Panel Administrador</h1>
-          <p className="mt-1 text-sm text-white/60">Ayres de Guernica</p>
+          <p className="mt-1 text-sm text-white/60">Matu Lotes</p>
         </div>
 
         <form action={formAction} className="space-y-4">

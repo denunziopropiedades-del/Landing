@@ -11,7 +11,7 @@ export default function Beneficios({ beneficios }: { beneficios: Beneficio[] }) 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="font-display text-3xl font-bold text-white sm:text-4xl">Beneficios de invertir acá</h2>
-          <p className="mt-3 text-white/70">Todo lo que respalda tu inversión en Ayres de Guernica.</p>
+          <p className="mt-3 text-white/70">Todo lo que respalda tu inversión inmobiliaria.</p>
         </div>
 
         <div className="mt-14 grid grid-cols-2 gap-6 sm:grid-cols-4">

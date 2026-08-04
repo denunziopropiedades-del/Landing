@@ -291,7 +291,8 @@ create table visitas (
   telefono text not null,
   fecha date not null,
   horario text not null,
-  estado text not null default 'pendiente' check (estado in ('pendiente', 'confirmada', 'cancelada', 'realizada'))
+  estado text not null default 'pendiente' check (estado in ('pendiente', 'confirmada', 'cancelada', 'realizada')),
+  google_event_id text
 );
 
 -- ═══════════════════════════════════════════════════════════════════════
@@ -423,10 +424,10 @@ values (
   'Desarrollos inmobiliarios con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.',
   '5491127424512',
   'Hola, me interesa recibir información.',
-  'info@ayresdeguernica.com.ar',
-  'https://instagram.com/ayresdeguernica',
-  'https://facebook.com/ayresdeguernica',
-  'https://youtube.com/@ayresdeguernica'
+  'denunziopropiedades@gmail.com',
+  'https://instagram.com/matulotes',
+  'https://facebook.com/matulotes',
+  'https://youtube.com/@matulotes'
 );
 
 with proyecto_seed as (

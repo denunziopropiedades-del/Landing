@@ -9,7 +9,7 @@ type Mensaje = { autor: "bot" | "user"; texto: string };
 
 const SALUDO_INICIAL: Mensaje = {
   autor: "bot",
-  texto: "¡Hola! Soy el asistente virtual de Ayres de Guernica. Preguntame sobre precios, ubicación, financiación o cómo reservar tu lote.",
+  texto: "¡Hola! Soy el asistente virtual de Matu Lotes. Preguntame sobre precios, ubicación, financiación o cómo reservar tu lote.",
 };
 
 export default function ChatbotWidget() {
@@ -38,7 +38,7 @@ export default function ChatbotWidget() {
             <div className="flex items-center justify-between bg-brand-green-700 px-4 py-3 text-white">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-brand-gold-400" />
-                <span className="text-sm font-semibold">Asistente Ayres de Guernica</span>
+                <span className="text-sm font-semibold">Asistente Matu Lotes</span>
               </div>
               <button type="button" onClick={() => setOpen(false)} aria-label="Cerrar chat">
                 <X className="h-4 w-4" />

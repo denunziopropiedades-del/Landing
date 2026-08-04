@@ -20,13 +20,13 @@ export default async function OpengraphImage() {
         }}
       >
         <div style={{ display: "flex", fontSize: 28, color: "#d4af37", letterSpacing: 4, textTransform: "uppercase" }}>
-          Etapa 2 · Guernica, Buenos Aires
+          Plataforma inmobiliaria
         </div>
         <div style={{ display: "flex", fontSize: 64, fontWeight: 700, marginTop: 24, maxWidth: 900 }}>
-          Ayres de Guernica
+          Matu Lotes
         </div>
         <div style={{ display: "flex", fontSize: 32, marginTop: 24, maxWidth: 850, color: "rgba(255,255,255,0.85)" }}>
-          Lotes con escritura garantizada en el sur del Gran Buenos Aires
+          Lotes con escritura garantizada en el Gran Buenos Aires
         </div>
       </div>
     ),

@@ -29,10 +29,10 @@ export const siteTextosSeed: SiteTextos = {
     "Desarrollos inmobiliarios con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.",
   whatsappNumero: "5491127424512",
   whatsappMensajeDefault: "Hola, me interesa recibir información.",
-  email: "info@ayresdeguernica.com.ar",
-  instagram: "https://instagram.com/ayresdeguernica",
-  facebook: "https://facebook.com/ayresdeguernica",
-  youtube: "https://youtube.com/@ayresdeguernica",
+  email: "denunziopropiedades@gmail.com",
+  instagram: "https://instagram.com/matulotes",
+  facebook: "https://facebook.com/matulotes",
+  youtube: "https://youtube.com/@matulotes",
 };
 
 export const proyectoSeed: Proyecto = {

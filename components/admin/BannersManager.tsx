@@ -1,8 +1,9 @@
 "use client";
 
-import { Fragment, useActionState, useState, useTransition } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Fragment, useActionState, useRef, useState, useTransition } from "react";
+import { Loader2, Pencil, Trash2, UploadCloud } from "lucide-react";
 import { eliminarBannerAction, upsertBannerAction } from "@/lib/admin/actions";
+import { isCloudinaryConfigured, uploadToCloudinary } from "@/lib/cloudinary-client";
 import type { Banner, Proyecto } from "@/types/site";
 
 const inputClass =
@@ -11,6 +12,22 @@ const labelClass = "mb-1 block text-xs font-medium text-brand-black/70";
 
 function BannerForm({ proyectos, banner, onDone }: { proyectos: Proyecto[]; banner?: Banner; onDone?: () => void }) {
   const [state, formAction, pending] = useActionState(upsertBannerAction, null);
+  const [subiendo, setSubiendo] = useState(false);
+  const [urlSubida, setUrlSubida] = useState(banner?.imagenUrl ?? "");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const cloudinaryListo = isCloudinaryConfigured();
+
+  const handleFile = async (file: File) => {
+    setSubiendo(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      setUrlSubida(url);
+    } catch {
+      alert("No se pudo subir el archivo. Verificá la configuración de Cloudinary.");
+    } finally {
+      setSubiendo(false);
+    }
+  };
 
   return (
     <form
@@ -36,10 +53,49 @@ function BannerForm({ proyectos, banner, onDone }: { proyectos: Proyecto[]; bann
           ))}
         </select>
       </div>
+
+      {cloudinaryListo && (
+        <div className="sm:col-span-2">
+          <label className={labelClass}>Subir imagen (Cloudinary)</label>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={subiendo}
+            className="inline-flex items-center gap-2 rounded-lg border border-dashed border-black/20 px-4 py-3 text-sm text-brand-black/70 hover:border-brand-green-600 disabled:opacity-60"
+          >
+            {subiendo ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+            {subiendo ? "Subiendo..." : "Elegir archivo"}
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+          />
+        </div>
+      )}
+
       <div className="sm:col-span-2">
-        <label className={labelClass}>Imagen (URL)</label>
-        <input name="imagenUrl" defaultValue={banner?.imagenUrl} required className={inputClass} />
+        <label className={labelClass}>
+          URL de la imagen {cloudinaryListo && "(se completa sola al subir un archivo, o pegá una manualmente)"}
+        </label>
+        <input
+          name="imagenUrl"
+          required
+          defaultValue={urlSubida}
+          key={urlSubida}
+          placeholder="https://..."
+          className={inputClass}
+        />
       </div>
+      {!cloudinaryListo && (
+        <p className="-mt-2 text-xs text-brand-black/50 sm:col-span-2">
+          Configurá NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME y NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET para poder subir
+          archivos directamente. Mientras tanto podés pegar una URL de imagen ya alojada.
+        </p>
+      )}
+
       <div className="sm:col-span-2">
         <label className={labelClass}>Link de destino (opcional)</label>
         <input name="linkUrl" defaultValue={banner?.linkUrl ?? ""} placeholder="https://..." className={inputClass} />

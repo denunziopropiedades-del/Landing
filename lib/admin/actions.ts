@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/server";
 import { requireRole, AdminActionError } from "@/lib/admin/auth";
 import { registrarActividad } from "@/lib/admin/activity";
+import { cancelarEventoVisita } from "@/lib/google-calendar";
 import type { EstadoLead, EstadoLote, EstadoVisita, Rol } from "@/types/site";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
@@ -641,6 +642,12 @@ export async function actualizarEstadoVisitaAction(id: string, estado: EstadoVis
   try {
     const actor = await requireRole("administrador", "supervisor", "vendedor");
     const admin = (await getSupabaseAdminClient())!;
+
+    if (estado === "cancelada") {
+      const { data: visita } = await admin.from("visitas").select("google_event_id").eq("id", id).maybeSingle();
+      if (visita?.google_event_id) await cancelarEventoVisita(visita.google_event_id);
+    }
+
     const { error } = await admin.from("visitas").update({ estado }).eq("id", id);
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "cambiar-estado", "visita", id, { estado });

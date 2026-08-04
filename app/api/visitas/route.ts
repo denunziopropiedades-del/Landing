@@ -3,6 +3,7 @@ import { visitaSchema } from "@/lib/schemas";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { crearEventoVisita } from "@/lib/google-calendar";
 
 export async function POST(request: Request) {
   const rate = await checkRateLimit(request, "visitas");
@@ -18,21 +19,48 @@ export async function POST(request: Request) {
   }
 
   const data = parsed.data;
-
   const supabase = await getSupabaseAdminClient();
+
+  let proyectoNombre: string | undefined;
+  let visitaId: string | null = null;
+
   if (supabase) {
-    const { error } = await supabase.from("visitas").insert({
-      proyecto_id: data.proyectoId || null,
-      nombre: data.nombre,
-      email: data.email,
-      telefono: data.telefono,
-      fecha: data.fecha,
-      horario: data.horario,
-      estado: "pendiente",
-    });
+    if (data.proyectoId) {
+      const { data: proyecto } = await supabase.from("proyectos").select("nombre").eq("id", data.proyectoId).maybeSingle();
+      proyectoNombre = proyecto?.nombre;
+    }
+
+    const { data: visita, error } = await supabase
+      .from("visitas")
+      .insert({
+        proyecto_id: data.proyectoId || null,
+        nombre: data.nombre,
+        email: data.email,
+        telefono: data.telefono,
+        fecha: data.fecha,
+        horario: data.horario,
+        estado: "pendiente",
+      })
+      .select("id")
+      .single();
+
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    visitaId = visita.id;
+  }
+
+  const googleEventId = await crearEventoVisita({
+    nombre: data.nombre,
+    email: data.email,
+    telefono: data.telefono,
+    fecha: data.fecha,
+    horario: data.horario,
+    proyectoNombre,
+  });
+
+  if (supabase && visitaId && googleEventId) {
+    await supabase.from("visitas").update({ google_event_id: googleEventId }).eq("id", visitaId);
   }
 
   try {

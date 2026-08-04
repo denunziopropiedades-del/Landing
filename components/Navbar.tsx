@@ -25,7 +25,7 @@ export const NAV_LINKS_PROYECTO: NavLink[] = [
 
 export default function Navbar({
   numero,
-  marca = "Ayres de Guernica",
+  marca = "Matu Lotes",
   links = NAV_LINKS_PORTAL,
   logoHref = "/",
 }: {
