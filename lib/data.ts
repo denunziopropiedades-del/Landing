@@ -27,7 +27,7 @@ export const siteTextosSeed: SiteTextos = {
   heroTitulo: "Encontrá el lote ideal para tu inversión",
   heroSubtitulo:
     "Desarrollos inmobiliarios con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.",
-  whatsappNumero: "5491100000000",
+  whatsappNumero: "54911274245",
   whatsappMensajeDefault: "Hola, me interesa recibir información.",
   email: "info@ayresdeguernica.com.ar",
   instagram: "https://instagram.com/ayresdeguernica",
@@ -46,7 +46,7 @@ export const proyectoSeed: Proyecto = {
     "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2400&auto=format&fit=crop",
   publicado: true,
   destacado: true,
-  whatsappNumero: "5491100000000",
+  whatsappNumero: "54911274245",
   orden: 0,
 };
 

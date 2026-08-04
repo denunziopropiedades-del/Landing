@@ -421,7 +421,7 @@ values (
   1,
   'Encontrá el lote ideal para tu inversión',
   'Desarrollos inmobiliarios con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.',
-  '5491100000000',
+  '54911274245',
   'Hola, me interesa recibir información.',
   'info@ayresdeguernica.com.ar',
   'https://instagram.com/ayresdeguernica',
@@ -438,7 +438,7 @@ with proyecto_seed as (
     'Guernica, Buenos Aires',
     true,
     true,
-    '5491100000000',
+    '54911274245',
     0
   )
   returning id
