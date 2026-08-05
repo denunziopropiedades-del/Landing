@@ -119,7 +119,6 @@ export async function crearEventoVisita(visita: VisitaParaCalendario): Promise<s
           start: { dateTime: sumarMinutos(visita.fecha, visita.horario, 0), timeZone: TIMEZONE },
           end: { dateTime: sumarMinutos(visita.fecha, visita.horario, DURACION_VISITA_MINUTOS), timeZone: TIMEZONE },
           colorId: COLOR_ID_ROJO,
-          attendees: [{ email: visita.email, displayName: visita.nombre }],
         }),
       }
     );
