@@ -121,7 +121,7 @@ export default function Financiacion({
             {planFijo ? (
               <dl className="space-y-3 text-brand-black">
                 <div className="flex items-center justify-between border-b border-black/5 pb-2.5">
-                  <dt className="text-sm text-brand-black/60">Precio de contado</dt>
+                  <dt className="text-sm text-brand-black/60">Precio de contado (precio final)</dt>
                   <dd className="font-semibold">{formatUsd(lote.precioUsd)}</dd>
                 </div>
                 <div className="flex items-center justify-between border-b border-black/5 pb-2.5">
@@ -144,7 +144,7 @@ export default function Financiacion({
               resultado && (
                 <dl className="space-y-3 text-brand-black">
                   <div className="flex items-center justify-between border-b border-black/5 pb-2.5">
-                    <dt className="text-sm text-brand-black/60">Precio del lote</dt>
+                    <dt className="text-sm text-brand-black/60">Precio de contado (precio final)</dt>
                     <dd className="font-semibold">{formatUsd(lote.precioUsd)}</dd>
                   </div>
                   <div className="flex items-center justify-between border-b border-black/5 pb-2.5">

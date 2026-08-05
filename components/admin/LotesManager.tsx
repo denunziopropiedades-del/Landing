@@ -68,7 +68,7 @@ function LoteForm({ proyectoId, lote, onDone }: { proyectoId: string; lote?: Lot
         <input name="dimensiones" defaultValue={lote?.dimensiones} placeholder="10 x 30" required className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>Precio USD</label>
+        <label className={labelClass}>Precio USD (contado, precio final)</label>
         <input name="precioUsd" type="number" defaultValue={lote?.precioUsd} required className={inputClass} />
       </div>
       <div className="flex items-center gap-2">

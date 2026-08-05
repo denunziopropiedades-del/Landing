@@ -51,7 +51,10 @@ export default function LotesGrid({ tiposLotes, numero }: { tiposLotes: LoteTipo
               <h3 className="font-display text-2xl font-bold text-brand-black">{lote.nombre}</h3>
               <p className="mt-1 text-sm text-brand-black/60">{lote.dimensiones} metros</p>
 
-              <p className="mt-6 font-display text-4xl font-extrabold text-brand-green-700">
+              <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-brand-black/40">
+                Precio de contado (precio final)
+              </p>
+              <p className="mt-1 font-display text-4xl font-extrabold text-brand-green-700">
                 {formatUsd(lote.precioUsd)}
               </p>
               {typeof lote.disponibles === "number" && (
