@@ -51,13 +51,13 @@ export const proyectoSeed: Proyecto = {
 };
 
 export const lotesSeed: Lote[] = [
-  { id: "demo-lote-a1", proyectoId: PROYECTO_DEMO_ID, nombre: "Lote 300 m²", manzana: "A", numero: "1", superficieM2: 300, dimensiones: "10 x 30", precioUsd: 2700, estado: "disponible", destacado: false, posX: 12, posY: 20 },
-  { id: "demo-lote-a2", proyectoId: PROYECTO_DEMO_ID, nombre: "Lote 300 m²", manzana: "A", numero: "2", superficieM2: 300, dimensiones: "10 x 30", precioUsd: 2700, estado: "disponible", destacado: false, posX: 22, posY: 20 },
-  { id: "demo-lote-a3", proyectoId: PROYECTO_DEMO_ID, nombre: "Lote 300 m²", manzana: "A", numero: "3", superficieM2: 300, dimensiones: "10 x 30", precioUsd: 2700, estado: "reservado", destacado: false, posX: 32, posY: 20 },
-  { id: "demo-lote-b1", proyectoId: PROYECTO_DEMO_ID, nombre: "Lote 600 m²", manzana: "B", numero: "1", superficieM2: 600, dimensiones: "20 x 30", precioUsd: 5400, estado: "disponible", destacado: true, posX: 12, posY: 45 },
-  { id: "demo-lote-b2", proyectoId: PROYECTO_DEMO_ID, nombre: "Lote 600 m²", manzana: "B", numero: "2", superficieM2: 600, dimensiones: "20 x 30", precioUsd: 5400, estado: "vendido", destacado: true, posX: 27, posY: 45 },
-  { id: "demo-lote-c1", proyectoId: PROYECTO_DEMO_ID, nombre: "Lote 900 m²", manzana: "C", numero: "1", superficieM2: 900, dimensiones: "30 x 30", precioUsd: 8100, estado: "disponible", destacado: false, posX: 15, posY: 70 },
-  { id: "demo-lote-c2", proyectoId: PROYECTO_DEMO_ID, nombre: "Lote 900 m²", manzana: "C", numero: "2", superficieM2: 900, dimensiones: "30 x 30", precioUsd: 8100, estado: "no_disponible", destacado: false, posX: 35, posY: 70 },
+  { id: "demo-lote-a1", proyectoId: PROYECTO_DEMO_ID, nombre: "Lote 300 m²", manzana: "A", numero: "1", superficieM2: 300, dimensiones: "10 x 30", precioUsd: 2700, estado: "disponible", destacado: false, posX: 12, posY: 20, anticipoFinanciadoUsd: 1700, cuotasFinanciado: 18, valorCuotaFinanciadoUsd: 250 },
+  { id: "demo-lote-a2", proyectoId: PROYECTO_DEMO_ID, nombre: "Lote 300 m²", manzana: "A", numero: "2", superficieM2: 300, dimensiones: "10 x 30", precioUsd: 2700, estado: "disponible", destacado: false, posX: 22, posY: 20, anticipoFinanciadoUsd: 1700, cuotasFinanciado: 18, valorCuotaFinanciadoUsd: 250 },
+  { id: "demo-lote-a3", proyectoId: PROYECTO_DEMO_ID, nombre: "Lote 300 m²", manzana: "A", numero: "3", superficieM2: 300, dimensiones: "10 x 30", precioUsd: 2700, estado: "reservado", destacado: false, posX: 32, posY: 20, anticipoFinanciadoUsd: 1700, cuotasFinanciado: 18, valorCuotaFinanciadoUsd: 250 },
+  { id: "demo-lote-b1", proyectoId: PROYECTO_DEMO_ID, nombre: "Lote 600 m²", manzana: "B", numero: "1", superficieM2: 600, dimensiones: "20 x 30", precioUsd: 5400, estado: "disponible", destacado: true, posX: 12, posY: 45, anticipoFinanciadoUsd: 4400, cuotasFinanciado: 18, valorCuotaFinanciadoUsd: 250 },
+  { id: "demo-lote-b2", proyectoId: PROYECTO_DEMO_ID, nombre: "Lote 600 m²", manzana: "B", numero: "2", superficieM2: 600, dimensiones: "20 x 30", precioUsd: 5400, estado: "vendido", destacado: true, posX: 27, posY: 45, anticipoFinanciadoUsd: 4400, cuotasFinanciado: 18, valorCuotaFinanciadoUsd: 250 },
+  { id: "demo-lote-c1", proyectoId: PROYECTO_DEMO_ID, nombre: "Lote 900 m²", manzana: "C", numero: "1", superficieM2: 900, dimensiones: "30 x 30", precioUsd: 8100, estado: "disponible", destacado: false, posX: 15, posY: 70, anticipoFinanciadoUsd: null, cuotasFinanciado: null, valorCuotaFinanciadoUsd: null },
+  { id: "demo-lote-c2", proyectoId: PROYECTO_DEMO_ID, nombre: "Lote 900 m²", manzana: "C", numero: "2", superficieM2: 900, dimensiones: "30 x 30", precioUsd: 8100, estado: "no_disponible", destacado: false, posX: 35, posY: 70, anticipoFinanciadoUsd: null, cuotasFinanciado: null, valorCuotaFinanciadoUsd: null },
 ];
 
 export const bannersSeed: Banner[] = [];

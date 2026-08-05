@@ -110,6 +110,10 @@ create table lotes (
   destacado boolean not null default false,
   pos_x numeric check (pos_x is null or (pos_x >= 0 and pos_x <= 100)),
   pos_y numeric check (pos_y is null or (pos_y >= 0 and pos_y <= 100)),
+  -- Plan de financiación fijo (anticipo + cuotas en USD). Si son null, la web usa la calculadora por porcentaje.
+  anticipo_financiado_usd numeric,
+  cuotas_financiado integer,
+  valor_cuota_financiado_usd numeric,
   orden integer not null default 0,
   creado_en timestamptz not null default now(),
   unique (proyecto_id, manzana, numero)
@@ -444,18 +448,18 @@ with proyecto_seed as (
   )
   returning id
 )
-insert into lotes (proyecto_id, nombre, manzana, numero, superficie_m2, dimensiones, precio_usd, estado, destacado, pos_x, pos_y, orden)
-select id, v.nombre, v.manzana, v.numero, v.superficie_m2, v.dimensiones, v.precio_usd, v.estado, v.destacado, v.pos_x, v.pos_y, v.orden
+insert into lotes (proyecto_id, nombre, manzana, numero, superficie_m2, dimensiones, precio_usd, estado, destacado, pos_x, pos_y, anticipo_financiado_usd, cuotas_financiado, valor_cuota_financiado_usd, orden)
+select id, v.nombre, v.manzana, v.numero, v.superficie_m2, v.dimensiones, v.precio_usd, v.estado, v.destacado, v.pos_x, v.pos_y, v.anticipo_financiado_usd, v.cuotas_financiado, v.valor_cuota_financiado_usd, v.orden
 from proyecto_seed,
   (values
-    ('Lote 300 m²', 'A', '1', 300, '10 x 30', 2700, 'disponible', false, 12, 20, 1),
-    ('Lote 300 m²', 'A', '2', 300, '10 x 30', 2700, 'disponible', false, 22, 20, 2),
-    ('Lote 300 m²', 'A', '3', 300, '10 x 30', 2700, 'reservado', false, 32, 20, 3),
-    ('Lote 600 m²', 'B', '1', 600, '20 x 30', 5400, 'disponible', true, 12, 45, 4),
-    ('Lote 600 m²', 'B', '2', 600, '20 x 30', 5400, 'vendido', true, 27, 45, 5),
-    ('Lote 900 m²', 'C', '1', 900, '30 x 30', 8100, 'disponible', false, 15, 70, 6),
-    ('Lote 900 m²', 'C', '2', 900, '30 x 30', 8100, 'no_disponible', false, 35, 70, 7)
-  ) as v(nombre, manzana, numero, superficie_m2, dimensiones, precio_usd, estado, destacado, pos_x, pos_y, orden);
+    ('Lote 300 m²', 'A', '1', 300, '10 x 30', 2700, 'disponible', false, 12, 20, 1700, 18, 250, 1),
+    ('Lote 300 m²', 'A', '2', 300, '10 x 30', 2700, 'disponible', false, 22, 20, 1700, 18, 250, 2),
+    ('Lote 300 m²', 'A', '3', 300, '10 x 30', 2700, 'reservado', false, 32, 20, 1700, 18, 250, 3),
+    ('Lote 600 m²', 'B', '1', 600, '20 x 30', 5400, 'disponible', true, 12, 45, 4400, 18, 250, 4),
+    ('Lote 600 m²', 'B', '2', 600, '20 x 30', 5400, 'vendido', true, 27, 45, 4400, 18, 250, 5),
+    ('Lote 900 m²', 'C', '1', 900, '30 x 30', 8100, 'disponible', false, 15, 70, null, null, null, 6),
+    ('Lote 900 m²', 'C', '2', 900, '30 x 30', 8100, 'no_disponible', false, 35, 70, null, null, null, 7)
+  ) as v(nombre, manzana, numero, superficie_m2, dimensiones, precio_usd, estado, destacado, pos_x, pos_y, anticipo_financiado_usd, cuotas_financiado, valor_cuota_financiado_usd, orden);
 
 insert into financiacion_config (proyecto_id, anticipo_minimo_pct, anticipo_maximo_pct, cuotas_opciones, interes_anual_pct)
 select id, 20, 50, '{12,24,36,48,60}', 6 from proyectos where slug = 'ayres-de-guernica';

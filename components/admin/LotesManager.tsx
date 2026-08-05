@@ -85,6 +85,39 @@ function LoteForm({ proyectoId, lote, onDone }: { proyectoId: string; lote?: Lot
         <label className={labelClass}>Posición Y en el mapa (0-100, opcional)</label>
         <input name="posY" type="number" min={0} max={100} defaultValue={lote?.posY ?? ""} className={inputClass} />
       </div>
+      <div className="sm:col-span-4">
+        <p className="mb-1 text-xs font-medium text-brand-black/70">
+          Plan de financiación fijo (opcional). Si se completa, reemplaza a la calculadora por porcentaje para esta
+          tipología.
+        </p>
+      </div>
+      <div>
+        <label className={labelClass}>Anticipo financiado (USD)</label>
+        <input
+          name="anticipoFinanciadoUsd"
+          type="number"
+          defaultValue={lote?.anticipoFinanciadoUsd ?? ""}
+          className={inputClass}
+        />
+      </div>
+      <div>
+        <label className={labelClass}>Cantidad de cuotas</label>
+        <input
+          name="cuotasFinanciado"
+          type="number"
+          defaultValue={lote?.cuotasFinanciado ?? ""}
+          className={inputClass}
+        />
+      </div>
+      <div>
+        <label className={labelClass}>Valor de cada cuota (USD)</label>
+        <input
+          name="valorCuotaFinanciadoUsd"
+          type="number"
+          defaultValue={lote?.valorCuotaFinanciadoUsd ?? ""}
+          className={inputClass}
+        />
+      </div>
       <div className="flex items-end sm:col-span-2">
         <button
           type="submit"

@@ -110,6 +110,9 @@ export async function getLotes(proyectoId: string): Promise<Lote[]> {
     destacado: l.destacado,
     posX: l.pos_x === null ? null : Number(l.pos_x),
     posY: l.pos_y === null ? null : Number(l.pos_y),
+    anticipoFinanciadoUsd: l.anticipo_financiado_usd === null ? null : Number(l.anticipo_financiado_usd),
+    cuotasFinanciado: l.cuotas_financiado === null ? null : Number(l.cuotas_financiado),
+    valorCuotaFinanciadoUsd: l.valor_cuota_financiado_usd === null ? null : Number(l.valor_cuota_financiado_usd),
   }));
 }
 
@@ -133,6 +136,9 @@ export function agruparLotesPorTipo(lotes: Lote[]): LoteTipo[] {
         precioUsd: referencia.precioUsd,
         disponibles: disponibles.length,
         destacado: items.some((l) => l.destacado),
+        anticipoFinanciadoUsd: referencia.anticipoFinanciadoUsd,
+        cuotasFinanciado: referencia.cuotasFinanciado,
+        valorCuotaFinanciadoUsd: referencia.valorCuotaFinanciadoUsd,
       };
     })
     .sort((a, b) => a.superficieM2 - b.superficieM2);

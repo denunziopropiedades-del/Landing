@@ -47,6 +47,10 @@ export type Lote = {
   destacado: boolean;
   posX: number | null;
   posY: number | null;
+  /** Plan de financiación fijo (anticipo + cuotas en USD). Si no está cargado, se usa la calculadora por porcentaje. */
+  anticipoFinanciadoUsd: number | null;
+  cuotasFinanciado: number | null;
+  valorCuotaFinanciadoUsd: number | null;
 };
 
 /** Agrupación comercial de lotes por tipología (para las tarjetas de la landing). */
@@ -57,6 +61,9 @@ export type LoteTipo = {
   precioUsd: number;
   disponibles: number;
   destacado: boolean;
+  anticipoFinanciadoUsd: number | null;
+  cuotasFinanciado: number | null;
+  valorCuotaFinanciadoUsd: number | null;
 };
 
 export type Banner = {

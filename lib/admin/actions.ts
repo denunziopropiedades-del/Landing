@@ -152,6 +152,11 @@ export async function upsertLoteAction(_prev: ActionResult | null, formData: For
       destacado: formData.get("destacado") === "on",
       pos_x: formData.get("posX") ? num(formData, "posX") : null,
       pos_y: formData.get("posY") ? num(formData, "posY") : null,
+      anticipo_financiado_usd: formData.get("anticipoFinanciadoUsd") ? num(formData, "anticipoFinanciadoUsd") : null,
+      cuotas_financiado: formData.get("cuotasFinanciado") ? num(formData, "cuotasFinanciado") : null,
+      valor_cuota_financiado_usd: formData.get("valorCuotaFinanciadoUsd")
+        ? num(formData, "valorCuotaFinanciadoUsd")
+        : null,
     };
 
     if (id) {
