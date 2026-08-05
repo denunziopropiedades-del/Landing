@@ -1,8 +1,31 @@
 import crypto from "node:crypto";
 
-const CLIENT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-const PRIVATE_KEY = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, "\n");
-const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID;
+/**
+ * Tolera los formatos habituales en que queda pegada la clave privada al
+ * copiarla dentro de una variable de entorno (comillas envolventes, saltos
+ * de línea literales "\n" en vez de reales, o finales de línea CRLF), para
+ * que `crypto.sign` no falle con ERR_OSSL_UNSUPPORTED por un PEM mal formado.
+ */
+function normalizarClavePrivada(valor: string | undefined): string | undefined {
+  if (!valor) return undefined;
+
+  let clave = valor.trim();
+
+  if (
+    (clave.startsWith('"') && clave.endsWith('"')) ||
+    (clave.startsWith("'") && clave.endsWith("'"))
+  ) {
+    clave = clave.slice(1, -1);
+  }
+
+  clave = clave.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n").replace(/\r\n/g, "\n").trim();
+
+  return clave;
+}
+
+const CLIENT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
+const PRIVATE_KEY = normalizarClavePrivada(process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY);
+const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID?.trim();
 const TIMEZONE = process.env.GOOGLE_CALENDAR_TIMEZONE ?? "America/Argentina/Buenos_Aires";
 
 const DURACION_VISITA_MINUTOS = 45;
