@@ -9,18 +9,16 @@ import crypto from "node:crypto";
 function normalizarClavePrivada(valor: string | undefined): string | undefined {
   if (!valor) return undefined;
 
-  let clave = valor.trim();
+  let clave = valor.trim().replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n").replace(/\r\n/g, "\n");
 
-  if (
-    (clave.startsWith('"') && clave.endsWith('"')) ||
-    (clave.startsWith("'") && clave.endsWith("'"))
-  ) {
-    clave = clave.slice(1, -1);
-  }
+  // Se queda solo con el bloque PEM real, descartando comillas, comas o
+  // cualquier otro carácter que haya quedado pegado por accidente al copiar
+  // el valor desde el archivo JSON (esa es la causa habitual del error
+  // ERR_OSSL_UNSUPPORTED al firmar el JWT).
+  const bloquePem = clave.match(/-----BEGIN (?:RSA )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA )?PRIVATE KEY-----/);
+  if (bloquePem) clave = bloquePem[0];
 
-  clave = clave.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n").replace(/\r\n/g, "\n").trim();
-
-  return clave;
+  return `${clave.trim()}\n`;
 }
 
 const CLIENT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
