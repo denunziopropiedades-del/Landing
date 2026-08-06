@@ -690,6 +690,39 @@ async function verificarPropiedadLead(actorId: string, actorRol: Rol, leadId: st
   }
 }
 
+export async function crearLeadManualAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const nombre = str(formData, "nombre");
+    if (!nombre) throw new Error("El nombre es obligatorio.");
+
+    const payload = {
+      tipo: "manual" as const,
+      proyecto_id: optStr(formData, "proyectoId"),
+      nombre,
+      apellido: optStr(formData, "apellido"),
+      dni: optStr(formData, "dni"),
+      email: optStr(formData, "email") ?? "",
+      telefono: optStr(formData, "telefono") ?? "",
+      observaciones: optStr(formData, "observaciones") ?? "",
+      estado: "nuevo" as const,
+      asignado_a: actor.rol === "vendedor" ? actor.id : optStr(formData, "asignadoA"),
+    };
+
+    const { data, error } = await admin.from("leads").insert(payload).select("id").single();
+    if (error) throw new Error(error.message);
+
+    await registrarActividad(actor, "crear", "lead", data.id, { origen: "manual" });
+    revalidatePath("/admin/crm");
+    revalidatePath("/admin/consultas");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function actualizarEstadoLeadAction(id: string, estado: EstadoLead): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor", "vendedor");
