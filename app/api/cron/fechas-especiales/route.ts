@@ -42,8 +42,14 @@ function plantillaEmail(titulo: string, cuerpo: string) {
 }
 
 export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
   const auth = request.headers.get("authorization");
-  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  const autorizado =
+    !process.env.CRON_SECRET ||
+    auth === `Bearer ${process.env.CRON_SECRET}` ||
+    searchParams.get("secret") === process.env.CRON_SECRET;
+
+  if (!autorizado) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
