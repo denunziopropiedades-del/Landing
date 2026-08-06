@@ -273,6 +273,56 @@ export async function eliminarLoteAction(id: string): Promise<ActionResult> {
   }
 }
 
+export async function eliminarLotesAction(ids: string[]): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+    const { error } = await admin.from("lotes").delete().in("id", ids);
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "eliminar-masivo", "lote", null, { cantidad: ids.length });
+    revalidatePath("/admin/lotes");
+    revalidatePath("/proyectos/[slug]", "page");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function actualizarPreciosMasivoAction(
+  ids: string[],
+  modo: "fijo" | "porcentaje",
+  valor: number
+): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    if (modo === "fijo") {
+      const { error } = await admin.from("lotes").update({ precio_usd: valor }).in("id", ids);
+      if (error) throw new Error(error.message);
+    } else {
+      const { data, error: fetchError } = await admin.from("lotes").select("id, precio_usd").in("id", ids);
+      if (fetchError) throw new Error(fetchError.message);
+
+      const resultados = await Promise.all(
+        (data ?? []).map((lote) => {
+          const nuevoPrecio = Math.max(0, Math.round(Number(lote.precio_usd) * (1 + valor / 100)));
+          return admin.from("lotes").update({ precio_usd: nuevoPrecio }).eq("id", lote.id);
+        })
+      );
+      const conError = resultados.find((r) => r.error);
+      if (conError?.error) throw new Error(conError.error.message);
+    }
+
+    await registrarActividad(actor, "actualizar-precio-masivo", "lote", null, { cantidad: ids.length, modo, valor });
+    revalidatePath("/admin/lotes");
+    revalidatePath("/proyectos/[slug]", "page");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function actualizarEstadoLoteAction(id: string, estado: EstadoLote): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor");
@@ -754,8 +804,10 @@ export async function invitarUsuarioAction(_prev: ActionResult | null, formData:
     const nombre = str(formData, "nombre");
     const rol = str(formData, "rol") as Rol;
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.matulotes.com.ar";
     const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
       data: { nombre },
+      redirectTo: `${siteUrl}/admin/login`,
     });
     if (error) throw new Error(error.message);
 

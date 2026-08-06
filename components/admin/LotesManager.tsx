@@ -2,7 +2,13 @@
 
 import { Fragment, useActionState, useState, useTransition } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { actualizarEstadoLoteAction, eliminarLoteAction, upsertLoteAction } from "@/lib/admin/actions";
+import {
+  actualizarEstadoLoteAction,
+  actualizarPreciosMasivoAction,
+  eliminarLoteAction,
+  eliminarLotesAction,
+  upsertLoteAction,
+} from "@/lib/admin/actions";
 import { formatUsd } from "@/lib/utils";
 import type { EstadoLote, Lote } from "@/types/site";
 
@@ -136,6 +142,9 @@ function LoteForm({ proyectoId, lote, onDone }: { proyectoId: string; lote?: Lot
 export default function LotesManager({ proyectoId, lotes }: { proyectoId: string; lotes: Lote[] }) {
   const [editando, setEditando] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
+  const [seleccionados, setSeleccionados] = useState<string[]>([]);
+  const [modoPrecio, setModoPrecio] = useState<"porcentaje" | "fijo">("porcentaje");
+  const [valorPrecio, setValorPrecio] = useState("");
   const [pending, startTransition] = useTransition();
 
   const eliminar = (id: string) => {
@@ -151,6 +160,38 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
     });
   };
 
+  const toggleSeleccion = (id: string) => {
+    setSeleccionados((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const toggleSeleccionarTodos = () => {
+    setSeleccionados((prev) => (prev.length === lotes.length ? [] : lotes.map((l) => l.id)));
+  };
+
+  const eliminarSeleccionados = () => {
+    if (!confirm(`¿Eliminar los ${seleccionados.length} lotes seleccionados? Esta acción no se puede deshacer.`)) return;
+    startTransition(async () => {
+      await eliminarLotesAction(seleccionados);
+      setSeleccionados([]);
+    });
+  };
+
+  const aplicarPrecioMasivo = () => {
+    const valor = Number(valorPrecio);
+    if (!valorPrecio || Number.isNaN(valor)) return;
+
+    const mensaje =
+      modoPrecio === "fijo"
+        ? `¿Poner el precio de ${seleccionados.length} lotes en USD ${valor}?`
+        : `¿Ajustar el precio de ${seleccionados.length} lotes en ${valor > 0 ? "+" : ""}${valor}%?`;
+    if (!confirm(mensaje)) return;
+
+    startTransition(async () => {
+      await actualizarPreciosMasivoAction(seleccionados, modoPrecio, valor);
+      setValorPrecio("");
+    });
+  };
+
   return (
     <div className="space-y-8">
       <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
@@ -163,10 +204,59 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
         {creando && <LoteForm proyectoId={proyectoId} onDone={() => setCreando(false)} />}
       </div>
 
+      {seleccionados.length > 0 && (
+        <div className="flex flex-col gap-4 rounded-2xl border border-black/10 bg-brand-cream/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm font-medium text-brand-black">{seleccionados.length} lote(s) seleccionado(s)</p>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={modoPrecio}
+              onChange={(e) => setModoPrecio(e.target.value as "porcentaje" | "fijo")}
+              className="rounded-lg border border-black/10 px-2 py-2 text-sm"
+            >
+              <option value="porcentaje">Ajuste %</option>
+              <option value="fijo">Precio fijo USD</option>
+            </select>
+            <input
+              type="number"
+              value={valorPrecio}
+              onChange={(e) => setValorPrecio(e.target.value)}
+              placeholder={modoPrecio === "fijo" ? "Ej: 2900" : "Ej: 10 o -5"}
+              className="w-32 rounded-lg border border-black/10 px-3 py-2 text-sm"
+            />
+            <button
+              type="button"
+              disabled={pending || !valorPrecio}
+              onClick={aplicarPrecioMasivo}
+              className="rounded-full bg-brand-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-green-600 disabled:opacity-60"
+            >
+              Aplicar precio
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={eliminarSeleccionados}
+              className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+            >
+              <Trash2 className="h-4 w-4" />
+              Eliminar seleccionados
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-2xl border border-black/5 bg-white shadow-sm">
         <table className="w-full min-w-[820px] text-left text-sm">
           <thead className="border-b border-black/10 text-brand-black/50">
             <tr>
+              <th className="w-10 px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={lotes.length > 0 && seleccionados.length === lotes.length}
+                  onChange={toggleSeleccionarTodos}
+                  aria-label="Seleccionar todos"
+                />
+              </th>
               <th className="px-4 py-3 font-medium">Manzana / Lote</th>
               <th className="px-4 py-3 font-medium">Tipología</th>
               <th className="px-4 py-3 font-medium">Superficie</th>
@@ -179,6 +269,14 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
             {lotes.map((lote) => (
               <Fragment key={lote.id}>
                 <tr className="border-b border-black/5 last:border-0">
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={seleccionados.includes(lote.id)}
+                      onChange={() => toggleSeleccion(lote.id)}
+                      aria-label={`Seleccionar lote ${lote.manzana}-${lote.numero}`}
+                    />
+                  </td>
                   <td className="px-4 py-3 font-medium">
                     {lote.manzana}-{lote.numero}
                   </td>
@@ -210,7 +308,7 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
                 </tr>
                 {editando === lote.id && (
                   <tr className="border-b border-black/5 bg-brand-cream/60">
-                    <td colSpan={6} className="px-4 py-4">
+                    <td colSpan={7} className="px-4 py-4">
                       <LoteForm proyectoId={proyectoId} lote={lote} onDone={() => setEditando(null)} />
                     </td>
                   </tr>
@@ -219,7 +317,7 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
             ))}
             {lotes.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-brand-black/50">
+                <td colSpan={7} className="px-4 py-8 text-center text-brand-black/50">
                   Todavía no hay lotes cargados para este proyecto.
                 </td>
               </tr>
