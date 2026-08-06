@@ -25,6 +25,20 @@ export async function getSupabaseServerClient() {
   });
 }
 
+/**
+ * Cliente de Supabase para lectura pública (contenido del sitio), sin atarse a cookies.
+ * A diferencia de getSupabaseServerClient(), es seguro llamarlo en build time
+ * (generateStaticParams, páginas prerenderizadas estáticamente), donde no hay
+ * request ni cookies disponibles.
+ */
+export async function getSupabasePublicClient() {
+  if (!isSupabaseConfigured()) return null;
+  const { createClient } = await import("@supabase/supabase-js");
+  return createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
 /** Cliente con service role para operaciones administrativas server-side (sin RLS). */
 export async function getSupabaseAdminClient() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

@@ -1,4 +1,4 @@
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabasePublicClient } from "@/lib/supabase/server";
 import {
   bannersSeed,
   configFinanciacionSeed,
@@ -58,7 +58,7 @@ function mapProyecto(p: Record<string, unknown>): Proyecto {
 }
 
 export async function getProyectos(): Promise<Proyecto[]> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = await getSupabasePublicClient();
   if (!supabase) return [proyectoSeed];
 
   const { data, error } = await supabase
@@ -72,7 +72,7 @@ export async function getProyectos(): Promise<Proyecto[]> {
 }
 
 export async function getProyectoBySlug(slug: string): Promise<Proyecto | null> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = await getSupabasePublicClient();
   if (!supabase) return proyectoSeed.slug === slug ? proyectoSeed : null;
 
   const { data, error } = await supabase.from("proyectos").select("*").eq("slug", slug).maybeSingle();
@@ -87,7 +87,7 @@ export async function getProyectoDestacado(): Promise<Proyecto | null> {
 }
 
 export async function getLotes(proyectoId: string): Promise<Lote[]> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = await getSupabasePublicClient();
   if (!supabase) return lotesSeed.filter((l) => l.proyectoId === proyectoId);
 
   const { data, error } = await supabase
@@ -145,7 +145,7 @@ export function agruparLotesPorTipo(lotes: Lote[]): LoteTipo[] {
 }
 
 export async function getPromocionActiva(proyectoId: string): Promise<Promocion | null> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = await getSupabasePublicClient();
   if (!supabase) return promocionesSeed.find((p) => p.proyectoId === proyectoId && p.activa) ?? null;
 
   const { data, error } = await supabase
@@ -169,7 +169,7 @@ export async function getPromocionActiva(proyectoId: string): Promise<Promocion 
 }
 
 export async function getFinanciacionConfig(proyectoId: string): Promise<ConfigFinanciacion> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = await getSupabasePublicClient();
   if (!supabase) return configFinanciacionSeed;
 
   const { data, error } = await supabase
@@ -188,7 +188,7 @@ export async function getFinanciacionConfig(proyectoId: string): Promise<ConfigF
 }
 
 export async function getSiteTextos(): Promise<SiteTextos> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = await getSupabasePublicClient();
   if (!supabase) return siteTextosSeed;
 
   const { data, error } = await supabase.from("site_textos").select("*").eq("id", 1).maybeSingle();
@@ -207,7 +207,7 @@ export async function getSiteTextos(): Promise<SiteTextos> {
 }
 
 export async function getGaleria(proyectoId: string): Promise<ItemGaleria[]> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = await getSupabasePublicClient();
   if (!supabase) return galeriaSeed.filter((g) => g.proyectoId === proyectoId);
 
   const { data, error } = await supabase
@@ -221,7 +221,7 @@ export async function getGaleria(proyectoId: string): Promise<ItemGaleria[]> {
 }
 
 export async function getProgreso(proyectoId: string): Promise<ProgresoItem[]> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = await getSupabasePublicClient();
   if (!supabase) return progresoSeed.filter((p) => p.proyectoId === proyectoId);
 
   const { data, error } = await supabase
@@ -235,7 +235,7 @@ export async function getProgreso(proyectoId: string): Promise<ProgresoItem[]> {
 }
 
 export async function getTestimonios(proyectoId?: string): Promise<Testimonio[]> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = await getSupabasePublicClient();
   if (!supabase) return testimoniosSeed;
 
   const query = supabase.from("testimonios").select("*").order("orden");
@@ -256,7 +256,7 @@ export async function getTestimonios(proyectoId?: string): Promise<Testimonio[]>
 }
 
 export async function getFaqs(proyectoId?: string): Promise<FaqItem[]> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = await getSupabasePublicClient();
   if (!supabase) return faqsSeed;
 
   const query = supabase.from("faqs").select("*").order("orden");
@@ -269,7 +269,7 @@ export async function getFaqs(proyectoId?: string): Promise<FaqItem[]> {
 }
 
 export async function getBanners(proyectoId?: string): Promise<Banner[]> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = await getSupabasePublicClient();
   if (!supabase) return bannersSeed;
 
   const query = supabase.from("banners").select("*").eq("activo", true);
@@ -289,7 +289,7 @@ export async function getBanners(proyectoId?: string): Promise<Banner[]> {
 }
 
 export async function getNovedades(proyectoId?: string): Promise<Novedad[]> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = await getSupabasePublicClient();
   if (!supabase) return [];
 
   let query = supabase.from("novedades").select("*").eq("publicado", true).order("creado_en", { ascending: false });
