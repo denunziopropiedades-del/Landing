@@ -156,6 +156,7 @@ export type Lead = {
   estado: EstadoLead;
   asignadoA: string | null;
   asignadoNombre?: string;
+  fechaNacimiento?: string | null;
 };
 
 export type EstadoVisita = "pendiente" | "confirmada" | "cancelada" | "realizada";

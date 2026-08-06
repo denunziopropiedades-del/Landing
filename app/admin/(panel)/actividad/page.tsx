@@ -8,12 +8,26 @@ const ACCION_LABEL: Record<string, string> = {
   despublicar: "despublicó",
   "cambiar-estado": "cambió el estado de",
   "cambiar-rol": "cambió el rol de",
+  "cambiar-proyecto": "cambió el desarrollo de",
   asignar: "asignó",
   anotar: "anotó en",
   activar: "activó",
   desactivar: "desactivó",
   invitar: "invitó a",
+  importar: "importó",
+  "eliminar-masivo": "eliminó en bloque",
+  "actualizar-precio-masivo": "actualizó precios en bloque de",
 };
+
+function formatearDetalle(detalle: Record<string, unknown> | null): string {
+  if (!detalle) return "";
+  if (typeof detalle.anterior !== "undefined" && typeof detalle.nuevo !== "undefined") {
+    return `${detalle.anterior} → ${detalle.nuevo}`;
+  }
+  return Object.entries(detalle)
+    .map(([clave, valor]) => `${clave}: ${valor}`)
+    .join(", ");
+}
 
 export default async function AdminActividadPage() {
   const registros = await getActividadLog(200);
@@ -31,6 +45,7 @@ export default async function AdminActividadPage() {
               <th className="px-4 py-3 font-medium">Usuario</th>
               <th className="px-4 py-3 font-medium">Acción</th>
               <th className="px-4 py-3 font-medium">Entidad</th>
+              <th className="px-4 py-3 font-medium">Detalle</th>
             </tr>
           </thead>
           <tbody>
@@ -43,11 +58,12 @@ export default async function AdminActividadPage() {
                   {r.entidad}
                   {r.entidadId ? ` (${r.entidadId.slice(0, 8)})` : ""}
                 </td>
+                <td className="px-4 py-3 text-xs text-brand-black/50">{formatearDetalle(r.detalle)}</td>
               </tr>
             ))}
             {registros.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-brand-black/50">
+                <td colSpan={5} className="px-4 py-8 text-center text-brand-black/50">
                   Todavía no hay actividad registrada.
                 </td>
               </tr>

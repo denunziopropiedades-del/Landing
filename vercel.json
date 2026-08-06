@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/fechas-especiales",
+      "schedule": "0 12 * * *"
+    }
+  ]
+}

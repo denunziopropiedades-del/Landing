@@ -236,6 +236,7 @@ export async function getLeads(): Promise<Lead[]> {
     estado: l.estado,
     asignadoA: l.asignado_a,
     asignadoNombre: (l.perfiles as { nombre: string; email: string } | null)?.nombre,
+    fechaNacimiento: l.fecha_nacimiento ?? null,
   }));
 }
 

@@ -744,6 +744,25 @@ export async function actualizarObservacionesLeadAction(id: string, observacione
   }
 }
 
+export async function actualizarFechaNacimientoLeadAction(id: string, fecha: string | null): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    await verificarPropiedadLead(actor.id, actor.rol, id);
+    const admin = (await getSupabaseAdminClient())!;
+    const { error } = await admin
+      .from("leads")
+      .update({ fecha_nacimiento: fecha, actualizado_en: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "actualizar", "lead", id, { fechaNacimiento: fecha });
+    revalidatePath("/admin/crm");
+    revalidatePath("/admin/consultas");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function asignarLeadAction(id: string, vendedorId: string | null): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor");
@@ -752,6 +771,62 @@ export async function asignarLeadAction(id: string, vendedorId: string | null): 
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "asignar", "lead", id, { vendedorId });
     revalidatePath("/admin/crm");
+    revalidatePath("/admin/consultas");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function cambiarProyectoLeadAction(id: string, proyectoId: string | null): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const [{ data: actual }, { data: nuevo }] = await Promise.all([
+      admin.from("leads").select("proyectos(nombre)").eq("id", id).maybeSingle(),
+      proyectoId
+        ? admin.from("proyectos").select("nombre").eq("id", proyectoId).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+
+    const { error } = await admin
+      .from("leads")
+      .update({ proyecto_id: proyectoId, actualizado_en: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+
+    await registrarActividad(actor, "cambiar-proyecto", "lead", id, {
+      anterior: (actual?.proyectos as unknown as { nombre: string } | null)?.nombre ?? "Sin desarrollo",
+      nuevo: nuevo?.nombre ?? "Sin desarrollo",
+    });
+    revalidatePath("/admin/crm");
+    revalidatePath("/admin/consultas");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function cambiarProyectoVisitaAction(id: string, proyectoId: string | null): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const [{ data: actual }, { data: nuevo }] = await Promise.all([
+      admin.from("visitas").select("proyectos(nombre)").eq("id", id).maybeSingle(),
+      proyectoId
+        ? admin.from("proyectos").select("nombre").eq("id", proyectoId).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+
+    const { error } = await admin.from("visitas").update({ proyecto_id: proyectoId }).eq("id", id);
+    if (error) throw new Error(error.message);
+
+    await registrarActividad(actor, "cambiar-proyecto", "visita", id, {
+      anterior: (actual?.proyectos as unknown as { nombre: string } | null)?.nombre ?? "Sin desarrollo",
+      nuevo: nuevo?.nombre ?? "Sin desarrollo",
+    });
     revalidatePath("/admin/consultas");
     return { ok: true };
   } catch (err) {

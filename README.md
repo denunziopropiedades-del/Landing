@@ -90,7 +90,19 @@ Toda consulta (formulario de contacto, reserva online o agenda de visita) crea a
 
 `Nuevo → Contactado → Visita Programada → Reservado → Vendido` (con `Descartado` como salida en cualquier punto).
 
-Mover un lead a **Reservado** o **Vendido** sincroniza automáticamente el estado del lote asociado (`lotes.estado`); volver a **Descartado** libera el lote si estaba reservado por ese lead. Administradores y supervisores pueden asignar cada lead a un vendedor del equipo desde la misma tarjeta.
+Mover un lead a **Reservado** o **Vendido** sincroniza automáticamente el estado del lote asociado (`lotes.estado`); volver a **Descartado** libera el lote si estaba reservado por ese lead. Administradores y supervisores pueden asignar cada lead a un vendedor del equipo, y también reasignarlo a otro desarrollo, desde la misma tarjeta — igual que en la tabla de "Consultas y visitas" para las visitas agendadas. Todo cambio de desarrollo queda registrado en `/admin/actividad` (fecha, usuario, desarrollo anterior → nuevo).
+
+### Fechas especiales para clientes
+
+Una vez que un lead pasa a **Vendido** (ya es propietario), su tarjeta en el CRM muestra un campo de **fecha de nacimiento**. Un cron diario (`/api/cron/fechas-especiales`) revisa a todos los clientes (`estado = vendido`) y les envía por email:
+
+- Un saludo de **cumpleaños** el día que corresponda según su fecha de nacimiento.
+- Un saludo de **Navidad** (25/12), **Año Nuevo** (1/1), **Día del Padre** (3er domingo de junio) y **Día de la Madre** (3er domingo de octubre) a todos los clientes, el mismo día para todos.
+
+Configuración necesaria:
+1. `CRON_SECRET`: una cadena secreta cualquiera, para que solo Vercel pueda disparar el envío (Vercel la manda sola en el header `Authorization` cuando está configurada esta variable).
+2. Que `RESEND_API_KEY` ya esté configurada (se reutiliza la misma cuenta de Resend usada para las notificaciones).
+3. El cron ya está declarado en `vercel.json` (una vez al día, 12:00 UTC = 9:00 hora Argentina) — Vercel lo activa solo al desplegar, no requiere nada más.
 
 ## Gestión de lotes y mapa interactivo
 

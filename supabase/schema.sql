@@ -276,7 +276,9 @@ create table leads (
     check (estado in ('nuevo', 'contactado', 'visita_programada', 'reservado', 'vendido', 'descartado')),
   asignado_a uuid references perfiles(id) on delete set null,
   -- Id del leadgen de Meta Ads (leads generados desde formularios de Facebook/Instagram), para no duplicarlos.
-  external_id text
+  external_id text,
+  -- Fecha de nacimiento del cliente, para el email automático de cumpleaños.
+  fecha_nacimiento date
 );
 
 create index leads_estado_idx on leads (estado);

@@ -2,8 +2,14 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { GripVertical, Mail, Phone } from "lucide-react";
-import { actualizarEstadoLeadAction, actualizarObservacionesLeadAction, asignarLeadAction } from "@/lib/admin/actions";
-import type { EstadoLead, Lead, Perfil, Rol } from "@/types/site";
+import {
+  actualizarEstadoLeadAction,
+  actualizarFechaNacimientoLeadAction,
+  actualizarObservacionesLeadAction,
+  asignarLeadAction,
+  cambiarProyectoLeadAction,
+} from "@/lib/admin/actions";
+import type { EstadoLead, Lead, Perfil, Proyecto, Rol } from "@/types/site";
 
 const COLUMNAS: { estado: EstadoLead; label: string; color: string }[] = [
   { estado: "nuevo", label: "Nuevo", color: "border-t-blue-500" },
@@ -17,11 +23,13 @@ const COLUMNAS: { estado: EstadoLead; label: string; color: string }[] = [
 function LeadCard({
   lead,
   vendedores,
+  proyectos,
   puedeAsignar,
   onMoved,
 }: {
   lead: Lead;
   vendedores: Perfil[];
+  proyectos: Proyecto[];
   puedeAsignar: boolean;
   onMoved: () => void;
 }) {
@@ -50,7 +58,26 @@ function LeadCard({
         </p>
         <GripVertical className="h-4 w-4 shrink-0 text-brand-black/25" />
       </div>
-      {lead.proyectoNombre && <p className="text-xs text-brand-black/50">{lead.proyectoNombre}</p>}
+      {puedeAsignar ? (
+        <select
+          defaultValue={lead.proyectoId ?? ""}
+          onChange={(e) =>
+            startTransition(() => {
+              cambiarProyectoLeadAction(lead.id, e.target.value || null);
+            })
+          }
+          className="mt-1 w-full rounded-lg border border-black/10 px-2 py-1 text-xs text-brand-black/70"
+        >
+          <option value="">Sin desarrollo</option>
+          {proyectos.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.nombre}
+            </option>
+          ))}
+        </select>
+      ) : (
+        lead.proyectoNombre && <p className="text-xs text-brand-black/50">{lead.proyectoNombre}</p>
+      )}
       {lead.loteNombre && <p className="text-xs text-brand-black/50">{lead.loteNombre}</p>}
       <div className="mt-2 space-y-1 text-xs text-brand-black/60">
         <p className="flex items-center gap-1.5">
@@ -80,6 +107,24 @@ function LeadCard({
         </select>
       )}
 
+      {lead.estado === "vendido" && (
+        <div className="mt-2">
+          <label className="mb-1 block text-[11px] font-medium text-brand-black/50">
+            Fecha de nacimiento (para el saludo de cumpleaños)
+          </label>
+          <input
+            type="date"
+            defaultValue={lead.fechaNacimiento ?? ""}
+            onChange={(e) =>
+              startTransition(() => {
+                actualizarFechaNacimientoLeadAction(lead.id, e.target.value || null);
+              })
+            }
+            className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+          />
+        </div>
+      )}
+
       <textarea
         value={observaciones}
         onChange={(e) => setObservaciones(e.target.value)}
@@ -95,10 +140,12 @@ function LeadCard({
 export default function KanbanBoard({
   leads: leadsIniciales,
   vendedores,
+  proyectos,
   rolActual,
 }: {
   leads: Lead[];
   vendedores: Perfil[];
+  proyectos: Proyecto[];
   rolActual: Rol;
 }) {
   const [leads, setLeads] = useState(leadsIniciales);
@@ -147,6 +194,7 @@ export default function KanbanBoard({
                 key={lead.id}
                 lead={lead}
                 vendedores={vendedores}
+                proyectos={proyectos}
                 puedeAsignar={puedeAsignar}
                 onMoved={() => setDragOver(null)}
               />

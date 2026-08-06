@@ -2,13 +2,26 @@
 
 import { useTransition } from "react";
 import { Download, Trash2 } from "lucide-react";
-import { actualizarEstadoLeadAction, actualizarEstadoVisitaAction, deleteLeadAction } from "@/lib/admin/actions";
-import type { EstadoLead, EstadoVisita, Lead, Visita } from "@/types/site";
+import {
+  actualizarEstadoLeadAction,
+  actualizarEstadoVisitaAction,
+  cambiarProyectoVisitaAction,
+  deleteLeadAction,
+} from "@/lib/admin/actions";
+import type { EstadoLead, EstadoVisita, Lead, Proyecto, Visita } from "@/types/site";
 
 const ESTADOS: EstadoLead[] = ["nuevo", "contactado", "visita_programada", "reservado", "vendido", "descartado"];
 const ESTADOS_VISITA: EstadoVisita[] = ["pendiente", "confirmada", "cancelada", "realizada"];
 
-export default function ConsultasManager({ leads, visitas }: { leads: Lead[]; visitas: Visita[] }) {
+export default function ConsultasManager({
+  leads,
+  visitas,
+  proyectos,
+}: {
+  leads: Lead[];
+  visitas: Visita[];
+  proyectos: Proyecto[];
+}) {
   const [pending, startTransition] = useTransition();
 
   const cambiarEstado = (id: string, estado: EstadoLead) => {
@@ -20,6 +33,12 @@ export default function ConsultasManager({ leads, visitas }: { leads: Lead[]; vi
   const cambiarEstadoVisita = (id: string, estado: EstadoVisita) => {
     startTransition(() => {
       actualizarEstadoVisitaAction(id, estado);
+    });
+  };
+
+  const cambiarProyectoVisita = (id: string, proyectoId: string) => {
+    startTransition(() => {
+      cambiarProyectoVisitaAction(id, proyectoId || null);
     });
   };
 
@@ -129,7 +148,21 @@ export default function ConsultasManager({ leads, visitas }: { leads: Lead[]; vi
                     <p>{v.email}</p>
                     <p className="text-brand-black/50">{v.telefono}</p>
                   </td>
-                  <td className="px-4 py-3">{v.proyectoNombre ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    <select
+                      defaultValue={v.proyectoId ?? ""}
+                      disabled={pending}
+                      onChange={(e) => cambiarProyectoVisita(v.id, e.target.value)}
+                      className="rounded-lg border border-black/10 px-2 py-1 text-xs"
+                    >
+                      <option value="">Sin desarrollo</option>
+                      {proyectos.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
                   <td className="px-4 py-3">{v.fecha}</td>
                   <td className="px-4 py-3">{v.horario}</td>
                   <td className="px-4 py-3">

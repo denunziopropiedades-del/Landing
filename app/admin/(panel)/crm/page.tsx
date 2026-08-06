@@ -1,9 +1,14 @@
 import KanbanBoard from "@/components/admin/KanbanBoard";
-import { getLeads, getPerfiles } from "@/lib/admin/data";
+import { getLeads, getPerfiles, getProyectosAdmin } from "@/lib/admin/data";
 import { getPerfilActual } from "@/lib/admin/auth";
 
 export default async function AdminCrmPage() {
-  const [leads, perfiles, actual] = await Promise.all([getLeads(), getPerfiles(), getPerfilActual()]);
+  const [leads, perfiles, proyectos, actual] = await Promise.all([
+    getLeads(),
+    getPerfiles(),
+    getProyectosAdmin(),
+    getPerfilActual(),
+  ]);
   const vendedores = perfiles.filter((p) => p.rol === "vendedor" && p.activo);
 
   return (
@@ -14,7 +19,7 @@ export default async function AdminCrmPage() {
       </p>
 
       <div className="mt-8">
-        <KanbanBoard leads={leads} vendedores={vendedores} rolActual={actual?.rol ?? "vendedor"} />
+        <KanbanBoard leads={leads} vendedores={vendedores} proyectos={proyectos} rolActual={actual?.rol ?? "vendedor"} />
       </div>
 
       {leads.length === 0 && (
