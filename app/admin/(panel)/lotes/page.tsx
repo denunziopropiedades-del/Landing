@@ -1,4 +1,5 @@
 import LotesManager from "@/components/admin/LotesManager";
+import ImportarLotesForm from "@/components/admin/ImportarLotesForm";
 import ProgresoManager from "@/components/admin/ProgresoManager";
 import ProyectoSwitcher from "@/components/admin/ProyectoSwitcher";
 import { getLotesAdmin, getProgresoAdmin, getProyectosAdmin } from "@/lib/admin/data";
@@ -35,6 +36,7 @@ export default async function AdminLotesPage({
       </div>
 
       <div className="space-y-8">
+        <ImportarLotesForm proyectoId={proyecto.id} />
         <LotesManager proyectoId={proyecto.id} lotes={lotes} />
         <ProgresoManager proyectoId={proyecto.id} progreso={progreso} />
       </div>

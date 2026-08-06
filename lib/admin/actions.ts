@@ -133,6 +133,87 @@ export async function eliminarProyectoAction(id: string): Promise<ActionResult> 
 
 // ── Lotes ──────────────────────────────────────────────────────────────
 
+type ImportResult = { ok: true; creadosOActualizados: number; filasConError: number } | { ok: false; error: string };
+
+function parseSuperficie(dimensiones: string): number | null {
+  const match = dimensiones.match(/(\d+(?:[.,]\d+)?)\s*[xX]\s*(\d+(?:[.,]\d+)?)/);
+  if (!match) return null;
+  const a = Number(match[1].replace(",", "."));
+  const b = Number(match[2].replace(",", "."));
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  return Math.round(a * b);
+}
+
+export async function importarLotesExcelAction(_prev: ImportResult | null, formData: FormData): Promise<ImportResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const proyectoId = str(formData, "proyectoId");
+    const archivo = formData.get("archivo");
+    if (!(archivo instanceof File) || archivo.size === 0) {
+      return { ok: false, error: "Subí un archivo Excel (.xlsx) con el inventario." };
+    }
+
+    const ExcelJS = (await import("exceljs")).default;
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(await archivo.arrayBuffer());
+    const hoja = workbook.worksheets[0];
+    if (!hoja) return { ok: false, error: "El archivo no tiene ninguna hoja." };
+
+    const filas: {
+      proyecto_id: string;
+      manzana: string;
+      numero: string;
+      superficie_m2: number;
+      dimensiones: string;
+      precio_usd: number;
+      nombre: string;
+    }[] = [];
+    let filasConError = 0;
+
+    hoja.eachRow((row, numeroFila) => {
+      if (numeroFila === 1) return; // encabezado
+
+      const manzana = String(row.getCell(1).value ?? "").trim();
+      const numero = String(row.getCell(2).value ?? "").trim();
+      const precioUsd = Number(row.getCell(3).value);
+      const dimensiones = String(row.getCell(4).value ?? "").trim();
+
+      if (!manzana && !numero) return; // fila vacía
+
+      const superficieM2 = dimensiones ? parseSuperficie(dimensiones) : null;
+
+      if (!manzana || !numero || !dimensiones || !Number.isFinite(precioUsd) || precioUsd <= 0 || !superficieM2) {
+        filasConError += 1;
+        return;
+      }
+
+      filas.push({
+        proyecto_id: proyectoId,
+        manzana,
+        numero,
+        superficie_m2: superficieM2,
+        dimensiones,
+        precio_usd: precioUsd,
+        nombre: `Lote ${superficieM2} m²`,
+      });
+    });
+
+    if (filas.length > 0) {
+      const { error } = await admin.from("lotes").upsert(filas, { onConflict: "proyecto_id,manzana,numero" });
+      if (error) throw new Error(error.message);
+      await registrarActividad(actor, "importar", "lote", proyectoId, { cantidad: filas.length });
+    }
+
+    revalidatePath("/admin/lotes");
+    revalidatePath("/proyectos/[slug]", "page");
+    return { ok: true, creadosOActualizados: filas.length, filasConError };
+  } catch (err) {
+    return fail(err) as ImportResult;
+  }
+}
+
 export async function upsertLoteAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor");
