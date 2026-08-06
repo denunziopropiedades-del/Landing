@@ -26,7 +26,7 @@ export default function ChatbotWidget() {
   };
 
   return (
-    <div className="fixed bottom-24 right-5 z-50 sm:bottom-6 sm:right-24">
+    <div className="fixed bottom-24 right-5 z-50">
       <AnimatePresence>
         {open && (
           <motion.div
