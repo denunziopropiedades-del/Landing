@@ -36,7 +36,6 @@ function plantillaEmail(titulo: string, cuerpo: string) {
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
       <h2 style="color: #154a2e;">${titulo}</h2>
       <p style="color: #333; line-height: 1.6;">${cuerpo}</p>
-      <p style="color: #999; font-size: 12px; margin-top: 32px;">Matu Lotes</p>
     </div>
   `;
 }
