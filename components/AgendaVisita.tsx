@@ -1,13 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CalendarCheck, Loader2 } from "lucide-react";
 import { visitaSchema, type VisitaInput } from "@/lib/schemas";
 import type { Proyecto } from "@/types/site";
 
-const HORARIOS = ["09:00", "10:30", "12:00", "14:00", "15:30", "17:00", "19:00", "20:30", "22:00"];
+/** Turnos cada 40 minutos, de 8:00 a 17:00. */
+function generarHorarios() {
+  const horarios: string[] = [];
+  for (let minutos = 8 * 60; minutos <= 17 * 60; minutos += 40) {
+    const h = String(Math.floor(minutos / 60)).padStart(2, "0");
+    const m = String(minutos % 60).padStart(2, "0");
+    horarios.push(`${h}:${m}`);
+  }
+  return horarios;
+}
+
+const HORARIOS = generarHorarios();
 
 export default function AgendaVisita({
   proyectoId,
@@ -18,27 +29,58 @@ export default function AgendaVisita({
   proyectos?: Proyecto[];
 }) {
   const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
+  const [mensajeError, setMensajeError] = useState<string | null>(null);
+  const [ocupados, setOcupados] = useState<string[]>([]);
   const mostrarSelector = (proyectos?.length ?? 0) > 1;
 
   const {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<VisitaInput>({
     resolver: zodResolver(visitaSchema),
     defaultValues: { proyectoId: proyectoId ?? proyectos?.[0]?.id },
   });
 
+  const fechaElegida = watch("fecha");
+
+  useEffect(() => {
+    if (!fechaElegida) {
+      setOcupados([]);
+      return;
+    }
+    let cancelado = false;
+    setValue("horario", "");
+    fetch(`/api/visitas/disponibilidad?fecha=${fechaElegida}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelado) setOcupados(Array.isArray(data.ocupados) ? data.ocupados : []);
+      })
+      .catch(() => {
+        if (!cancelado) setOcupados([]);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [fechaElegida, setValue]);
+
   const onSubmit = async (data: VisitaInput) => {
     setEstado("enviando");
+    setMensajeError(null);
     try {
       const res = await fetch("/api/visitas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("request-failed");
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setMensajeError(typeof body?.error === "string" ? body.error : null);
+        throw new Error("request-failed");
+      }
       setEstado("ok");
       reset();
     } catch {
@@ -109,20 +151,27 @@ export default function AgendaVisita({
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-brand-black/80">Horario</label>
-                <select defaultValue="" {...register("horario")} className="w-full rounded-lg border border-black/10 px-4 py-2.5 focus:border-brand-green-600 focus:outline-none">
+                <select {...register("horario")} className="w-full rounded-lg border border-black/10 px-4 py-2.5 focus:border-brand-green-600 focus:outline-none">
                   <option value="" disabled>
                     Elegí un horario
                   </option>
-                  {HORARIOS.map((h) => (
-                    <option key={h} value={h}>
-                      {h} hs
-                    </option>
-                  ))}
+                  {HORARIOS.map((h) => {
+                    const noDisponible = ocupados.includes(h);
+                    return (
+                      <option key={h} value={h} disabled={noDisponible}>
+                        {h} hs — {noDisponible ? "no disponible" : "disponible"}
+                      </option>
+                    );
+                  })}
                 </select>
                 {errors.horario && <p className="mt-1 text-xs text-red-600">{errors.horario.message}</p>}
               </div>
 
-              {estado === "error" && <p className="text-sm text-red-600 sm:col-span-2">Ocurrió un error. Intentá nuevamente.</p>}
+              {estado === "error" && (
+                <p className="text-sm text-red-600 sm:col-span-2">
+                  {mensajeError ?? "Ocurrió un error. Intentá nuevamente."}
+                </p>
+              )}
 
               <button
                 type="submit"

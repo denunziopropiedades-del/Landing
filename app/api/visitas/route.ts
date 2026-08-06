@@ -25,6 +25,21 @@ export async function POST(request: Request) {
   let visitaId: string | null = null;
 
   if (supabase) {
+    const { data: ocupado } = await supabase
+      .from("visitas")
+      .select("id")
+      .eq("fecha", data.fecha)
+      .eq("horario", data.horario)
+      .neq("estado", "cancelada")
+      .maybeSingle();
+
+    if (ocupado) {
+      return NextResponse.json(
+        { error: "Ese horario ya fue reservado por otra persona. Elegí otro horario." },
+        { status: 409 }
+      );
+    }
+
     if (data.proyectoId) {
       const { data: proyecto } = await supabase.from("proyectos").select("nombre").eq("id", data.proyectoId).maybeSingle();
       proyectoNombre = proyecto?.nombre;
@@ -45,6 +60,12 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
+      if (error.code === "23505") {
+        return NextResponse.json(
+          { error: "Ese horario ya fue reservado por otra persona. Elegí otro horario." },
+          { status: 409 }
+        );
+      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     visitaId = visita.id;

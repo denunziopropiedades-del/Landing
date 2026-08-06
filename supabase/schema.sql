@@ -299,6 +299,9 @@ create table visitas (
   google_event_id text
 );
 
+-- Evita que dos visitas activas (no canceladas) queden agendadas en el mismo horario.
+create unique index visitas_fecha_horario_activa_idx on visitas (fecha, horario) where estado <> 'cancelada';
+
 -- ═══════════════════════════════════════════════════════════════════════
 -- Registro de actividad (auditoría de acciones administrativas)
 -- ═══════════════════════════════════════════════════════════════════════
