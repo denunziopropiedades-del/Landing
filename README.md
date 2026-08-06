@@ -145,6 +145,19 @@ El formulario "Coordiná tu visita" guarda la solicitud en la tabla `visitas`, n
 
 Soporte nativo para Meta Pixel y GA4/GTM (ver variables de entorno). Las páginas `/reserva/exito`, `/reserva/error` y `/reserva/pendiente` sirven como páginas de conversión para configurar eventos en Meta Ads Manager y Google Ads. Las URLs de proyecto (`/proyectos/[slug]`) son amigables y estables, aptas para pauta.
 
+### Leads de formularios de Meta Ads en el CRM
+
+Los leads que se generan cuando alguien completa un formulario nativo de Facebook/Instagram ("Instant Forms") pueden llegar automáticamente al CRM (`/admin/crm`), como una tarjeta nueva en la columna "Nuevo", vía webhook de Meta.
+
+1. Creá una app en [Meta for Developers](https://developers.facebook.com/apps) (tipo "Business"), y agregá el producto **Webhooks**.
+2. En la app, andá a **Webhooks → Page** → "Suscribirse a este objeto" y elegí el campo **`leadgen`**.
+3. Como **Callback URL** poné `https://tu-dominio/api/leads/meta-webhook`, y como **Verify Token** cualquier cadena secreta que vos definas — esa misma cadena va en `META_WEBHOOK_VERIFY_TOKEN`.
+4. En **Configuración de la app → Básica**, copiá el **App Secret** → `META_APP_SECRET` (se usa para verificar que cada webhook realmente viene de Meta).
+5. Conectá tu Página de Facebook a la app y generá un **Page Access Token** con los permisos `pages_manage_metadata` y `leads_retrieval` → `META_PAGE_ACCESS_TOKEN`.
+6. Suscribí la Página al webhook de `leadgen` de tu formulario de anuncios.
+
+Sin esto configurado, el CRM sigue funcionando igual con los leads de la web (contacto, reserva, agenda de visita); simplemente no van a llegar los de Meta Ads.
+
 ## SEO
 
 Metadata dinámica por proyecto (`generateMetadata`), JSON-LD `RealEstateListing` por proyecto, Open Graph con imagen generada dinámicamente (`app/opengraph-image.tsx`), `sitemap.ts` que enumera todos los proyectos publicados desde Supabase, y `robots.ts` que bloquea `/admin` y `/api`.

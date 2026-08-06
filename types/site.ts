@@ -140,7 +140,7 @@ export type Lead = {
   id: string;
   creadoEn: string;
   actualizadoEn: string;
-  tipo: "reserva" | "contacto";
+  tipo: "reserva" | "contacto" | "meta";
   proyectoId: string | null;
   proyectoNombre?: string;
   loteId: string | null;

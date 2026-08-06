@@ -261,7 +261,7 @@ create table leads (
   id uuid primary key default gen_random_uuid(),
   creado_en timestamptz not null default now(),
   actualizado_en timestamptz not null default now(),
-  tipo text not null check (tipo in ('reserva', 'contacto')),
+  tipo text not null check (tipo in ('reserva', 'contacto', 'meta')),
   proyecto_id uuid references proyectos(id) on delete set null,
   lote_id uuid references lotes(id) on delete set null,
   nombre text not null,
@@ -274,12 +274,15 @@ create table leads (
   observaciones text not null default '',
   estado text not null default 'nuevo'
     check (estado in ('nuevo', 'contactado', 'visita_programada', 'reservado', 'vendido', 'descartado')),
-  asignado_a uuid references perfiles(id) on delete set null
+  asignado_a uuid references perfiles(id) on delete set null,
+  -- Id del leadgen de Meta Ads (leads generados desde formularios de Facebook/Instagram), para no duplicarlos.
+  external_id text
 );
 
 create index leads_estado_idx on leads (estado);
 create index leads_proyecto_idx on leads (proyecto_id);
 create index leads_asignado_idx on leads (asignado_a);
+create unique index leads_external_id_idx on leads (external_id) where external_id is not null;
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- Visitas agendadas
