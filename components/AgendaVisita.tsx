@@ -5,18 +5,30 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CalendarCheck, Loader2 } from "lucide-react";
 import { visitaSchema, type VisitaInput } from "@/lib/schemas";
+import type { Proyecto } from "@/types/site";
 
 const HORARIOS = ["09:00", "10:30", "12:00", "14:00", "15:30", "17:00", "19:00", "20:30", "22:00"];
 
-export default function AgendaVisita({ proyectoId }: { proyectoId?: string }) {
+export default function AgendaVisita({
+  proyectoId,
+  proyectos,
+}: {
+  proyectoId?: string;
+  /** Si se pasan varios proyectos, se muestra un selector para que el visitante elija cuál desea conocer. */
+  proyectos?: Proyecto[];
+}) {
   const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
+  const mostrarSelector = (proyectos?.length ?? 0) > 1;
 
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<VisitaInput>({ resolver: zodResolver(visitaSchema), defaultValues: { proyectoId } });
+  } = useForm<VisitaInput>({
+    resolver: zodResolver(visitaSchema),
+    defaultValues: { proyectoId: proyectoId ?? proyectos?.[0]?.id },
+  });
 
   const onSubmit = async (data: VisitaInput) => {
     setEstado("enviando");
@@ -56,7 +68,25 @@ export default function AgendaVisita({ proyectoId }: { proyectoId?: string }) {
             </div>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5 rounded-2xl border border-black/5 bg-white p-8 shadow-sm sm:grid-cols-2">
-              <input type="hidden" {...register("proyectoId")} />
+              {mostrarSelector ? (
+                <div className="sm:col-span-2">
+                  <label className="mb-1.5 block text-sm font-medium text-brand-black/80">
+                    ¿Qué desarrollo te interesa conocer?
+                  </label>
+                  <select
+                    {...register("proyectoId")}
+                    className="w-full rounded-lg border border-black/10 px-4 py-2.5 focus:border-brand-green-600 focus:outline-none"
+                  >
+                    {proyectos!.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <input type="hidden" {...register("proyectoId")} />
+              )}
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-brand-black/80">Nombre</label>
                 <input {...register("nombre")} className="w-full rounded-lg border border-black/10 px-4 py-2.5 focus:border-brand-green-600 focus:outline-none" />

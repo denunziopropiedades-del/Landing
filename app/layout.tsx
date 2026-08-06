@@ -5,6 +5,7 @@ import "./globals.css";
 import { getSiteTextos } from "@/lib/content";
 import WhatsappFloatButton from "@/components/WhatsappFloatButton";
 import ChatbotWidget from "@/components/ChatbotWidget";
+import AgendaFloatButton from "@/components/AgendaFloatButton";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -106,6 +107,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           </Script>
         )}
         {children}
+        <AgendaFloatButton />
         <WhatsappFloatButton mensaje={textos.whatsappMensajeDefault} numero={textos.whatsappNumero} />
         <ChatbotWidget />
       </body>

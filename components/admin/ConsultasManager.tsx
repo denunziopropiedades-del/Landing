@@ -115,6 +115,7 @@ export default function ConsultasManager({ leads, visitas }: { leads: Lead[]; vi
               <tr>
                 <th className="px-4 py-3 font-medium">Nombre</th>
                 <th className="px-4 py-3 font-medium">Contacto</th>
+                <th className="px-4 py-3 font-medium">Desarrollo</th>
                 <th className="px-4 py-3 font-medium">Fecha</th>
                 <th className="px-4 py-3 font-medium">Horario</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
@@ -128,6 +129,7 @@ export default function ConsultasManager({ leads, visitas }: { leads: Lead[]; vi
                     <p>{v.email}</p>
                     <p className="text-brand-black/50">{v.telefono}</p>
                   </td>
+                  <td className="px-4 py-3">{v.proyectoNombre ?? "—"}</td>
                   <td className="px-4 py-3">{v.fecha}</td>
                   <td className="px-4 py-3">{v.horario}</td>
                   <td className="px-4 py-3">
@@ -148,7 +150,7 @@ export default function ConsultasManager({ leads, visitas }: { leads: Lead[]; vi
               ))}
               {visitas.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-brand-black/50">
+                  <td colSpan={6} className="px-4 py-8 text-center text-brand-black/50">
                     Todavía no hay visitas agendadas.
                   </td>
                 </tr>

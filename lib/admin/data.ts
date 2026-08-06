@@ -243,7 +243,10 @@ export async function getVisitas(): Promise<Visita[]> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
-  const { data, error } = await supabase.from("visitas").select("*").order("fecha", { ascending: true });
+  const { data, error } = await supabase
+    .from("visitas")
+    .select("*, proyectos(nombre)")
+    .order("fecha", { ascending: true });
   if (error || !data) return [];
 
   return data.map((v) => ({
@@ -251,6 +254,7 @@ export async function getVisitas(): Promise<Visita[]> {
     creadoEn: v.creado_en,
     leadId: v.lead_id,
     proyectoId: v.proyecto_id,
+    proyectoNombre: (v.proyectos as { nombre: string } | null)?.nombre,
     nombre: v.nombre,
     email: v.email,
     telefono: v.telefono,

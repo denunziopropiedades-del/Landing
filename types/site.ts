@@ -165,6 +165,7 @@ export type Visita = {
   creadoEn: string;
   leadId: string | null;
   proyectoId: string | null;
+  proyectoNombre?: string;
   nombre: string;
   email: string;
   telefono: string;
