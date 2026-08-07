@@ -12,6 +12,27 @@ const FIRMA_HTML = `
   </div>
 `;
 
+export const NOTA_COORDINACION_VISITA_HTML = `
+  <div style="margin-top: 20px; padding: 16px; border: 1px solid #f5c6cb; background: #fff5f5; border-radius: 8px;">
+    <p style="margin: 0 0 8px; font-weight: bold; color: #c0392b;">Importante &ndash; Coordinación de visitas</p>
+    <p style="margin: 0 0 8px; color: #333;">
+      Las visitas se coordinan exclusivamente con cita previa y
+      <b style="color: #c0392b;">deben ser tomadas con responsabilidad</b>, ya que serán realizadas por un
+      Martillero y Corredor Público o por un integrante de su equipo, quienes destinan tiempo y recursos para
+      brindar un asesoramiento personalizado.
+    </p>
+    <p style="margin: 0 0 8px; color: #333;">
+      En caso de no poder asistir,
+      <b style="color: #c0392b;">solicitamos comunicar la cancelación o reprogramación con la mayor anticipación posible</b>.
+      Esto nos permite reorganizar la agenda y ofrecer ese horario a otros interesados.
+    </p>
+    <p style="margin: 0; color: #333;">
+      Agradecemos su compromiso, puntualidad y comprensión. Será un placer acompañarlo en la búsqueda de la mejor
+      opción para su inversión.
+    </p>
+  </div>
+`;
+
 function conFirma(html: string) {
   return `${html}${FIRMA_HTML}`;
 }

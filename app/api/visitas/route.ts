@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { visitaSchema } from "@/lib/schemas";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
-import { sendEmail, sendNotificationEmail } from "@/lib/email";
+import { NOTA_COORDINACION_VISITA_HTML, sendEmail, sendNotificationEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { crearEventoVisita } from "@/lib/google-calendar";
 
@@ -150,7 +150,8 @@ export async function POST(request: Request) {
        }
        <p>Al llegar, preguntá por <b>Matías De Nunzio</b>.</p>
        <p>Cualquier consulta antes de la visita, escribinos por WhatsApp al <a href="https://wa.me/5491127424512">11-2742-4512</a> o comunicate a la oficina.</p>
-       <p>¡Te esperamos!</p>`
+       <p>¡Te esperamos!</p>
+       ${NOTA_COORDINACION_VISITA_HTML}`
     );
   } catch (err) {
     console.error("No se pudo enviar el email de confirmación al cliente", err);
