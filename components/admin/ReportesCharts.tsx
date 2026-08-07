@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -17,6 +18,16 @@ import {
   YAxis,
 } from "recharts";
 import type { EstadoLead, Lead, Proyecto } from "@/types/site";
+
+function formatoInput(fecha: Date) {
+  return fecha.toISOString().slice(0, 10);
+}
+
+function hace7Dias() {
+  const fecha = new Date();
+  fecha.setDate(fecha.getDate() - 7);
+  return formatoInput(fecha);
+}
 
 const ESTADO_LABEL: Record<EstadoLead, string> = {
   nuevo: "Nuevo",
@@ -39,46 +50,100 @@ const ESTADO_COLOR: Record<EstadoLead, string> = {
 const COLORES_PROYECTO = ["#154a2e", "#237046", "#d4af37", "#96741f", "#0a2318", "#eed49a"];
 
 export default function ReportesCharts({ leads, proyectos }: { leads: Lead[]; proyectos: Proyecto[] }) {
+  const [desdeInput, setDesdeInput] = useState(hace7Dias());
+  const [hastaInput, setHastaInput] = useState(formatoInput(new Date()));
+  const [desde, setDesde] = useState(desdeInput);
+  const [hasta, setHasta] = useState(hastaInput);
+
+  const leadsFiltrados = useMemo(() => {
+    const desdeMs = new Date(`${desde}T00:00:00`).getTime();
+    const hastaMs = new Date(`${hasta}T23:59:59.999`).getTime();
+    return leads.filter((l) => {
+      const creado = new Date(l.creadoEn).getTime();
+      return creado >= desdeMs && creado <= hastaMs;
+    });
+  }, [leads, desde, hasta]);
+
   const porEstado = useMemo(
     () =>
       (Object.keys(ESTADO_LABEL) as EstadoLead[]).map((estado) => ({
         estado: ESTADO_LABEL[estado],
-        cantidad: leads.filter((l) => l.estado === estado).length,
+        cantidad: leadsFiltrados.filter((l) => l.estado === estado).length,
         color: ESTADO_COLOR[estado],
       })),
-    [leads]
+    [leadsFiltrados]
   );
 
   const porProyecto = useMemo(() => {
     const mapa = new Map<string, number>();
-    for (const lead of leads) {
+    for (const lead of leadsFiltrados) {
       const nombre = lead.proyectoNombre ?? "Sin proyecto";
       mapa.set(nombre, (mapa.get(nombre) ?? 0) + 1);
     }
     return Array.from(mapa.entries()).map(([nombre, cantidad]) => ({ nombre, cantidad }));
-  }, [leads]);
+  }, [leadsFiltrados]);
 
   const enElTiempo = useMemo(() => {
     const mapa = new Map<string, number>();
-    for (const lead of leads) {
+    for (const lead of leadsFiltrados) {
       const fecha = new Date(lead.creadoEn).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
       mapa.set(fecha, (mapa.get(fecha) ?? 0) + 1);
     }
-    return Array.from(mapa.entries())
-      .map(([fecha, cantidad]) => ({ fecha, cantidad }))
-      .slice(-30);
-  }, [leads]);
+    return Array.from(mapa.entries()).map(([fecha, cantidad]) => ({ fecha, cantidad }));
+  }, [leadsFiltrados]);
 
-  if (leads.length === 0) {
+  const filtroForm = (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        setDesde(desdeInput);
+        setHasta(hastaInput);
+      }}
+      className="mb-6 flex flex-wrap items-end gap-3 rounded-2xl border border-black/5 bg-white p-4 shadow-sm"
+    >
+      <div>
+        <label className="mb-1 block text-xs font-medium text-brand-black/70">Desde</label>
+        <input
+          type="date"
+          value={desdeInput}
+          onChange={(e) => setDesdeInput(e.target.value)}
+          className="rounded-lg border border-black/10 px-3 py-2 text-sm"
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium text-brand-black/70">Hasta</label>
+        <input
+          type="date"
+          value={hastaInput}
+          onChange={(e) => setHastaInput(e.target.value)}
+          className="rounded-lg border border-black/10 px-3 py-2 text-sm"
+        />
+      </div>
+      <button
+        type="submit"
+        className="inline-flex items-center gap-2 rounded-full bg-brand-green-700 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-green-600"
+      >
+        <Search className="h-4 w-4" />
+        Buscar
+      </button>
+    </form>
+  );
+
+  if (leadsFiltrados.length === 0) {
     return (
-      <div className="rounded-2xl border border-black/5 bg-white p-8 text-center text-sm text-brand-black/50 shadow-sm">
-        Todavía no hay leads para graficar. Los gráficos se completan a medida que entran consultas y reservas.
+      <div>
+        {filtroForm}
+        <div className="rounded-2xl border border-black/5 bg-white p-8 text-center text-sm text-brand-black/50 shadow-sm">
+          No hay leads en ese rango de fechas para graficar.
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div>
+      {filtroForm}
+      <div className="grid gap-6 lg:grid-cols-2">
       <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
         <h3 className="mb-4 font-display text-lg font-bold text-brand-black">Leads por estado</h3>
         <ResponsiveContainer width="100%" height={280}>
@@ -125,6 +190,7 @@ export default function ReportesCharts({ leads, proyectos }: { leads: Lead[]; pr
             <Line type="monotone" dataKey="cantidad" stroke="#237046" strokeWidth={2} dot={{ r: 3 }} />
           </LineChart>
         </ResponsiveContainer>
+      </div>
       </div>
     </div>
   );
