@@ -74,6 +74,33 @@ export async function getLotesAdmin(proyectoId: string): Promise<Lote[]> {
   }));
 }
 
+/** Todos los lotes de todos los proyectos (para selectores que cruzan desarrollos, ej. carga manual de clientes). */
+export async function getLotesAdminTodos(): Promise<Lote[]> {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase.from("lotes").select("*").order("manzana").order("numero");
+  if (error || !data) return [];
+
+  return data.map((l) => ({
+    id: l.id,
+    proyectoId: l.proyecto_id,
+    nombre: l.nombre,
+    manzana: l.manzana,
+    numero: l.numero,
+    superficieM2: Number(l.superficie_m2),
+    dimensiones: l.dimensiones,
+    precioUsd: Number(l.precio_usd),
+    estado: l.estado,
+    destacado: l.destacado,
+    posX: l.pos_x === null ? null : Number(l.pos_x),
+    posY: l.pos_y === null ? null : Number(l.pos_y),
+    anticipoFinanciadoUsd: l.anticipo_financiado_usd === null ? null : Number(l.anticipo_financiado_usd),
+    cuotasFinanciado: l.cuotas_financiado === null ? null : Number(l.cuotas_financiado),
+    valorCuotaFinanciadoUsd: l.valor_cuota_financiado_usd === null ? null : Number(l.valor_cuota_financiado_usd),
+  }));
+}
+
 export async function getGaleriaAdmin(proyectoId: string): Promise<ItemGaleria[]> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
@@ -212,7 +239,7 @@ export async function getLeads(): Promise<Lead[]> {
 
   const { data, error } = await supabase
     .from("leads")
-    .select("*, proyectos(nombre), lotes(nombre), perfiles(nombre, email)")
+    .select("*, proyectos(nombre), lotes(nombre, numero), perfiles(nombre, email)")
     .order("creado_en", { ascending: false });
   if (error || !data) return [];
 
@@ -224,7 +251,8 @@ export async function getLeads(): Promise<Lead[]> {
     proyectoId: l.proyecto_id,
     proyectoNombre: (l.proyectos as { nombre: string } | null)?.nombre,
     loteId: l.lote_id,
-    loteNombre: (l.lotes as { nombre: string } | null)?.nombre,
+    loteNombre: (l.lotes as { nombre: string; numero: string } | null)?.nombre,
+    loteNumero: (l.lotes as { nombre: string; numero: string } | null)?.numero,
     nombre: l.nombre,
     apellido: l.apellido ?? undefined,
     dni: l.dni ?? undefined,

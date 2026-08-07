@@ -145,6 +145,7 @@ export type Lead = {
   proyectoNombre?: string;
   loteId: string | null;
   loteNombre?: string;
+  loteNumero?: string;
   nombre: string;
   apellido?: string;
   dni?: string;

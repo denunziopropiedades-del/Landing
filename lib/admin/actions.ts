@@ -698,9 +698,18 @@ export async function crearLeadManualAction(_prev: ActionResult | null, formData
     const nombre = str(formData, "nombre");
     if (!nombre) throw new Error("El nombre es obligatorio.");
 
+    const loteId = optStr(formData, "loteId");
+    let manzana: string | null = null;
+    if (loteId) {
+      const { data: lote } = await admin.from("lotes").select("manzana").eq("id", loteId).maybeSingle();
+      manzana = lote?.manzana ?? null;
+    }
+
     const payload = {
       tipo: "manual" as const,
       proyecto_id: optStr(formData, "proyectoId"),
+      lote_id: loteId,
+      manzana,
       nombre,
       apellido: optStr(formData, "apellido"),
       dni: optStr(formData, "dni"),

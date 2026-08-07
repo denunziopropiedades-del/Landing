@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { GripVertical, Mail, Phone } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, Mail, Phone } from "lucide-react";
 import {
   actualizarEstadoLeadAction,
   actualizarFechaNacimientoLeadAction,
@@ -34,6 +34,7 @@ function LeadCard({
   onMoved: () => void;
 }) {
   const [observaciones, setObservaciones] = useState(lead.observaciones);
+  const [expandido, setExpandido] = useState(false);
   const [, startTransition] = useTransition();
 
   const guardarObservaciones = () => {
@@ -58,81 +59,109 @@ function LeadCard({
         </p>
         <GripVertical className="h-4 w-4 shrink-0 text-brand-black/25" />
       </div>
-      {puedeAsignar ? (
-        <select
-          defaultValue={lead.proyectoId ?? ""}
-          onChange={(e) =>
-            startTransition(() => {
-              cambiarProyectoLeadAction(lead.id, e.target.value || null);
-            })
-          }
-          className="mt-1 w-full rounded-lg border border-black/10 px-2 py-1 text-xs text-brand-black/70"
-        >
-          <option value="">Sin desarrollo</option>
-          {proyectos.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nombre}
-            </option>
-          ))}
-        </select>
-      ) : (
-        lead.proyectoNombre && <p className="text-xs text-brand-black/50">{lead.proyectoNombre}</p>
-      )}
-      {lead.loteNombre && <p className="text-xs text-brand-black/50">{lead.loteNombre}</p>}
-      <div className="mt-2 space-y-1 text-xs text-brand-black/60">
-        <p className="flex items-center gap-1.5">
-          <Mail className="h-3 w-3" /> {lead.email}
-        </p>
-        <p className="flex items-center gap-1.5">
-          <Phone className="h-3 w-3" /> {lead.telefono}
-        </p>
+
+      {/* Datos principales, siempre visibles */}
+      <div className="space-y-0.5 text-xs text-brand-black/60">
+        {lead.proyectoNombre && <p>Barrio: {lead.proyectoNombre}</p>}
+        {lead.manzana && <p>Manzana: {lead.manzana}</p>}
+        {lead.loteNumero && <p>Lote: {lead.loteNumero}</p>}
       </div>
 
-      {puedeAsignar && (
-        <select
-          defaultValue={lead.asignadoA ?? ""}
-          onChange={(e) =>
-            startTransition(() => {
-              asignarLeadAction(lead.id, e.target.value || null);
-            })
-          }
-          className="mt-2 w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
-        >
-          <option value="">Sin asignar</option>
-          {vendedores.map((v) => (
-            <option key={v.id} value={v.id}>
-              {v.nombre ?? v.email}
-            </option>
-          ))}
-        </select>
-      )}
+      <button
+        type="button"
+        onClick={() => setExpandido((v) => !v)}
+        className="mt-1.5 flex items-center gap-1 text-xs font-medium text-brand-green-700"
+      >
+        {expandido ? (
+          <>
+            <ChevronUp className="h-3.5 w-3.5" /> Ver menos
+          </>
+        ) : (
+          <>
+            <ChevronDown className="h-3.5 w-3.5" /> Ver más
+          </>
+        )}
+      </button>
 
-      {lead.estado === "vendido" && (
-        <div className="mt-2">
-          <label className="mb-1 block text-[11px] font-medium text-brand-black/50">
-            Fecha de nacimiento (para el saludo de cumpleaños)
-          </label>
-          <input
-            type="date"
-            defaultValue={lead.fechaNacimiento ?? ""}
-            onChange={(e) =>
-              startTransition(() => {
-                actualizarFechaNacimientoLeadAction(lead.id, e.target.value || null);
-              })
-            }
-            className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+      {expandido && (
+        <div className="mt-2 space-y-2">
+          {puedeAsignar ? (
+            <select
+              defaultValue={lead.proyectoId ?? ""}
+              onChange={(e) =>
+                startTransition(() => {
+                  cambiarProyectoLeadAction(lead.id, e.target.value || null);
+                })
+              }
+              className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs text-brand-black/70"
+            >
+              <option value="">Sin desarrollo</option>
+              {proyectos.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
+              ))}
+            </select>
+          ) : (
+            lead.loteNombre && <p className="text-xs text-brand-black/50">{lead.loteNombre}</p>
+          )}
+
+          <div className="space-y-1 text-xs text-brand-black/60">
+            <p className="flex items-center gap-1.5">
+              <Mail className="h-3 w-3" /> {lead.email}
+            </p>
+            <p className="flex items-center gap-1.5">
+              <Phone className="h-3 w-3" /> {lead.telefono}
+            </p>
+          </div>
+
+          {puedeAsignar && (
+            <select
+              defaultValue={lead.asignadoA ?? ""}
+              onChange={(e) =>
+                startTransition(() => {
+                  asignarLeadAction(lead.id, e.target.value || null);
+                })
+              }
+              className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+            >
+              <option value="">Sin asignar</option>
+              {vendedores.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.nombre ?? v.email}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {lead.estado === "vendido" && (
+            <div>
+              <label className="mb-1 block text-[11px] font-medium text-brand-black/50">
+                Fecha de nacimiento (para el saludo de cumpleaños)
+              </label>
+              <input
+                type="date"
+                defaultValue={lead.fechaNacimiento ?? ""}
+                onChange={(e) =>
+                  startTransition(() => {
+                    actualizarFechaNacimientoLeadAction(lead.id, e.target.value || null);
+                  })
+                }
+                className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+              />
+            </div>
+          )}
+
+          <textarea
+            value={observaciones}
+            onChange={(e) => setObservaciones(e.target.value)}
+            onBlur={guardarObservaciones}
+            placeholder="Observaciones..."
+            rows={2}
+            className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs focus:border-brand-green-600 focus:outline-none"
           />
         </div>
       )}
-
-      <textarea
-        value={observaciones}
-        onChange={(e) => setObservaciones(e.target.value)}
-        onBlur={guardarObservaciones}
-        placeholder="Observaciones..."
-        rows={2}
-        className="mt-2 w-full rounded-lg border border-black/10 px-2 py-1 text-xs focus:border-brand-green-600 focus:outline-none"
-      />
     </div>
   );
 }

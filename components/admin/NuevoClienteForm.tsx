@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { crearLeadManualAction } from "@/lib/admin/actions";
-import type { Perfil, Proyecto, Rol } from "@/types/site";
+import type { Lote, Perfil, Proyecto, Rol } from "@/types/site";
 
 const inputClass =
   "w-full rounded-lg border border-black/10 px-3 py-2 text-sm focus:border-brand-green-600 focus:outline-none";
@@ -11,16 +11,21 @@ const labelClass = "mb-1 block text-xs font-medium text-brand-black/70";
 
 export default function NuevoClienteForm({
   proyectos,
+  lotes,
   vendedores,
   rolActual,
 }: {
   proyectos: Proyecto[];
+  lotes: Lote[];
   vendedores: Perfil[];
   rolActual: Rol;
 }) {
   const [abierto, setAbierto] = useState(false);
+  const [proyectoId, setProyectoId] = useState("");
   const [state, formAction, pending] = useActionState(crearLeadManualAction, null);
   const puedeAsignar = rolActual === "administrador" || rolActual === "supervisor";
+
+  const lotesDelProyecto = useMemo(() => lotes.filter((l) => l.proyectoId === proyectoId), [lotes, proyectoId]);
 
   return (
     <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
@@ -61,7 +66,12 @@ export default function NuevoClienteForm({
           </div>
           <div>
             <label className={labelClass}>Desarrollo</label>
-            <select name="proyectoId" defaultValue="" className={inputClass}>
+            <select
+              name="proyectoId"
+              value={proyectoId}
+              onChange={(e) => setProyectoId(e.target.value)}
+              className={inputClass}
+            >
               <option value="">Sin desarrollo</option>
               {proyectos.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -69,6 +79,20 @@ export default function NuevoClienteForm({
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className={labelClass}>Manzana / Lote (opcional)</label>
+            <select name="loteId" defaultValue="" disabled={!proyectoId} className={inputClass}>
+              <option value="">Sin lote puntual</option>
+              {lotesDelProyecto.map((l) => (
+                <option key={l.id} value={l.id}>
+                  Manzana {l.manzana} — Lote {l.numero}
+                </option>
+              ))}
+            </select>
+            {proyectoId && lotesDelProyecto.length === 0 && (
+              <p className="mt-1 text-[11px] text-brand-black/40">Este desarrollo todavía no tiene lotes cargados.</p>
+            )}
           </div>
           {puedeAsignar && (
             <div>
