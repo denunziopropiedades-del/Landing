@@ -75,6 +75,7 @@ export async function upsertProyectoAction(_prev: ActionResult | null, formData:
       slug: optStr(formData, "slug") ?? slugify(nombre),
       descripcion: str(formData, "descripcion"),
       ubicacion: str(formData, "ubicacion"),
+      ubicacion_maps_url: optStr(formData, "ubicacionMapsUrl"),
       imagen_portada: optStr(formData, "imagenPortada"),
       whatsapp_numero: optStr(formData, "whatsappNumero"),
       destacado: formData.get("destacado") === "on",

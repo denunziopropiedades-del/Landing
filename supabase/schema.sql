@@ -84,6 +84,7 @@ create table proyectos (
   slug text unique not null,
   descripcion text not null default '',
   ubicacion text not null default '',
+  ubicacion_maps_url text,
   imagen_portada text,
   publicado boolean not null default false,
   destacado boolean not null default false,

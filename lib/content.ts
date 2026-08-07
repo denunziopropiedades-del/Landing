@@ -49,6 +49,7 @@ function mapProyecto(p: Record<string, unknown>): Proyecto {
     slug: p.slug as string,
     descripcion: p.descripcion as string,
     ubicacion: p.ubicacion as string,
+    ubicacionMapsUrl: (p.ubicacion_maps_url as string) ?? null,
     imagenPortada: (p.imagen_portada as string) ?? null,
     publicado: p.publicado as boolean,
     destacado: p.destacado as boolean,

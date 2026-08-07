@@ -35,6 +35,7 @@ export async function getProyectosAdmin(): Promise<Proyecto[]> {
     slug: p.slug,
     descripcion: p.descripcion,
     ubicacion: p.ubicacion,
+    ubicacionMapsUrl: p.ubicacion_maps_url,
     imagenPortada: p.imagen_portada,
     publicado: p.publicado,
     destacado: p.destacado,

@@ -25,6 +25,7 @@ export type Proyecto = {
   slug: string;
   descripcion: string;
   ubicacion: string;
+  ubicacionMapsUrl: string | null;
   imagenPortada: string | null;
   publicado: boolean;
   destacado: boolean;

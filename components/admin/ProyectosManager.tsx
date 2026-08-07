@@ -34,6 +34,15 @@ function ProyectoForm({ proyecto, onDone }: { proyecto?: Proyecto; onDone?: () =
         <input name="ubicacion" defaultValue={proyecto?.ubicacion} required className={inputClass} />
       </div>
       <div>
+        <label className={labelClass}>Link de Google Maps (opcional, para el mail de confirmación de visita)</label>
+        <input
+          name="ubicacionMapsUrl"
+          defaultValue={proyecto?.ubicacionMapsUrl ?? ""}
+          placeholder="https://maps.app.goo.gl/..."
+          className={inputClass}
+        />
+      </div>
+      <div>
         <label className={labelClass}>WhatsApp (opcional, sino usa el general)</label>
         <input name="whatsappNumero" defaultValue={proyecto?.whatsappNumero ?? ""} className={inputClass} />
       </div>

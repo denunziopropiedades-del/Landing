@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { visitaSchema } from "@/lib/schemas";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
-import { sendNotificationEmail } from "@/lib/email";
+import { sendEmail, sendNotificationEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { crearEventoVisita } from "@/lib/google-calendar";
 
@@ -22,6 +22,8 @@ export async function POST(request: Request) {
   const supabase = await getSupabaseAdminClient();
 
   let proyectoNombre: string | undefined;
+  let proyectoUbicacion: string | undefined;
+  let proyectoUbicacionMapsUrl: string | undefined;
   let visitaId: string | null = null;
 
   if (supabase) {
@@ -41,8 +43,14 @@ export async function POST(request: Request) {
     }
 
     if (data.proyectoId) {
-      const { data: proyecto } = await supabase.from("proyectos").select("nombre").eq("id", data.proyectoId).maybeSingle();
+      const { data: proyecto } = await supabase
+        .from("proyectos")
+        .select("nombre, ubicacion, ubicacion_maps_url")
+        .eq("id", data.proyectoId)
+        .maybeSingle();
       proyectoNombre = proyecto?.nombre;
+      proyectoUbicacion = proyecto?.ubicacion;
+      proyectoUbicacionMapsUrl = proyecto?.ubicacion_maps_url ?? undefined;
     }
 
     const { data: lead, error: errorLead } = await supabase
@@ -116,6 +124,36 @@ export async function POST(request: Request) {
     );
   } catch (err) {
     console.error("No se pudo enviar el email de notificación", err);
+  }
+
+  try {
+    const mapsUrl =
+      proyectoUbicacionMapsUrl ??
+      (proyectoUbicacion
+        ? `https://maps.google.com/maps?q=${encodeURIComponent(proyectoUbicacion)}`
+        : undefined);
+
+    await sendEmail(
+      data.email,
+      `Confirmación de tu visita — ${data.fecha} ${data.horario}`,
+      `<h2>¡Tu visita quedó confirmada!</h2>
+       <p>Hola ${data.nombre}, te confirmamos la visita${proyectoNombre ? ` a <b>${proyectoNombre}</b>` : ""}:</p>
+       <ul>
+         <li><b>Fecha:</b> ${data.fecha}</li>
+         <li><b>Horario:</b> ${data.horario}</li>
+         ${proyectoUbicacion ? `<li><b>Ubicación:</b> ${proyectoUbicacion}</li>` : ""}
+       </ul>
+       ${
+         mapsUrl
+           ? `<p><a href="${mapsUrl}" target="_blank" rel="noopener noreferrer">📍 Ver ubicación en Google Maps</a></p>`
+           : ""
+       }
+       <p>Al llegar, preguntá por <b>Matías De Nunzio</b>.</p>
+       <p>Cualquier consulta antes de la visita, escribinos por WhatsApp al <a href="https://wa.me/5491127424512">11-2742-4512</a> o comunicate a la oficina.</p>
+       <p>¡Te esperamos!</p>`
+    );
+  } catch (err) {
+    console.error("No se pudo enviar el email de confirmación al cliente", err);
   }
 
   return NextResponse.json({ ok: true });
