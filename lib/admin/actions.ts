@@ -6,6 +6,7 @@ import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/
 import { requireRole, AdminActionError } from "@/lib/admin/auth";
 import { registrarActividad } from "@/lib/admin/activity";
 import { cancelarEventoVisita } from "@/lib/google-calendar";
+import { NOTA_RESERVA_LOTE_HTML, sendEmail } from "@/lib/email";
 import type { EstadoLead, EstadoLote, EstadoVisita, Rol } from "@/types/site";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
@@ -893,19 +894,78 @@ export async function deleteLeadAction(id: string): Promise<ActionResult> {
   }
 }
 
+const ESTADO_VISITA_MENSAJE: Record<EstadoVisita, { asunto: string; titulo: string; cuerpo: string }> = {
+  pendiente: {
+    asunto: "Tu visita está pendiente de confirmación",
+    titulo: "Tu visita está pendiente de confirmación",
+    cuerpo: "En breve nos pondremos en contacto para confirmar el horario.",
+  },
+  confirmada: {
+    asunto: "¡Tu visita fue confirmada!",
+    titulo: "¡Tu visita fue confirmada!",
+    cuerpo: "Te esperamos en la fecha y horario coordinados.",
+  },
+  cancelada: {
+    asunto: "Tu visita fue cancelada",
+    titulo: "Tu visita fue cancelada",
+    cuerpo: "Si querés coordinar un nuevo horario, escribinos por WhatsApp o volvé a agendar desde la web.",
+  },
+  realizada: {
+    asunto: "¡Gracias por tu visita!",
+    titulo: "¡Gracias por tu visita!",
+    cuerpo:
+      "Esperamos que te haya gustado el lote. Cualquier consulta, o si querés avanzar con la reserva, estamos a disposición.",
+  },
+};
+
 export async function actualizarEstadoVisitaAction(id: string, estado: EstadoVisita): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor", "vendedor");
     const admin = (await getSupabaseAdminClient())!;
 
-    if (estado === "cancelada") {
-      const { data: visita } = await admin.from("visitas").select("google_event_id").eq("id", id).maybeSingle();
-      if (visita?.google_event_id) await cancelarEventoVisita(visita.google_event_id);
+    const { data: visita } = await admin
+      .from("visitas")
+      .select("google_event_id, email, nombre, fecha, horario, proyectos(nombre, ubicacion_maps_url)")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (estado === "cancelada" && visita?.google_event_id) {
+      await cancelarEventoVisita(visita.google_event_id);
     }
 
     const { error } = await admin.from("visitas").update({ estado }).eq("id", id);
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "cambiar-estado", "visita", id, { estado });
+
+    if (visita?.email) {
+      try {
+        const proyecto = visita.proyectos as unknown as { nombre: string; ubicacion_maps_url: string | null } | null;
+        const mensaje = ESTADO_VISITA_MENSAJE[estado];
+        await sendEmail(
+          visita.email,
+          mensaje.asunto,
+          `<h2>${mensaje.titulo}</h2>
+           <p>Hola ${visita.nombre}, te contamos que tu visita${proyecto?.nombre ? ` a <b>${proyecto.nombre}</b>` : ""} cambió de estado:</p>
+           <ul>
+             <li><b>Fecha:</b> ${visita.fecha}</li>
+             <li><b>Horario:</b> ${visita.horario}</li>
+             <li><b>Estado:</b> ${estado}</li>
+           </ul>
+           <p>${mensaje.cuerpo}</p>
+           ${
+             estado === "confirmada" && proyecto?.ubicacion_maps_url
+               ? `<div style="margin: 12px 0; padding: 10px 14px; border: 2px solid #16a34a; border-radius: 8px; background: #f0fdf4; display: inline-block;">
+                    <b>Ubicación:</b> <a href="${proyecto.ubicacion_maps_url}" target="_blank" rel="noopener noreferrer" style="color: #16a34a; font-weight: 600;">${proyecto.ubicacion_maps_url}</a>
+                  </div>`
+               : ""
+           }
+           ${estado === "realizada" ? NOTA_RESERVA_LOTE_HTML : ""}`
+        );
+      } catch (err) {
+        console.error("No se pudo enviar el email de cambio de estado de la visita", err);
+      }
+    }
+
     revalidatePath("/admin/consultas");
     return { ok: true };
   } catch (err) {
