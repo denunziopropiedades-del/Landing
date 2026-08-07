@@ -8,6 +8,7 @@ const FIRMA_HTML = `
     <p style="margin: 4px 0 0 10px;">Matías De Nunzio</p>
     <p style="margin: 0 0 0 10px; color: #666;">Martillero Público</p>
     <p style="margin: 2px 0 0 10px; color: #666;">Tel: 11-2742-4512</p>
+    <p style="margin: 2px 0 0 10px; color: #666;">Oficina: 11-6136-5523</p>
   </div>
 `;
 

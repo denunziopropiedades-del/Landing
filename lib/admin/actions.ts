@@ -425,6 +425,7 @@ export async function upsertTextosAction(_prev: ActionResult | null, formData: F
       hero_subtitulo: str(formData, "heroSubtitulo"),
       whatsapp_numero: str(formData, "whatsappNumero"),
       whatsapp_mensaje_default: str(formData, "whatsappMensajeDefault"),
+      telefono_oficina: str(formData, "telefonoOficina"),
       email: str(formData, "email"),
       instagram: str(formData, "instagram"),
       facebook: str(formData, "facebook"),

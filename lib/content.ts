@@ -199,6 +199,7 @@ export async function getSiteTextos(): Promise<SiteTextos> {
     heroSubtitulo: data.hero_subtitulo,
     whatsappNumero: data.whatsapp_numero,
     whatsappMensajeDefault: data.whatsapp_mensaje_default,
+    telefonoOficina: data.telefono_oficina ?? "",
     email: data.email,
     instagram: data.instagram ?? "",
     facebook: data.facebook ?? "",

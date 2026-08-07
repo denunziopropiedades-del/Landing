@@ -7,7 +7,8 @@ export default function Footer({ textos }: { textos: SiteTextos }) {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <p>© {new Date().getFullYear()} Matu Lotes. Todos los derechos reservados.</p>
         <p className="mt-1">
-          {textos.email} ·{" "}
+          {textos.email}
+          {textos.telefonoOficina && ` · Oficina: ${textos.telefonoOficina}`} ·{" "}
           <Link href="/politica-de-privacidad" className="hover:text-white/80">
             Política de privacidad
           </Link>{" "}

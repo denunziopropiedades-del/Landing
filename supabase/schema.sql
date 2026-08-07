@@ -176,6 +176,7 @@ create table site_textos (
   hero_subtitulo text not null,
   whatsapp_numero text not null,
   whatsapp_mensaje_default text not null,
+  telefono_oficina text not null default '',
   email text not null,
   instagram text,
   facebook text,
@@ -429,13 +430,14 @@ create policy "Admin/supervisor leen actividad" on actividad_log for select usin
 -- Datos semilla: proyecto insignia "Ayres de Guernica"
 -- ═══════════════════════════════════════════════════════════════════════
 
-insert into site_textos (id, hero_titulo, hero_subtitulo, whatsapp_numero, whatsapp_mensaje_default, email, instagram, facebook, youtube)
+insert into site_textos (id, hero_titulo, hero_subtitulo, whatsapp_numero, whatsapp_mensaje_default, telefono_oficina, email, instagram, facebook, youtube)
 values (
   1,
   'Encontrá el lote ideal para tu inversión',
   'Desarrollos inmobiliarios con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.',
   '5491127424512',
   'Hola, me interesa recibir información.',
+  '11-6136-5523',
   'denunziopropiedades@gmail.com',
   'https://instagram.com/matulotes',
   'https://facebook.com/matulotes',

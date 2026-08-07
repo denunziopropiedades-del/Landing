@@ -68,6 +68,10 @@ function TextosForm({ textos }: { textos: SiteTextos }) {
         <input name="whatsappNumero" defaultValue={textos.whatsappNumero} required className={inputClass} />
       </div>
       <div>
+        <label className={labelClass}>Teléfono de oficina (visible en la web)</label>
+        <input name="telefonoOficina" defaultValue={textos.telefonoOficina} className={inputClass} />
+      </div>
+      <div>
         <label className={labelClass}>Email de contacto</label>
         <input type="email" name="email" defaultValue={textos.email} required className={inputClass} />
       </div>

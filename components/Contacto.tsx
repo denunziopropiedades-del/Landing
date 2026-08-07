@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Mail, MessageCircle, Send } from "lucide-react";
+import { Loader2, Mail, MessageCircle, Phone, Send } from "lucide-react";
 import { contactoSchema, type ContactoInput } from "@/lib/schemas";
 import type { SiteTextos } from "@/types/site";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
@@ -124,6 +124,14 @@ export default function Contacto({ textos }: { textos: SiteTextos }) {
               >
                 <Mail className="h-4 w-4" /> {textos.email}
               </a>
+              {textos.telefonoOficina && (
+                <a
+                  href={`tel:${textos.telefonoOficina.replace(/\D/g, "")}`}
+                  className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white/80 hover:text-white"
+                >
+                  <Phone className="h-4 w-4" /> Oficina: {textos.telefonoOficina}
+                </a>
+              )}
               {social.map(({ href, label, Icon }) => (
                 <a
                   key={label}

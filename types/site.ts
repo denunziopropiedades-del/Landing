@@ -128,6 +128,7 @@ export type SiteTextos = {
   heroSubtitulo: string;
   whatsappNumero: string;
   whatsappMensajeDefault: string;
+  telefonoOficina: string;
   email: string;
   instagram: string;
   facebook: string;
