@@ -911,6 +911,24 @@ export async function actualizarEstadoVisitaAction(id: string, estado: EstadoVis
   }
 }
 
+export async function eliminarVisitaAction(id: string): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const { data: visita } = await admin.from("visitas").select("google_event_id").eq("id", id).maybeSingle();
+    if (visita?.google_event_id) await cancelarEventoVisita(visita.google_event_id);
+
+    const { error } = await admin.from("visitas").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "eliminar", "visita", id);
+    revalidatePath("/admin/consultas");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 // ── Usuarios y roles ─────────────────────────────────────────────────────
 
 export async function invitarUsuarioAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
