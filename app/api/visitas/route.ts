@@ -141,11 +141,12 @@ export async function POST(request: Request) {
        <ul>
          <li><b>Fecha:</b> ${data.fecha}</li>
          <li><b>Horario:</b> ${data.horario}</li>
-         ${proyectoUbicacion ? `<li><b>Ubicación:</b> ${proyectoUbicacion}</li>` : ""}
        </ul>
        ${
          mapsUrl
-           ? `<p><a href="${mapsUrl}" target="_blank" rel="noopener noreferrer">📍 Ver ubicación en Google Maps</a></p>`
+           ? `<div style="margin: 12px 0; padding: 10px 14px; border: 2px solid #16a34a; border-radius: 8px; background: #f0fdf4; display: inline-block;">
+                <b>Ubicación:</b> <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color: #16a34a; font-weight: 600;">${mapsUrl}</a>
+              </div>`
            : ""
        }
        <p>Al llegar, preguntá por <b>Matías De Nunzio</b>.</p>
