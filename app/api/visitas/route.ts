@@ -45,9 +45,27 @@ export async function POST(request: Request) {
       proyectoNombre = proyecto?.nombre;
     }
 
+    const { data: lead, error: errorLead } = await supabase
+      .from("leads")
+      .insert({
+        tipo: "visita",
+        proyecto_id: data.proyectoId || null,
+        nombre: data.nombre,
+        email: data.email,
+        telefono: data.telefono,
+        observaciones: `Visita agendada para el ${data.fecha} a las ${data.horario}.`,
+        estado: "visita_programada",
+      })
+      .select("id")
+      .single();
+    if (errorLead) {
+      return NextResponse.json({ error: errorLead.message }, { status: 500 });
+    }
+
     const { data: visita, error } = await supabase
       .from("visitas")
       .insert({
+        lead_id: lead.id,
         proyecto_id: data.proyectoId || null,
         nombre: data.nombre,
         email: data.email,

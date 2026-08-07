@@ -261,7 +261,7 @@ create table leads (
   id uuid primary key default gen_random_uuid(),
   creado_en timestamptz not null default now(),
   actualizado_en timestamptz not null default now(),
-  tipo text not null check (tipo in ('reserva', 'contacto', 'meta', 'manual')),
+  tipo text not null check (tipo in ('reserva', 'contacto', 'meta', 'manual', 'visita')),
   proyecto_id uuid references proyectos(id) on delete set null,
   lote_id uuid references lotes(id) on delete set null,
   nombre text not null,
