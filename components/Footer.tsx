@@ -8,6 +8,10 @@ export default function Footer({ textos }: { textos: SiteTextos }) {
         <p>© {new Date().getFullYear()} Matu Lotes. Todos los derechos reservados.</p>
         <p className="mt-1">
           {textos.email} ·{" "}
+          <Link href="/politica-de-privacidad" className="hover:text-white/80">
+            Política de privacidad
+          </Link>{" "}
+          ·{" "}
           <Link href="/admin" className="hover:text-white/80">
             Panel administrador
           </Link>
