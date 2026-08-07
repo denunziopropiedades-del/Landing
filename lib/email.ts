@@ -33,6 +33,28 @@ export const NOTA_COORDINACION_VISITA_HTML = `
   </div>
 `;
 
+export const NOTA_RESERVA_LOTE_HTML = `
+  <div style="margin-top: 20px; padding: 16px; border: 1px solid #f0d999; background: #fffbeb; border-radius: 8px;">
+    <p style="margin: 0 0 8px; font-weight: bold; color: #96741f;">Importante &ndash; Reserva del lote</p>
+    <p style="margin: 0 0 8px; color: #333;">
+      Recordá que, una vez realizada la visita y si el lote cumple con tus expectativas y decidís avanzar con la
+      operación, podrás reservarlo mediante una <b style="color: #96741f;">seña de $200.000</b>.
+    </p>
+    <p style="margin: 0 0 8px; color: #333;">
+      Este importe <b style="color: #96741f;">se imputa íntegramente al precio de la operación</b>, es decir,
+      <b style="color: #96741f;">se descuenta del monto que debas abonar al concretar la compra</b>, por lo que no
+      representa un costo adicional.
+    </p>
+    <p style="margin: 0 0 8px; color: #333;">
+      La reserva permite asegurar la disponibilidad del lote seleccionado y dar inicio al proceso de compra con la
+      correspondiente documentación.
+    </p>
+    <p style="margin: 0; color: #333;">
+      Ante cualquier consulta, nuestro equipo estará a disposición para brindarte asesoramiento personalizado.
+    </p>
+  </div>
+`;
+
 function conFirma(html: string) {
   return `${html}${FIRMA_HTML}`;
 }
