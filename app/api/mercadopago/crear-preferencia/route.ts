@@ -5,7 +5,7 @@ import { getPreferenceClient, isMercadoPagoConfigured } from "@/lib/mercadopago"
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 
-const SENA_PORCENTAJE = 10;
+const SENA_ARS = 200000;
 
 const bodySchema = z.object({
   loteId: z.string().min(1),
@@ -35,21 +35,21 @@ export async function POST(request: Request) {
   const { loteId, nombre, email } = parsed.data;
 
   const supabase = await getSupabaseAdminClient();
-  let lote: { id: string; nombre: string; precioUsd: number } | undefined;
+  let lote: { id: string; nombre: string } | undefined;
 
   if (supabase) {
-    const { data } = await supabase.from("lotes").select("id, nombre, precio_usd").eq("id", loteId).maybeSingle();
-    if (data) lote = { id: data.id, nombre: data.nombre, precioUsd: Number(data.precio_usd) };
+    const { data } = await supabase.from("lotes").select("id, nombre").eq("id", loteId).maybeSingle();
+    if (data) lote = { id: data.id, nombre: data.nombre };
   } else {
     const seed = lotesSeed.find((l) => l.id === loteId);
-    if (seed) lote = { id: seed.id, nombre: seed.nombre, precioUsd: seed.precioUsd };
+    if (seed) lote = { id: seed.id, nombre: seed.nombre };
   }
 
   if (!lote) {
     return NextResponse.json({ error: "Lote inválido" }, { status: 400 });
   }
 
-  const monto = Math.round((lote.precioUsd * SENA_PORCENTAJE) / 100);
+  const monto = SENA_ARS;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
   const preference = getPreferenceClient()!;
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
           title: `Seña reserva ${lote.nombre}`,
           quantity: 1,
           unit_price: monto,
-          currency_id: "USD",
+          currency_id: "ARS",
         },
       ],
       payer: { name: nombre, email },
