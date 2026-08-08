@@ -296,6 +296,67 @@ export async function actualizarEstadosLotesAction(_prev: ImportResult | null, f
   }
 }
 
+export type CalibracionPlano = {
+  xMin: number;
+  xMax: number;
+  bandas: { yTop: number; yBottom: number }[]; // una por manzana, en el orden en que aparecen ordenadas
+};
+
+/**
+ * Recalcula pos_x/pos_y de todos los lotes de un proyecto asumiendo la grilla de
+ * Ayres de Guernica: cada manzana tiene 102 lotes en 2 filas de 51 (fila de arriba
+ * numerada 1→51 de izquierda a derecha, fila de abajo numerada 102→52 de izquierda
+ * a derecha). Sirve para calibrar visualmente contra la imagen real del masterplan.
+ */
+export async function recalcularPosicionesLotesAction(
+  proyectoId: string,
+  calibracion: CalibracionPlano
+): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const { data: lotes, error: errLotes } = await admin
+      .from("lotes")
+      .select("id, manzana, numero")
+      .eq("proyecto_id", proyectoId);
+    if (errLotes) throw new Error(errLotes.message);
+    if (!lotes || lotes.length === 0) return { ok: false, error: "Este proyecto no tiene lotes cargados." };
+
+    const manzanasOrdenadas = Array.from(new Set(lotes.map((l) => l.manzana))).sort();
+    const { xMin, xMax, bandas } = calibracion;
+    const colWidth = (xMax - xMin) / 51;
+
+    const actualizaciones = lotes
+      .map((lote) => {
+        const bandaIdx = manzanasOrdenadas.indexOf(lote.manzana);
+        const banda = bandas[bandaIdx];
+        if (!banda) return null;
+
+        const numero = Number(lote.numero);
+        const esFilaSuperior = numero >= 1 && numero <= 51;
+        const posicion = esFilaSuperior ? numero : 103 - numero;
+        const posX = Math.round((xMin + (posicion - 0.5) * colWidth) * 10) / 10;
+        const posY = esFilaSuperior ? banda.yTop : banda.yBottom;
+
+        return { id: lote.id, pos_x: posX, pos_y: posY };
+      })
+      .filter((v): v is { id: string; pos_x: number; pos_y: number } => v !== null);
+
+    for (const act of actualizaciones) {
+      const { error } = await admin.from("lotes").update({ pos_x: act.pos_x, pos_y: act.pos_y }).eq("id", act.id);
+      if (error) throw new Error(error.message);
+    }
+
+    await registrarActividad(actor, "calibrar-plano", "proyecto", proyectoId, { cantidad: actualizaciones.length });
+    revalidatePath("/admin/lotes");
+    revalidatePath("/proyectos/[slug]", "page");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function upsertLoteAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor");
