@@ -77,6 +77,7 @@ export async function upsertProyectoAction(_prev: ActionResult | null, formData:
       descripcion: str(formData, "descripcion"),
       ubicacion: str(formData, "ubicacion"),
       ubicacion_maps_url: optStr(formData, "ubicacionMapsUrl"),
+      meta_descripcion: optStr(formData, "metaDescripcion"),
       imagen_portada: optStr(formData, "imagenPortada"),
       whatsapp_numero: optStr(formData, "whatsappNumero"),
       destacado: formData.get("destacado") === "on",
@@ -990,6 +991,35 @@ export async function actualizarPagoLeadAction(
   }
 }
 
+export async function actualizarComisionHonorariosLeadAction(
+  id: string,
+  comisionUsd: string,
+  honorariosUsd: string
+): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    await verificarPropiedadLead(actor.id, actor.rol, id);
+    const admin = (await getSupabaseAdminClient())!;
+    const comision = comisionUsd.trim() ? Number(comisionUsd) : null;
+    const honorarios = honorariosUsd.trim() ? Number(honorariosUsd) : null;
+    const { error } = await admin
+      .from("leads")
+      .update({
+        comision_usd: comision,
+        honorarios_usd: honorarios,
+        actualizado_en: new Date().toISOString(),
+      })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "actualizar", "lead", id, { comisionUsd: comision, honorariosUsd: honorarios });
+    revalidatePath("/admin/crm");
+    revalidatePath("/admin/facturacion");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function actualizarFirmaEscribaniaLeadAction(
   id: string,
   fecha: string,
@@ -1281,6 +1311,48 @@ export async function toggleActivoUsuarioAction(id: string, activo: boolean): Pr
     if (error) throw new Error(error.message);
     await registrarActividad(actor, activo ? "activar" : "desactivar", "usuario", id);
     revalidatePath("/admin/usuarios");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+// ── Facturación (gastos) ──────────────────────────────────────────────
+
+export async function crearGastoAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const payload = {
+      proyecto_id: optStr(formData, "proyectoId"),
+      fecha: str(formData, "fecha"),
+      concepto: str(formData, "concepto"),
+      categoria: optStr(formData, "categoria"),
+      monto_usd: Number(str(formData, "montoUsd")),
+    };
+    if (!payload.fecha || !payload.concepto || !Number.isFinite(payload.monto_usd) || payload.monto_usd <= 0) {
+      return { ok: false, error: "Completá fecha, concepto y un monto válido." };
+    }
+
+    const { data, error } = await admin.from("gastos").insert(payload).select("id").single();
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "crear", "gasto", data.id, payload);
+    revalidatePath("/admin/facturacion");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function eliminarGastoAction(id: string): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+    const { error } = await admin.from("gastos").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "eliminar", "gasto", id);
+    revalidatePath("/admin/facturacion");
     return { ok: true };
   } catch (err) {
     return fail(err);

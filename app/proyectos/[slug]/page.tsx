@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   if (!proyecto) return {};
 
   const titulo = `${proyecto.nombre} | Lotes en venta`;
-  const descripcion = proyecto.descripcion;
+  const descripcion = proyecto.metaDescripcion || proyecto.descripcion;
 
   return {
     title: titulo,

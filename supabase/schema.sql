@@ -85,6 +85,7 @@ create table proyectos (
   descripcion text not null default '',
   ubicacion text not null default '',
   ubicacion_maps_url text,
+  meta_descripcion text,
   imagen_portada text,
   publicado boolean not null default false,
   destacado boolean not null default false,
@@ -291,7 +292,13 @@ create table leads (
   numero_transaccion text,
   importe_cobrado numeric,
   -- Sexo del cliente, para segmentar el saludo de día del padre / día de la madre.
-  sexo text check (sexo in ('M', 'F'))
+  sexo text check (sexo in ('M', 'F')),
+  -- Fecha/horario acordado para la firma en escribanía.
+  fecha_firma_escribania date,
+  horario_firma_escribania text,
+  -- Comisión y honorarios de la venta, cargados a mano en USD.
+  comision_usd numeric,
+  honorarios_usd numeric
 );
 
 create index leads_estado_idx on leads (estado);
@@ -302,6 +309,23 @@ create unique index leads_external_id_idx on leads (external_id) where external_
 create unique index leads_lote_activo_idx on leads (lote_id)
   where lote_id is not null
     and estado in ('reservado', 'pendiente_firma_escribania', 'firmado_escribania', 'vendido');
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- Gastos (planilla manual para el reporte mensual de facturación)
+-- ═══════════════════════════════════════════════════════════════════════
+
+create table gastos (
+  id uuid primary key default gen_random_uuid(),
+  proyecto_id uuid references proyectos(id) on delete set null,
+  fecha date not null default current_date,
+  concepto text not null,
+  categoria text,
+  monto_usd numeric not null,
+  creado_en timestamptz not null default now()
+);
+
+create index gastos_fecha_idx on gastos (fecha);
+create index gastos_proyecto_idx on gastos (proyecto_id);
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- Visitas agendadas
@@ -360,6 +384,7 @@ alter table progreso_desarrollo enable row level security;
 alter table leads enable row level security;
 alter table visitas enable row level security;
 alter table actividad_log enable row level security;
+alter table gastos enable row level security;
 
 -- Perfiles: cada usuario lee su propio perfil; administrador y supervisor
 -- pueden leer todos; solo administrador escribe (alta/edición/borrado).
@@ -441,6 +466,9 @@ create policy "Staff gestiona visitas" on visitas for all using (mi_rol() is not
 -- Registro de actividad: solo lectura para administrador/supervisor; las
 -- escrituras se hacen desde el servidor con la service role key.
 create policy "Admin/supervisor leen actividad" on actividad_log for select using (mi_rol() in ('administrador', 'supervisor'));
+
+-- Gastos: solo administrador/supervisor.
+create policy "Admin/supervisor gestionan gastos" on gastos for all using (mi_rol() in ('administrador', 'supervisor'));
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- Datos semilla: proyecto insignia "Ayres de Guernica"

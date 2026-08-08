@@ -4,6 +4,7 @@ import type {
   Banner,
   ConfigFinanciacion,
   FaqItem,
+  Gasto,
   ItemGaleria,
   Lead,
   Lote,
@@ -36,6 +37,7 @@ export async function getProyectosAdmin(): Promise<Proyecto[]> {
     descripcion: p.descripcion,
     ubicacion: p.ubicacion,
     ubicacionMapsUrl: p.ubicacion_maps_url,
+    metaDescripcion: p.meta_descripcion ?? null,
     imagenPortada: p.imagen_portada,
     publicado: p.publicado,
     destacado: p.destacado,
@@ -273,6 +275,8 @@ export async function getLeads(): Promise<Lead[]> {
     sexo: l.sexo ?? null,
     fechaFirmaEscribania: l.fecha_firma_escribania ?? null,
     horarioFirmaEscribania: l.horario_firma_escribania ?? null,
+    comisionUsd: l.comision_usd === null ? null : Number(l.comision_usd),
+    honorariosUsd: l.honorarios_usd === null ? null : Number(l.honorarios_usd),
   }));
 }
 
@@ -338,5 +342,27 @@ export async function getActividadLog(limite = 100): Promise<ActividadLog[]> {
     entidad: a.entidad,
     entidadId: a.entidad_id,
     detalle: a.detalle,
+  }));
+}
+
+export async function getGastosAdmin(): Promise<Gasto[]> {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("gastos")
+    .select("*, proyectos(nombre)")
+    .order("fecha", { ascending: false });
+  if (error || !data) return [];
+
+  return data.map((g) => ({
+    id: g.id,
+    proyectoId: g.proyecto_id,
+    proyectoNombre: (g.proyectos as { nombre: string } | null)?.nombre,
+    fecha: g.fecha,
+    concepto: g.concepto,
+    categoria: g.categoria,
+    montoUsd: Number(g.monto_usd),
+    creadoEn: g.creado_en,
   }));
 }

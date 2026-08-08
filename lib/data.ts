@@ -44,6 +44,7 @@ export const proyectoSeed: Proyecto = {
     "Lotes con escritura garantizada en una de las zonas con mayor crecimiento del sur del Gran Buenos Aires.",
   ubicacion: "Guernica, Buenos Aires",
   ubicacionMapsUrl: "https://maps.app.goo.gl/AKTSkF2C1qaHGH4q6",
+  metaDescripcion: null,
   imagenPortada:
     "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2400&auto=format&fit=crop",
   publicado: true,

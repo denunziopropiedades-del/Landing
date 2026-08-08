@@ -50,6 +50,7 @@ function mapProyecto(p: Record<string, unknown>): Proyecto {
     descripcion: p.descripcion as string,
     ubicacion: p.ubicacion as string,
     ubicacionMapsUrl: (p.ubicacion_maps_url as string) ?? null,
+    metaDescripcion: (p.meta_descripcion as string) ?? null,
     imagenPortada: (p.imagen_portada as string) ?? null,
     publicado: p.publicado as boolean,
     destacado: p.destacado as boolean,

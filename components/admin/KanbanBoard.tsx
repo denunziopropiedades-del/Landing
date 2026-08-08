@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { ChevronDown, ChevronUp, GripVertical, Mail, Phone, Trash2 } from "lucide-react";
 import {
+  actualizarComisionHonorariosLeadAction,
   actualizarEstadoLeadAction,
   actualizarFechaNacimientoLeadAction,
   actualizarFirmaEscribaniaLeadAction,
@@ -47,6 +48,8 @@ function LeadCard({
   const [importeCobrado, setImporteCobrado] = useState(lead.importeCobrado?.toString() ?? "");
   const [fechaFirma, setFechaFirma] = useState(lead.fechaFirmaEscribania ?? "");
   const [horarioFirma, setHorarioFirma] = useState(lead.horarioFirmaEscribania ?? "");
+  const [comisionUsd, setComisionUsd] = useState(lead.comisionUsd?.toString() ?? "");
+  const [honorariosUsd, setHonorariosUsd] = useState(lead.honorariosUsd?.toString() ?? "");
   const [expandido, setExpandido] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -69,6 +72,17 @@ function LeadCard({
     if (fechaFirma === (lead.fechaFirmaEscribania ?? "") && horarioFirma === (lead.horarioFirmaEscribania ?? "")) return;
     startTransition(() => {
       actualizarFirmaEscribaniaLeadAction(lead.id, fechaFirma, horarioFirma);
+    });
+  };
+
+  const guardarComisionHonorarios = () => {
+    if (
+      comisionUsd === (lead.comisionUsd?.toString() ?? "") &&
+      honorariosUsd === (lead.honorariosUsd?.toString() ?? "")
+    )
+      return;
+    startTransition(() => {
+      actualizarComisionHonorariosLeadAction(lead.id, comisionUsd, honorariosUsd);
     });
   };
 
@@ -220,6 +234,31 @@ function LeadCard({
               />
             </div>
           </div>
+
+          {puedeAsignar && (
+            <div className="grid grid-cols-2 gap-1.5">
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Comisión (USD)</label>
+                <input
+                  type="number"
+                  value={comisionUsd}
+                  onChange={(e) => setComisionUsd(e.target.value)}
+                  onBlur={guardarComisionHonorarios}
+                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Honorarios (USD)</label>
+                <input
+                  type="number"
+                  value={honorariosUsd}
+                  onChange={(e) => setHonorariosUsd(e.target.value)}
+                  onBlur={guardarComisionHonorarios}
+                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+                />
+              </div>
+            </div>
+          )}
 
           {lead.estado === "vendido" && (
             <div className="grid grid-cols-2 gap-1.5">

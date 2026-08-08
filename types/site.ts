@@ -26,6 +26,7 @@ export type Proyecto = {
   descripcion: string;
   ubicacion: string;
   ubicacionMapsUrl: string | null;
+  metaDescripcion: string | null;
   imagenPortada: string | null;
   publicado: boolean;
   destacado: boolean;
@@ -175,6 +176,19 @@ export type Lead = {
   sexo?: "M" | "F" | null;
   fechaFirmaEscribania?: string | null;
   horarioFirmaEscribania?: string | null;
+  comisionUsd?: number | null;
+  honorariosUsd?: number | null;
+};
+
+export type Gasto = {
+  id: string;
+  proyectoId: string | null;
+  proyectoNombre?: string;
+  fecha: string;
+  concepto: string;
+  categoria: string | null;
+  montoUsd: number;
+  creadoEn: string;
 };
 
 export type EstadoVisita = "pendiente" | "confirmada" | "cancelada" | "realizada";

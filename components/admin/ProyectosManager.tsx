@@ -54,6 +54,19 @@ function ProyectoForm({ proyecto, onDone }: { proyecto?: Proyecto; onDone?: () =
         <label className={labelClass}>Descripción</label>
         <textarea name="descripcion" defaultValue={proyecto?.descripcion} required rows={2} className={inputClass} />
       </div>
+      <div className="sm:col-span-2">
+        <label className={labelClass}>
+          Meta descripción (SEO — la que ven en Google, ideal 150-160 caracteres. Si la dejás vacía, usa la
+          Descripción de arriba)
+        </label>
+        <textarea
+          name="metaDescripcion"
+          defaultValue={proyecto?.metaDescripcion ?? ""}
+          rows={2}
+          maxLength={160}
+          className={inputClass}
+        />
+      </div>
       <div className="flex items-center gap-2">
         <input type="checkbox" name="destacado" id={`destacado-${proyecto?.id ?? "new"}`} defaultChecked={proyecto?.destacado} />
         <label htmlFor={`destacado-${proyecto?.id ?? "new"}`} className="text-sm text-brand-black/70">
