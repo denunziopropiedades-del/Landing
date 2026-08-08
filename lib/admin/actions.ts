@@ -226,7 +226,10 @@ export async function actualizarEstadosLotesAction(_prev: ImportResult | null, f
     const proyectoId = str(formData, "proyectoId");
     const archivo = formData.get("archivo");
     if (!(archivo instanceof File) || archivo.size === 0) {
-      return { ok: false, error: "Subí un archivo Excel (.xlsx) con las columnas Manzana, Numero, Estado." };
+      return {
+        ok: false,
+        error: "Subí un archivo Excel (.xlsx) con las columnas Manzana, Numero, Estado, PosX, PosY.",
+      };
     }
 
     const ExcelJS = (await import("exceljs")).default;
@@ -235,7 +238,7 @@ export async function actualizarEstadosLotesAction(_prev: ImportResult | null, f
     const hoja = workbook.worksheets[0];
     if (!hoja) return { ok: false, error: "El archivo no tiene ninguna hoja." };
 
-    const filas: { manzana: string; numero: string; estado: string }[] = [];
+    const filas: { manzana: string; numero: string; estado: string; posX: number | null; posY: number | null }[] = [];
     let filasConError = 0;
 
     hoja.eachRow((row, numeroFila) => {
@@ -246,6 +249,10 @@ export async function actualizarEstadosLotesAction(_prev: ImportResult | null, f
       const estado = String(row.getCell(3).value ?? "")
         .trim()
         .toLowerCase();
+      const posXRaw = row.getCell(4).value;
+      const posYRaw = row.getCell(5).value;
+      const posX = posXRaw === null || posXRaw === undefined || posXRaw === "" ? null : Number(posXRaw);
+      const posY = posYRaw === null || posYRaw === undefined || posYRaw === "" ? null : Number(posYRaw);
 
       if (!manzana && !numero) return; // fila vacía
 
@@ -254,14 +261,24 @@ export async function actualizarEstadosLotesAction(_prev: ImportResult | null, f
         return;
       }
 
-      filas.push({ manzana, numero, estado });
+      filas.push({
+        manzana,
+        numero,
+        estado,
+        posX: Number.isFinite(posX) ? posX : null,
+        posY: Number.isFinite(posY) ? posY : null,
+      });
     });
 
     let actualizados = 0;
     for (const fila of filas) {
+      const payload: Record<string, unknown> = { estado: fila.estado };
+      if (fila.posX !== null) payload.pos_x = fila.posX;
+      if (fila.posY !== null) payload.pos_y = fila.posY;
+
       const { error, count } = await admin
         .from("lotes")
-        .update({ estado: fila.estado }, { count: "exact" })
+        .update(payload, { count: "exact" })
         .eq("proyecto_id", proyectoId)
         .eq("manzana", fila.manzana)
         .eq("numero", fila.numero);

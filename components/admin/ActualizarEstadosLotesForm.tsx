@@ -9,10 +9,11 @@ export default function ActualizarEstadosLotesForm({ proyectoId }: { proyectoId:
 
   return (
     <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-      <h2 className="mb-1 font-display text-lg font-bold text-brand-black">Actualizar estados desde Excel</h2>
+      <h2 className="mb-1 font-display text-lg font-bold text-brand-black">Actualizar estados y posición desde Excel</h2>
       <p className="mb-4 text-sm text-brand-black/60">
         Subí un .xlsx con columnas: <b>Manzana</b>, <b>Numero</b>, <b>Estado</b> (disponible, reservado, vendido o
-        no_disponible). Solo actualiza el estado de los lotes que ya existen — no toca precio ni medidas.
+        no_disponible), y opcionalmente <b>PosX</b>/<b>PosY</b> (0 a 100, posición del punto en el plano
+        interactivo). Solo actualiza los lotes que ya existen — no toca precio ni medidas.
       </p>
 
       <form action={formAction} className="flex flex-col gap-3 sm:flex-row sm:items-center">
