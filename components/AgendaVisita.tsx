@@ -46,6 +46,7 @@ export default function AgendaVisita({
   });
 
   const fechaElegida = watch("fecha");
+  const horarioElegido = watch("horario");
 
   useEffect(() => {
     if (!fechaElegida) {
@@ -151,19 +152,30 @@ export default function AgendaVisita({
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-brand-black/80">Horario</label>
-                <select {...register("horario")} className="w-full rounded-lg border border-black/10 px-4 py-2.5 focus:border-brand-green-600 focus:outline-none">
-                  <option value="" disabled>
-                    Elegí un horario
-                  </option>
+                <input type="hidden" {...register("horario")} />
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                   {HORARIOS.map((h) => {
                     const noDisponible = ocupados.includes(h);
+                    const seleccionado = horarioElegido === h;
                     return (
-                      <option key={h} value={h} disabled={noDisponible}>
-                        {h} hs — {noDisponible ? "no disponible" : "disponible"}
-                      </option>
+                      <button
+                        key={h}
+                        type="button"
+                        disabled={noDisponible}
+                        onClick={() => setValue("horario", h, { shouldValidate: true })}
+                        className={`rounded-lg border px-2 py-2 text-xs font-medium transition ${
+                          noDisponible
+                            ? "cursor-not-allowed border-red-200 bg-red-50 text-red-400 line-through"
+                            : seleccionado
+                              ? "border-brand-green-600 bg-brand-green-600 text-white"
+                              : "border-black/10 text-brand-black/80 hover:border-brand-green-600"
+                        }`}
+                      >
+                        {h} hs
+                      </button>
                     );
                   })}
-                </select>
+                </div>
                 {errors.horario && <p className="mt-1 text-xs text-red-600">{errors.horario.message}</p>}
               </div>
 
