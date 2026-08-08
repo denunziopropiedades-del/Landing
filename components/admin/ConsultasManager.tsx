@@ -11,7 +11,16 @@ import {
 } from "@/lib/admin/actions";
 import type { EstadoLead, EstadoVisita, Lead, Proyecto, Visita } from "@/types/site";
 
-const ESTADOS: EstadoLead[] = ["nuevo", "contactado", "visita_programada", "reservado", "vendido", "descartado"];
+const ESTADOS: EstadoLead[] = [
+  "nuevo",
+  "contactado",
+  "visita_programada",
+  "reservado",
+  "pendiente_firma_escribania",
+  "firmado_escribania",
+  "vendido",
+  "descartado",
+];
 const ESTADOS_VISITA: EstadoVisita[] = ["pendiente", "confirmada", "cancelada", "realizada"];
 
 type Campo = "nombre" | "fecha";

@@ -748,7 +748,12 @@ export async function actualizarEstadoLeadAction(id: string, estado: EstadoLead)
       .from("leads")
       .update({ estado, actualizado_en: new Date().toISOString() })
       .eq("id", id);
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (error.code === "23505") {
+        throw new Error("Ese lote ya está reservado o vendido por otro cliente. No se puede duplicar.");
+      }
+      throw new Error(error.message);
+    }
 
     if (lead?.lote_id) {
       if (estado === "reservado") {
@@ -800,6 +805,50 @@ export async function actualizarFechaNacimientoLeadAction(id: string, fecha: str
       .eq("id", id);
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "actualizar", "lead", id, { fechaNacimiento: fecha });
+    revalidatePath("/admin/crm");
+    revalidatePath("/admin/consultas");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function actualizarPagoLeadAction(
+  id: string,
+  numeroTransaccion: string,
+  importeCobrado: string
+): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    await verificarPropiedadLead(actor.id, actor.rol, id);
+    const admin = (await getSupabaseAdminClient())!;
+    const importe = importeCobrado.trim() ? Number(importeCobrado) : null;
+    const { error } = await admin
+      .from("leads")
+      .update({
+        numero_transaccion: numeroTransaccion.trim() || null,
+        importe_cobrado: importe,
+        actualizado_en: new Date().toISOString(),
+      })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "actualizar", "lead", id, { numeroTransaccion, importeCobrado: importe });
+    revalidatePath("/admin/crm");
+    revalidatePath("/admin/consultas");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function actualizarSexoLeadAction(id: string, sexo: "M" | "F" | null): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    await verificarPropiedadLead(actor.id, actor.rol, id);
+    const admin = (await getSupabaseAdminClient())!;
+    const { error } = await admin.from("leads").update({ sexo, actualizado_en: new Date().toISOString() }).eq("id", id);
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "actualizar", "lead", id, { sexo });
     revalidatePath("/admin/crm");
     revalidatePath("/admin/consultas");
     return { ok: true };

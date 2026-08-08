@@ -275,18 +275,30 @@ create table leads (
   manzana text,
   observaciones text not null default '',
   estado text not null default 'nuevo'
-    check (estado in ('nuevo', 'contactado', 'visita_programada', 'reservado', 'vendido', 'descartado')),
+    check (estado in (
+      'nuevo', 'contactado', 'visita_programada', 'reservado',
+      'pendiente_firma_escribania', 'firmado_escribania', 'vendido', 'descartado'
+    )),
   asignado_a uuid references perfiles(id) on delete set null,
   -- Id del leadgen de Meta Ads (leads generados desde formularios de Facebook/Instagram), para no duplicarlos.
   external_id text,
   -- Fecha de nacimiento del cliente, para el email automático de cumpleaños.
-  fecha_nacimiento date
+  fecha_nacimiento date,
+  -- Datos de la seña/pago de la reserva, cargados a mano por el equipo.
+  numero_transaccion text,
+  importe_cobrado numeric,
+  -- Sexo del cliente, para segmentar el saludo de día del padre / día de la madre.
+  sexo text check (sexo in ('M', 'F'))
 );
 
 create index leads_estado_idx on leads (estado);
 create index leads_proyecto_idx on leads (proyecto_id);
 create index leads_asignado_idx on leads (asignado_a);
 create unique index leads_external_id_idx on leads (external_id) where external_id is not null;
+-- Un mismo lote no puede estar reservado/vendido para más de un lead a la vez.
+create unique index leads_lote_activo_idx on leads (lote_id)
+  where lote_id is not null
+    and estado in ('reservado', 'pendiente_firma_escribania', 'firmado_escribania', 'vendido');
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- Visitas agendadas

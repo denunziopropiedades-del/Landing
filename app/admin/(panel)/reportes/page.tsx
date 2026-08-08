@@ -2,7 +2,16 @@ import { Download, FileText, Users } from "lucide-react";
 import { getLeads, getProyectosAdmin } from "@/lib/admin/data";
 import ReportesCharts from "@/components/admin/ReportesCharts";
 
-const ESTADOS = ["nuevo", "contactado", "visita_programada", "reservado", "vendido", "descartado"];
+const ESTADOS = [
+  "nuevo",
+  "contactado",
+  "visita_programada",
+  "reservado",
+  "pendiente_firma_escribania",
+  "firmado_escribania",
+  "vendido",
+  "descartado",
+];
 
 export default async function AdminReportesPage() {
   const [proyectos, leads] = await Promise.all([getProyectosAdmin(), getLeads()]);

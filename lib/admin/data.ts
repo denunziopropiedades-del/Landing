@@ -266,6 +266,9 @@ export async function getLeads(): Promise<Lead[]> {
     asignadoA: l.asignado_a,
     asignadoNombre: (l.perfiles as { nombre: string; email: string } | null)?.nombre,
     fechaNacimiento: l.fecha_nacimiento ?? null,
+    numeroTransaccion: l.numero_transaccion ?? null,
+    importeCobrado: l.importe_cobrado === null ? null : Number(l.importe_cobrado),
+    sexo: l.sexo ?? null,
   }));
 }
 

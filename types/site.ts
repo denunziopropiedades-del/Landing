@@ -136,7 +136,15 @@ export type SiteTextos = {
   youtube: string;
 };
 
-export type EstadoLead = "nuevo" | "contactado" | "visita_programada" | "reservado" | "vendido" | "descartado";
+export type EstadoLead =
+  | "nuevo"
+  | "contactado"
+  | "visita_programada"
+  | "reservado"
+  | "pendiente_firma_escribania"
+  | "firmado_escribania"
+  | "vendido"
+  | "descartado";
 
 export type Lead = {
   id: string;
@@ -160,6 +168,9 @@ export type Lead = {
   asignadoA: string | null;
   asignadoNombre?: string;
   fechaNacimiento?: string | null;
+  numeroTransaccion?: string | null;
+  importeCobrado?: number | null;
+  sexo?: "M" | "F" | null;
 };
 
 export type EstadoVisita = "pendiente" | "confirmada" | "cancelada" | "realizada";

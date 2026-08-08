@@ -1,13 +1,16 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { ChevronDown, ChevronUp, GripVertical, Mail, Phone } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, Mail, Phone, Trash2 } from "lucide-react";
 import {
   actualizarEstadoLeadAction,
   actualizarFechaNacimientoLeadAction,
   actualizarObservacionesLeadAction,
+  actualizarPagoLeadAction,
+  actualizarSexoLeadAction,
   asignarLeadAction,
   cambiarProyectoLeadAction,
+  deleteLeadAction,
 } from "@/lib/admin/actions";
 import type { EstadoLead, Lead, Perfil, Proyecto, Rol } from "@/types/site";
 
@@ -16,24 +19,32 @@ const COLUMNAS: { estado: EstadoLead; label: string; color: string }[] = [
   { estado: "contactado", label: "Contactado", color: "border-t-purple-500" },
   { estado: "visita_programada", label: "Visita Programada", color: "border-t-amber-500" },
   { estado: "reservado", label: "Reservado", color: "border-t-yellow-500" },
+  { estado: "pendiente_firma_escribania", label: "Pendiente firma escribanía", color: "border-t-orange-500" },
+  { estado: "firmado_escribania", label: "Firmado escribanía", color: "border-t-teal-500" },
   { estado: "vendido", label: "Vendido", color: "border-t-green-600" },
   { estado: "descartado", label: "Descartado", color: "border-t-red-500" },
 ];
+
+const CON_PAGO: EstadoLead[] = ["reservado", "pendiente_firma_escribania", "firmado_escribania", "vendido"];
 
 function LeadCard({
   lead,
   vendedores,
   proyectos,
   puedeAsignar,
+  puedeBorrar,
   onMoved,
 }: {
   lead: Lead;
   vendedores: Perfil[];
   proyectos: Proyecto[];
   puedeAsignar: boolean;
+  puedeBorrar: boolean;
   onMoved: () => void;
 }) {
   const [observaciones, setObservaciones] = useState(lead.observaciones);
+  const [numeroTransaccion, setNumeroTransaccion] = useState(lead.numeroTransaccion ?? "");
+  const [importeCobrado, setImporteCobrado] = useState(lead.importeCobrado?.toString() ?? "");
   const [expandido, setExpandido] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -41,6 +52,21 @@ function LeadCard({
     if (observaciones === lead.observaciones) return;
     startTransition(() => {
       actualizarObservacionesLeadAction(lead.id, observaciones);
+    });
+  };
+
+  const guardarPago = () => {
+    if (numeroTransaccion === (lead.numeroTransaccion ?? "") && importeCobrado === (lead.importeCobrado?.toString() ?? ""))
+      return;
+    startTransition(() => {
+      actualizarPagoLeadAction(lead.id, numeroTransaccion, importeCobrado);
+    });
+  };
+
+  const eliminar = () => {
+    if (!confirm(`¿Eliminar la reserva de ${lead.nombre}? Esta acción no se puede deshacer.`)) return;
+    startTransition(() => {
+      deleteLeadAction(lead.id);
     });
   };
 
@@ -57,7 +83,14 @@ function LeadCard({
         <p className="text-sm font-semibold text-brand-black">
           {lead.nombre} {lead.apellido ?? ""}
         </p>
-        <GripVertical className="h-4 w-4 shrink-0 text-brand-black/25" />
+        <div className="flex shrink-0 items-center gap-1.5">
+          {puedeBorrar && (
+            <button type="button" onClick={eliminar} aria-label="Eliminar" className="text-brand-black/25 hover:text-red-600">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <GripVertical className="h-4 w-4 text-brand-black/25" />
+        </div>
       </div>
 
       {/* Datos principales, siempre visibles */}
@@ -134,21 +167,65 @@ function LeadCard({
             </select>
           )}
 
+          {CON_PAGO.includes(lead.estado) && (
+            <div className="grid grid-cols-2 gap-1.5">
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-brand-black/50">N° de transacción</label>
+                <input
+                  value={numeroTransaccion}
+                  onChange={(e) => setNumeroTransaccion(e.target.value)}
+                  onBlur={guardarPago}
+                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Importe cobrado</label>
+                <input
+                  type="number"
+                  value={importeCobrado}
+                  onChange={(e) => setImporteCobrado(e.target.value)}
+                  onBlur={guardarPago}
+                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+                />
+              </div>
+            </div>
+          )}
+
           {lead.estado === "vendido" && (
-            <div>
-              <label className="mb-1 block text-[11px] font-medium text-brand-black/50">
-                Fecha de nacimiento (para el saludo de cumpleaños)
-              </label>
-              <input
-                type="date"
-                defaultValue={lead.fechaNacimiento ?? ""}
-                onChange={(e) =>
-                  startTransition(() => {
-                    actualizarFechaNacimientoLeadAction(lead.id, e.target.value || null);
-                  })
-                }
-                className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
-              />
+            <div className="grid grid-cols-2 gap-1.5">
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-brand-black/50">
+                  Fecha de nacimiento (cumpleaños)
+                </label>
+                <input
+                  type="date"
+                  defaultValue={lead.fechaNacimiento ?? ""}
+                  onChange={(e) =>
+                    startTransition(() => {
+                      actualizarFechaNacimientoLeadAction(lead.id, e.target.value || null);
+                    })
+                  }
+                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-brand-black/50">
+                  Sexo (día del padre/madre)
+                </label>
+                <select
+                  defaultValue={lead.sexo ?? ""}
+                  onChange={(e) =>
+                    startTransition(() => {
+                      actualizarSexoLeadAction(lead.id, (e.target.value || null) as "M" | "F" | null);
+                    })
+                  }
+                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+                >
+                  <option value="">Sin definir</option>
+                  <option value="M">Masculino</option>
+                  <option value="F">Femenino</option>
+                </select>
+              </div>
             </div>
           )}
 
@@ -180,15 +257,21 @@ export default function KanbanBoard({
   const [leads, setLeads] = useState(leadsIniciales);
   const [dragOver, setDragOver] = useState<EstadoLead | null>(null);
   const puedeAsignar = rolActual === "administrador" || rolActual === "supervisor";
+  const puedeBorrar = rolActual === "administrador";
 
   const columnas = useMemo(
     () => COLUMNAS.map((col) => ({ ...col, leads: leads.filter((l) => l.estado === col.estado) })),
     [leads]
   );
 
-  const mover = (id: string, estado: EstadoLead) => {
+  const mover = async (id: string, estado: EstadoLead) => {
+    const anterior = leads.find((l) => l.id === id)?.estado;
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, estado } : l)));
-    actualizarEstadoLeadAction(id, estado);
+    const res = await actualizarEstadoLeadAction(id, estado);
+    if (!res.ok && anterior) {
+      setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, estado: anterior } : l)));
+      alert(res.error);
+    }
   };
 
   return (
@@ -225,6 +308,7 @@ export default function KanbanBoard({
                 vendedores={vendedores}
                 proyectos={proyectos}
                 puedeAsignar={puedeAsignar}
+                puedeBorrar={puedeBorrar}
                 onMoved={() => setDragOver(null)}
               />
             ))}
