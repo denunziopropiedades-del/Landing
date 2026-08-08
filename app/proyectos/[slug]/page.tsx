@@ -124,7 +124,7 @@ export default async function ProyectoPage({ params }: { params: Promise<Params>
 
         {masterplan && lotes.some((l) => l.posX !== null) && (
           <section className="bg-brand-cream pb-20 sm:pb-28">
-            <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <MapaLotes imagenMasterplan={masterplan} lotes={lotes} numero={numero} />
             </div>
           </section>

@@ -20,6 +20,12 @@ const LABEL_ESTADO: Record<EstadoLote, string> = {
   no_disponible: "No disponible",
 };
 
+// Medidas de cada celda en % de la imagen, calculadas con la misma grilla usada para
+// generar las posiciones (51 lotes por fila, 3 manzanas apiladas). Coinciden con el
+// ancho/alto real de cada lote en el plano para que el color quede dentro del lote.
+const LOTE_ANCHO_PCT = 1.7;
+const LOTE_ALTO_PCT = 12.5;
+
 export default function MapaLotes({
   imagenMasterplan,
   lotes,
@@ -58,11 +64,19 @@ export default function MapaLotes({
             type="button"
             onClick={() => setSeleccionado(seleccionado?.id === lote.id ? null : lote)}
             aria-label={`Lote ${lote.manzana}-${lote.numero}, ${LABEL_ESTADO[lote.estado]}`}
-            className="absolute flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white shadow-md transition hover:scale-125"
-            style={{ left: `${lote.posX}%`, top: `${lote.posY}%`, backgroundColor: COLOR_ESTADO[lote.estado] }}
-          >
-            {lote.manzana}
-          </button>
+            className="absolute -translate-x-1/2 -translate-y-1/2 border transition hover:z-10 hover:brightness-110"
+            style={{
+              left: `${lote.posX}%`,
+              top: `${lote.posY}%`,
+              width: `${LOTE_ANCHO_PCT}%`,
+              height: `${LOTE_ALTO_PCT}%`,
+              backgroundColor: COLOR_ESTADO[lote.estado],
+              opacity: seleccionado?.id === lote.id ? 0.85 : 0.55,
+              borderColor:
+                seleccionado?.id === lote.id ? "#fff" : "color-mix(in srgb, " + COLOR_ESTADO[lote.estado] + " 70%, black)",
+              borderWidth: seleccionado?.id === lote.id ? 2 : 1,
+            }}
+          />
         ))}
 
         {seleccionado && (
