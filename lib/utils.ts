@@ -10,6 +10,14 @@ export function formatUsd(value: number) {
   }).format(value);
 }
 
+export function formatArs(value: number) {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
 export function formatNumber(value: number) {
   return new Intl.NumberFormat("es-AR").format(value);
 }

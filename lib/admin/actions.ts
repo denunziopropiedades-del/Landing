@@ -994,24 +994,35 @@ export async function actualizarPagoLeadAction(
 export async function actualizarComisionHonorariosLeadAction(
   id: string,
   comisionUsd: string,
-  honorariosUsd: string
+  honorariosUsd: string,
+  honorariosArs: string,
+  gastosArs: string
 ): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor");
     await verificarPropiedadLead(actor.id, actor.rol, id);
     const admin = (await getSupabaseAdminClient())!;
     const comision = comisionUsd.trim() ? Number(comisionUsd) : null;
-    const honorarios = honorariosUsd.trim() ? Number(honorariosUsd) : null;
+    const honorariosU = honorariosUsd.trim() ? Number(honorariosUsd) : null;
+    const honorariosA = honorariosArs.trim() ? Number(honorariosArs) : null;
+    const gastosA = gastosArs.trim() ? Number(gastosArs) : null;
     const { error } = await admin
       .from("leads")
       .update({
         comision_usd: comision,
-        honorarios_usd: honorarios,
+        honorarios_usd: honorariosU,
+        honorarios_ars: honorariosA,
+        gastos_ars: gastosA,
         actualizado_en: new Date().toISOString(),
       })
       .eq("id", id);
     if (error) throw new Error(error.message);
-    await registrarActividad(actor, "actualizar", "lead", id, { comisionUsd: comision, honorariosUsd: honorarios });
+    await registrarActividad(actor, "actualizar", "lead", id, {
+      comisionUsd: comision,
+      honorariosUsd: honorariosU,
+      honorariosArs: honorariosA,
+      gastosArs: gastosA,
+    });
     revalidatePath("/admin/crm");
     revalidatePath("/admin/facturacion");
     return { ok: true };
@@ -1329,9 +1340,9 @@ export async function crearGastoAction(_prev: ActionResult | null, formData: For
       fecha: str(formData, "fecha"),
       concepto: str(formData, "concepto"),
       categoria: optStr(formData, "categoria"),
-      monto_usd: Number(str(formData, "montoUsd")),
+      monto_ars: Number(str(formData, "montoArs")),
     };
-    if (!payload.fecha || !payload.concepto || !Number.isFinite(payload.monto_usd) || payload.monto_usd <= 0) {
+    if (!payload.fecha || !payload.concepto || !Number.isFinite(payload.monto_ars) || payload.monto_ars <= 0) {
       return { ok: false, error: "Completá fecha, concepto y un monto válido." };
     }
 

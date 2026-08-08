@@ -277,6 +277,8 @@ export async function getLeads(): Promise<Lead[]> {
     horarioFirmaEscribania: l.horario_firma_escribania ?? null,
     comisionUsd: l.comision_usd === null ? null : Number(l.comision_usd),
     honorariosUsd: l.honorarios_usd === null ? null : Number(l.honorarios_usd),
+    honorariosArs: l.honorarios_ars === null ? null : Number(l.honorarios_ars),
+    gastosArs: l.gastos_ars === null ? null : Number(l.gastos_ars),
   }));
 }
 
@@ -362,7 +364,7 @@ export async function getGastosAdmin(): Promise<Gasto[]> {
     fecha: g.fecha,
     concepto: g.concepto,
     categoria: g.categoria,
-    montoUsd: Number(g.monto_usd),
+    montoArs: Number(g.monto_ars),
     creadoEn: g.creado_en,
   }));
 }

@@ -50,6 +50,8 @@ function LeadCard({
   const [horarioFirma, setHorarioFirma] = useState(lead.horarioFirmaEscribania ?? "");
   const [comisionUsd, setComisionUsd] = useState(lead.comisionUsd?.toString() ?? "");
   const [honorariosUsd, setHonorariosUsd] = useState(lead.honorariosUsd?.toString() ?? "");
+  const [honorariosArs, setHonorariosArs] = useState(lead.honorariosArs?.toString() ?? "");
+  const [gastosArs, setGastosArs] = useState(lead.gastosArs?.toString() ?? "");
   const [expandido, setExpandido] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -78,11 +80,13 @@ function LeadCard({
   const guardarComisionHonorarios = () => {
     if (
       comisionUsd === (lead.comisionUsd?.toString() ?? "") &&
-      honorariosUsd === (lead.honorariosUsd?.toString() ?? "")
+      honorariosUsd === (lead.honorariosUsd?.toString() ?? "") &&
+      honorariosArs === (lead.honorariosArs?.toString() ?? "") &&
+      gastosArs === (lead.gastosArs?.toString() ?? "")
     )
       return;
     startTransition(() => {
-      actualizarComisionHonorariosLeadAction(lead.id, comisionUsd, honorariosUsd);
+      actualizarComisionHonorariosLeadAction(lead.id, comisionUsd, honorariosUsd, honorariosArs, gastosArs);
     });
   };
 
@@ -253,6 +257,26 @@ function LeadCard({
                   type="number"
                   value={honorariosUsd}
                   onChange={(e) => setHonorariosUsd(e.target.value)}
+                  onBlur={guardarComisionHonorarios}
+                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Honorarios (ARS)</label>
+                <input
+                  type="number"
+                  value={honorariosArs}
+                  onChange={(e) => setHonorariosArs(e.target.value)}
+                  onBlur={guardarComisionHonorarios}
+                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Gastos (ARS)</label>
+                <input
+                  type="number"
+                  value={gastosArs}
+                  onChange={(e) => setGastosArs(e.target.value)}
                   onBlur={guardarComisionHonorarios}
                   className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
                 />

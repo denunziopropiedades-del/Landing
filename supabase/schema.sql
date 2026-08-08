@@ -296,9 +296,11 @@ create table leads (
   -- Fecha/horario acordado para la firma en escribanía.
   fecha_firma_escribania date,
   horario_firma_escribania text,
-  -- Comisión y honorarios de la venta, cargados a mano en USD.
+  -- Comisión (USD), honorarios (USD y ARS) y gastos (ARS) de la venta, cargados a mano.
   comision_usd numeric,
-  honorarios_usd numeric
+  honorarios_usd numeric,
+  honorarios_ars numeric,
+  gastos_ars numeric
 );
 
 create index leads_estado_idx on leads (estado);
@@ -311,7 +313,7 @@ create unique index leads_lote_activo_idx on leads (lote_id)
     and estado in ('reservado', 'pendiente_firma_escribania', 'firmado_escribania', 'vendido');
 
 -- ═══════════════════════════════════════════════════════════════════════
--- Gastos (planilla manual para el reporte mensual de facturación)
+-- Gastos generales (planilla manual, en pesos, no atados a un cliente puntual)
 -- ═══════════════════════════════════════════════════════════════════════
 
 create table gastos (
@@ -320,7 +322,7 @@ create table gastos (
   fecha date not null default current_date,
   concepto text not null,
   categoria text,
-  monto_usd numeric not null,
+  monto_ars numeric not null,
   creado_en timestamptz not null default now()
 );
 

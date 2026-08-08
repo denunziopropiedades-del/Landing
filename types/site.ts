@@ -178,6 +178,8 @@ export type Lead = {
   horarioFirmaEscribania?: string | null;
   comisionUsd?: number | null;
   honorariosUsd?: number | null;
+  honorariosArs?: number | null;
+  gastosArs?: number | null;
 };
 
 export type Gasto = {
@@ -187,7 +189,7 @@ export type Gasto = {
   fecha: string;
   concepto: string;
   categoria: string | null;
-  montoUsd: number;
+  montoArs: number;
   creadoEn: string;
 };
 
