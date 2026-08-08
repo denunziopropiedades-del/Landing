@@ -216,6 +216,69 @@ export async function importarLotesExcelAction(_prev: ImportResult | null, formD
   }
 }
 
+const ESTADOS_LOTE_VALIDOS = new Set(["disponible", "reservado", "vendido", "no_disponible"]);
+
+export async function actualizarEstadosLotesAction(_prev: ImportResult | null, formData: FormData): Promise<ImportResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const proyectoId = str(formData, "proyectoId");
+    const archivo = formData.get("archivo");
+    if (!(archivo instanceof File) || archivo.size === 0) {
+      return { ok: false, error: "Subí un archivo Excel (.xlsx) con las columnas Manzana, Numero, Estado." };
+    }
+
+    const ExcelJS = (await import("exceljs")).default;
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(await archivo.arrayBuffer());
+    const hoja = workbook.worksheets[0];
+    if (!hoja) return { ok: false, error: "El archivo no tiene ninguna hoja." };
+
+    const filas: { manzana: string; numero: string; estado: string }[] = [];
+    let filasConError = 0;
+
+    hoja.eachRow((row, numeroFila) => {
+      if (numeroFila === 1) return; // encabezado
+
+      const manzana = String(row.getCell(1).value ?? "").trim();
+      const numero = String(row.getCell(2).value ?? "").trim();
+      const estado = String(row.getCell(3).value ?? "")
+        .trim()
+        .toLowerCase();
+
+      if (!manzana && !numero) return; // fila vacía
+
+      if (!manzana || !numero || !ESTADOS_LOTE_VALIDOS.has(estado)) {
+        filasConError += 1;
+        return;
+      }
+
+      filas.push({ manzana, numero, estado });
+    });
+
+    let actualizados = 0;
+    for (const fila of filas) {
+      const { error, count } = await admin
+        .from("lotes")
+        .update({ estado: fila.estado }, { count: "exact" })
+        .eq("proyecto_id", proyectoId)
+        .eq("manzana", fila.manzana)
+        .eq("numero", fila.numero);
+      if (error) throw new Error(error.message);
+      if (count) actualizados += count;
+      else filasConError += 1;
+    }
+
+    await registrarActividad(actor, "actualizar-estados", "lote", proyectoId, { cantidad: actualizados });
+    revalidatePath("/admin/lotes");
+    revalidatePath("/proyectos/[slug]", "page");
+    return { ok: true, creadosOActualizados: actualizados, filasConError };
+  } catch (err) {
+    return fail(err) as ImportResult;
+  }
+}
+
 export async function upsertLoteAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor");
