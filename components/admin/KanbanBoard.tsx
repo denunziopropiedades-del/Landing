@@ -26,8 +26,6 @@ const COLUMNAS: { estado: EstadoLead; label: string; color: string }[] = [
   { estado: "descartado", label: "Descartado", color: "border-t-red-500" },
 ];
 
-const CON_PAGO: EstadoLead[] = ["reservado", "pendiente_firma_escribania", "firmado_escribania", "vendido"];
-const CON_FIRMA_ESCRIBANIA: EstadoLead[] = ["pendiente_firma_escribania", "firmado_escribania", "vendido"];
 
 function LeadCard({
   lead,
@@ -178,54 +176,50 @@ function LeadCard({
             </select>
           )}
 
-          {CON_FIRMA_ESCRIBANIA.includes(lead.estado) && (
-            <div className="grid grid-cols-2 gap-1.5">
-              <div>
-                <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Fecha de firma</label>
-                <input
-                  type="date"
-                  value={fechaFirma}
-                  onChange={(e) => setFechaFirma(e.target.value)}
-                  onBlur={guardarFirma}
-                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Horario</label>
-                <input
-                  type="time"
-                  value={horarioFirma}
-                  onChange={(e) => setHorarioFirma(e.target.value)}
-                  onBlur={guardarFirma}
-                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
-                />
-              </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            <div>
+              <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Fecha de firma escribanía</label>
+              <input
+                type="date"
+                value={fechaFirma}
+                onChange={(e) => setFechaFirma(e.target.value)}
+                onBlur={guardarFirma}
+                className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+              />
             </div>
-          )}
+            <div>
+              <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Horario</label>
+              <input
+                type="time"
+                value={horarioFirma}
+                onChange={(e) => setHorarioFirma(e.target.value)}
+                onBlur={guardarFirma}
+                className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+              />
+            </div>
+          </div>
 
-          {CON_PAGO.includes(lead.estado) && (
-            <div className="grid grid-cols-2 gap-1.5">
-              <div>
-                <label className="mb-1 block text-[11px] font-medium text-brand-black/50">N° de transacción</label>
-                <input
-                  value={numeroTransaccion}
-                  onChange={(e) => setNumeroTransaccion(e.target.value)}
-                  onBlur={guardarPago}
-                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Importe cobrado</label>
-                <input
-                  type="number"
-                  value={importeCobrado}
-                  onChange={(e) => setImporteCobrado(e.target.value)}
-                  onBlur={guardarPago}
-                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
-                />
-              </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            <div>
+              <label className="mb-1 block text-[11px] font-medium text-brand-black/50">N° de transacción</label>
+              <input
+                value={numeroTransaccion}
+                onChange={(e) => setNumeroTransaccion(e.target.value)}
+                onBlur={guardarPago}
+                className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+              />
             </div>
-          )}
+            <div>
+              <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Importe cobrado</label>
+              <input
+                type="number"
+                value={importeCobrado}
+                onChange={(e) => setImporteCobrado(e.target.value)}
+                onBlur={guardarPago}
+                className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+              />
+            </div>
+          </div>
 
           {lead.estado === "vendido" && (
             <div className="grid grid-cols-2 gap-1.5">

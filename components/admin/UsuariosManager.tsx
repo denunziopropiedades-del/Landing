@@ -2,7 +2,12 @@
 
 import { useActionState, useTransition } from "react";
 import { UserPlus } from "lucide-react";
-import { cambiarRolUsuarioAction, invitarUsuarioAction, toggleActivoUsuarioAction } from "@/lib/admin/actions";
+import {
+  actualizarNombreUsuarioAction,
+  cambiarRolUsuarioAction,
+  invitarUsuarioAction,
+  toggleActivoUsuarioAction,
+} from "@/lib/admin/actions";
 import type { Perfil, Rol } from "@/types/site";
 
 const ROLES: Rol[] = ["administrador", "supervisor", "vendedor"];
@@ -68,7 +73,21 @@ export default function UsuariosManager({ perfiles, usuarioActualId }: { perfile
             {perfiles.map((p) => (
               <tr key={p.id} className="border-b border-black/5 last:border-0">
                 <td className="px-4 py-3 font-medium">
-                  {p.nombre ?? "—"} {p.id === usuarioActualId && <span className="text-xs text-brand-black/40">(vos)</span>}
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      key={p.id}
+                      defaultValue={p.nombre ?? ""}
+                      placeholder="Sin nombre"
+                      onBlur={(e) => {
+                        if (e.target.value === (p.nombre ?? "")) return;
+                        startTransition(() => {
+                          actualizarNombreUsuarioAction(p.id, e.target.value);
+                        });
+                      }}
+                      className="w-32 rounded-lg border border-transparent px-1.5 py-1 hover:border-black/10 focus:border-brand-green-600 focus:outline-none"
+                    />
+                    {p.id === usuarioActualId && <span className="shrink-0 text-xs text-brand-black/40">(vos)</span>}
+                  </div>
                 </td>
                 <td className="px-4 py-3">{p.email}</td>
                 <td className="px-4 py-3">

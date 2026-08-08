@@ -1259,6 +1259,20 @@ export async function cambiarRolUsuarioAction(id: string, rol: Rol): Promise<Act
   }
 }
 
+export async function actualizarNombreUsuarioAction(id: string, nombre: string): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador");
+    const admin = (await getSupabaseAdminClient())!;
+    const { error } = await admin.from("perfiles").update({ nombre: nombre.trim() || null }).eq("id", id);
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "actualizar", "usuario", id, { nombre });
+    revalidatePath("/admin/usuarios");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function toggleActivoUsuarioAction(id: string, activo: boolean): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador");
