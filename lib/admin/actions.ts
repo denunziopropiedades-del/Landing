@@ -990,6 +990,33 @@ export async function actualizarPagoLeadAction(
   }
 }
 
+export async function actualizarFirmaEscribaniaLeadAction(
+  id: string,
+  fecha: string,
+  horario: string
+): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    await verificarPropiedadLead(actor.id, actor.rol, id);
+    const admin = (await getSupabaseAdminClient())!;
+    const { error } = await admin
+      .from("leads")
+      .update({
+        fecha_firma_escribania: fecha || null,
+        horario_firma_escribania: horario.trim() || null,
+        actualizado_en: new Date().toISOString(),
+      })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "actualizar", "lead", id, { fechaFirmaEscribania: fecha, horarioFirmaEscribania: horario });
+    revalidatePath("/admin/crm");
+    revalidatePath("/admin/consultas");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function actualizarSexoLeadAction(id: string, sexo: "M" | "F" | null): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor", "vendedor");

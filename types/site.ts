@@ -173,6 +173,8 @@ export type Lead = {
   numeroTransaccion?: string | null;
   importeCobrado?: number | null;
   sexo?: "M" | "F" | null;
+  fechaFirmaEscribania?: string | null;
+  horarioFirmaEscribania?: string | null;
 };
 
 export type EstadoVisita = "pendiente" | "confirmada" | "cancelada" | "realizada";

@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp, GripVertical, Mail, Phone, Trash2 } from "lucid
 import {
   actualizarEstadoLeadAction,
   actualizarFechaNacimientoLeadAction,
+  actualizarFirmaEscribaniaLeadAction,
   actualizarObservacionesLeadAction,
   actualizarPagoLeadAction,
   actualizarSexoLeadAction,
@@ -26,6 +27,7 @@ const COLUMNAS: { estado: EstadoLead; label: string; color: string }[] = [
 ];
 
 const CON_PAGO: EstadoLead[] = ["reservado", "pendiente_firma_escribania", "firmado_escribania", "vendido"];
+const CON_FIRMA_ESCRIBANIA: EstadoLead[] = ["pendiente_firma_escribania", "firmado_escribania", "vendido"];
 
 function LeadCard({
   lead,
@@ -45,6 +47,8 @@ function LeadCard({
   const [observaciones, setObservaciones] = useState(lead.observaciones);
   const [numeroTransaccion, setNumeroTransaccion] = useState(lead.numeroTransaccion ?? "");
   const [importeCobrado, setImporteCobrado] = useState(lead.importeCobrado?.toString() ?? "");
+  const [fechaFirma, setFechaFirma] = useState(lead.fechaFirmaEscribania ?? "");
+  const [horarioFirma, setHorarioFirma] = useState(lead.horarioFirmaEscribania ?? "");
   const [expandido, setExpandido] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -60,6 +64,13 @@ function LeadCard({
       return;
     startTransition(() => {
       actualizarPagoLeadAction(lead.id, numeroTransaccion, importeCobrado);
+    });
+  };
+
+  const guardarFirma = () => {
+    if (fechaFirma === (lead.fechaFirmaEscribania ?? "") && horarioFirma === (lead.horarioFirmaEscribania ?? "")) return;
+    startTransition(() => {
+      actualizarFirmaEscribaniaLeadAction(lead.id, fechaFirma, horarioFirma);
     });
   };
 
@@ -165,6 +176,31 @@ function LeadCard({
                 </option>
               ))}
             </select>
+          )}
+
+          {CON_FIRMA_ESCRIBANIA.includes(lead.estado) && (
+            <div className="grid grid-cols-2 gap-1.5">
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Fecha de firma</label>
+                <input
+                  type="date"
+                  value={fechaFirma}
+                  onChange={(e) => setFechaFirma(e.target.value)}
+                  onBlur={guardarFirma}
+                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Horario</label>
+                <input
+                  type="time"
+                  value={horarioFirma}
+                  onChange={(e) => setHorarioFirma(e.target.value)}
+                  onBlur={guardarFirma}
+                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+                />
+              </div>
+            </div>
           )}
 
           {CON_PAGO.includes(lead.estado) && (

@@ -271,6 +271,8 @@ export async function getLeads(): Promise<Lead[]> {
     numeroTransaccion: l.numero_transaccion ?? null,
     importeCobrado: l.importe_cobrado === null ? null : Number(l.importe_cobrado),
     sexo: l.sexo ?? null,
+    fechaFirmaEscribania: l.fecha_firma_escribania ?? null,
+    horarioFirmaEscribania: l.horario_firma_escribania ?? null,
   }));
 }
 
