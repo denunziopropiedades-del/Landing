@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { X } from "lucide-react";
+import { Minus, Plus, RotateCcw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ItemGaleria } from "@/types/site";
+
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 5;
+
+function clamp(valor: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, valor));
+}
 
 const TABS: { key: ItemGaleria["categoria"]; label: string }[] = [
   { key: "fotos", label: "Fotos" },
@@ -18,8 +25,45 @@ const TABS: { key: ItemGaleria["categoria"]; label: string }[] = [
 export default function Galeria({ items }: { items: ItemGaleria[] }) {
   const [tab, setTab] = useState<ItemGaleria["categoria"]>("fotos");
   const [lightbox, setLightbox] = useState<ItemGaleria | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const arrastre = useRef<{ activo: boolean; x: number; y: number }>({ activo: false, x: 0, y: 0 });
 
   const filtrados = items.filter((i) => i.categoria === tab);
+
+  const abrirLightbox = (item: ItemGaleria) => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    setLightbox(item);
+  };
+
+  const cambiarZoom = (delta: number) => {
+    setZoom((z) => {
+      const nuevo = clamp(z + delta, ZOOM_MIN, ZOOM_MAX);
+      if (nuevo === ZOOM_MIN) setPan({ x: 0, y: 0 });
+      return nuevo;
+    });
+  };
+
+  const onWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    cambiarZoom(e.deltaY < 0 ? 0.4 : -0.4);
+  };
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (zoom <= 1) return;
+    arrastre.current = { activo: true, x: e.clientX - pan.x, y: e.clientY - pan.y };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!arrastre.current.activo) return;
+    setPan({ x: e.clientX - arrastre.current.x, y: e.clientY - arrastre.current.y });
+  };
+
+  const onPointerUp = () => {
+    arrastre.current.activo = false;
+  };
 
   return (
     <section className="bg-brand-cream py-20 sm:py-28">
@@ -67,7 +111,7 @@ export default function Galeria({ items }: { items: ItemGaleria[] }) {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setLightbox(item)}
+                onClick={() => abrirLightbox(item)}
                 className="group relative aspect-video overflow-hidden rounded-2xl border border-black/5 shadow-sm"
               >
                 <Image
@@ -102,18 +146,85 @@ export default function Galeria({ items }: { items: ItemGaleria[] }) {
               type="button"
               onClick={() => setLightbox(null)}
               aria-label="Cerrar"
-              className="absolute right-5 top-5 text-white/80 hover:text-white"
+              className="absolute right-5 top-5 z-10 text-white/80 hover:text-white"
             >
               <X className="h-8 w-8" />
             </button>
+
+            <div
+              className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full bg-black/60 p-1.5 backdrop-blur"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => cambiarZoom(-0.6)}
+                aria-label="Alejar"
+                className="rounded-full p-2 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30"
+                disabled={zoom <= ZOOM_MIN}
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+              <span className="min-w-[3.5rem] text-center text-xs font-medium text-white/80">
+                {Math.round(zoom * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={() => cambiarZoom(0.6)}
+                aria-label="Acercar"
+                className="rounded-full p-2 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30"
+                disabled={zoom >= ZOOM_MAX}
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setZoom(1);
+                  setPan({ x: 0, y: 0 });
+                }}
+                aria-label="Restablecer zoom"
+                className="rounded-full p-2 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30"
+                disabled={zoom === ZOOM_MIN}
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+            </div>
+
             <motion.div
               initial={{ scale: 0.92, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative h-[70vh] w-full max-w-4xl"
+              className="relative h-[85vh] w-full max-w-6xl overflow-hidden"
               onClick={(e) => e.stopPropagation()}
+              onWheel={onWheel}
+              onDoubleClick={() => {
+                if (zoom > 1) {
+                  setZoom(1);
+                  setPan({ x: 0, y: 0 });
+                } else {
+                  setZoom(2.5);
+                }
+              }}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerLeave={onPointerUp}
+              style={{ cursor: zoom > 1 ? "grab" : "default" }}
             >
-              <Image src={lightbox.url} alt={lightbox.titulo} fill sizes="100vw" className="object-contain" />
+              <div
+                className="relative h-full w-full transition-transform duration-100 ease-out"
+                style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
+              >
+                <Image
+                  src={lightbox.url}
+                  alt={lightbox.titulo}
+                  fill
+                  sizes="100vw"
+                  quality={95}
+                  className="object-contain"
+                  draggable={false}
+                />
+              </div>
             </motion.div>
           </motion.div>
         )}
