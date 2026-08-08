@@ -90,6 +90,9 @@ create table proyectos (
   destacado boolean not null default false,
   whatsapp_numero text,
   orden integer not null default 0,
+  -- Ancho/alto de cada celda de lote en el plano interactivo, en % de la imagen del masterplan.
+  celda_ancho_pct numeric not null default 1.7,
+  celda_alto_pct numeric not null default 12.5,
   creado_en timestamptz not null default now(),
   actualizado_en timestamptz not null default now()
 );

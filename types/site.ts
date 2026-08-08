@@ -31,6 +31,8 @@ export type Proyecto = {
   destacado: boolean;
   whatsappNumero: string | null;
   orden: number;
+  celdaAnchoPct: number | null;
+  celdaAltoPct: number | null;
 };
 
 export type EstadoLote = "disponible" | "reservado" | "vendido" | "no_disponible";

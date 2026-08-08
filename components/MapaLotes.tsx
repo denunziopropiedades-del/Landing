@@ -20,12 +20,6 @@ const LABEL_ESTADO: Record<EstadoLote, string> = {
   no_disponible: "No disponible",
 };
 
-// Medidas de cada celda en % de la imagen, calculadas con la misma grilla usada para
-// generar las posiciones (51 lotes por fila, 3 manzanas apiladas). Coinciden con el
-// ancho/alto real de cada lote en el plano para que el color quede dentro del lote.
-const LOTE_ANCHO_PCT = 1.7;
-const LOTE_ALTO_PCT = 12.5;
-
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 6;
 
@@ -50,10 +44,14 @@ export default function MapaLotes({
   imagenMasterplan,
   lotes,
   numero,
+  celdaAnchoPct = 1.7,
+  celdaAltoPct = 12.5,
 }: {
   imagenMasterplan: string;
   lotes: Lote[];
   numero?: string;
+  celdaAnchoPct?: number;
+  celdaAltoPct?: number;
 }) {
   const [seleccionado, setSeleccionado] = useState<Lote | null>(null);
   const [expandido, setExpandido] = useState(false);
@@ -155,8 +153,8 @@ export default function MapaLotes({
       style={{
         left: `${lote.posX}%`,
         top: `${lote.posY}%`,
-        width: `${LOTE_ANCHO_PCT}%`,
-        height: `${LOTE_ALTO_PCT}%`,
+        width: `${celdaAnchoPct}%`,
+        height: `${celdaAltoPct}%`,
         backgroundColor: COLOR_ESTADO[lote.estado],
         opacity: seleccionado?.id === lote.id ? 0.85 : 0.6,
         borderColor:

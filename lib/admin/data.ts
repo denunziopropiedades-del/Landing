@@ -41,6 +41,8 @@ export async function getProyectosAdmin(): Promise<Proyecto[]> {
     destacado: p.destacado,
     whatsappNumero: p.whatsapp_numero,
     orden: p.orden,
+    celdaAnchoPct: p.celda_ancho_pct ?? null,
+    celdaAltoPct: p.celda_alto_pct ?? null,
   }));
 }
 

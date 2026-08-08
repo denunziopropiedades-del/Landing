@@ -300,6 +300,8 @@ export type CalibracionPlano = {
   xMin: number;
   xMax: number;
   bandas: { yTop: number; yBottom: number }[]; // una por manzana, en el orden en que aparecen ordenadas
+  celdaAnchoPct: number;
+  celdaAltoPct: number;
 };
 
 /**
@@ -324,7 +326,7 @@ export async function recalcularPosicionesLotesAction(
     if (!lotes || lotes.length === 0) return { ok: false, error: "Este proyecto no tiene lotes cargados." };
 
     const manzanasOrdenadas = Array.from(new Set(lotes.map((l) => l.manzana))).sort();
-    const { xMin, xMax, bandas } = calibracion;
+    const { xMin, xMax, bandas, celdaAnchoPct, celdaAltoPct } = calibracion;
     const colWidth = (xMax - xMin) / 51;
 
     const actualizaciones = lotes
@@ -347,6 +349,12 @@ export async function recalcularPosicionesLotesAction(
       const { error } = await admin.from("lotes").update({ pos_x: act.pos_x, pos_y: act.pos_y }).eq("id", act.id);
       if (error) throw new Error(error.message);
     }
+
+    const { error: errProyecto } = await admin
+      .from("proyectos")
+      .update({ celda_ancho_pct: celdaAnchoPct, celda_alto_pct: celdaAltoPct })
+      .eq("id", proyectoId);
+    if (errProyecto) throw new Error(errProyecto.message);
 
     await registrarActividad(actor, "calibrar-plano", "proyecto", proyectoId, { cantidad: actualizaciones.length });
     revalidatePath("/admin/lotes");

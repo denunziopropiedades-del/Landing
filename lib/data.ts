@@ -50,6 +50,8 @@ export const proyectoSeed: Proyecto = {
   destacado: true,
   whatsappNumero: "5491127424512",
   orden: 0,
+  celdaAnchoPct: 1.7,
+  celdaAltoPct: 12.5,
 };
 
 export const lotesSeed: Lote[] = [

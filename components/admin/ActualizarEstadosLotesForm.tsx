@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Upload } from "lucide-react";
+import { Download, Upload } from "lucide-react";
 import { actualizarEstadosLotesAction } from "@/lib/admin/actions";
 
 export default function ActualizarEstadosLotesForm({ proyectoId }: { proyectoId: string }) {
@@ -15,6 +15,14 @@ export default function ActualizarEstadosLotesForm({ proyectoId }: { proyectoId:
         no_disponible), y opcionalmente <b>PosX</b>/<b>PosY</b> (0 a 100, posición del punto en el plano
         interactivo). Solo actualiza los lotes que ya existen — no toca precio ni medidas.
       </p>
+
+      <a
+        href="/api/lotes/plantilla-estados"
+        className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-brand-green-700 hover:underline"
+      >
+        <Download className="h-4 w-4" />
+        Descargar plantilla de ejemplo
+      </a>
 
       <form action={formAction} className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <input type="hidden" name="proyectoId" value={proyectoId} />

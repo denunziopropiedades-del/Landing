@@ -55,6 +55,8 @@ function mapProyecto(p: Record<string, unknown>): Proyecto {
     destacado: p.destacado as boolean,
     whatsappNumero: (p.whatsapp_numero as string) ?? null,
     orden: p.orden as number,
+    celdaAnchoPct: (p.celda_ancho_pct as number) ?? null,
+    celdaAltoPct: (p.celda_alto_pct as number) ?? null,
   };
 }
 

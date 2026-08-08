@@ -46,7 +46,13 @@ export default async function AdminLotesPage({
       <div className="space-y-8">
         <ImportarLotesForm proyectoId={proyecto.id} />
         <ActualizarEstadosLotesForm proyectoId={proyecto.id} />
-        <CalibrarPlanoForm proyectoId={proyecto.id} imagenMasterplan={masterplan} lotes={lotes} />
+        <CalibrarPlanoForm
+          proyectoId={proyecto.id}
+          imagenMasterplan={masterplan}
+          lotes={lotes}
+          celdaAnchoPctInicial={proyecto.celdaAnchoPct ?? 1.7}
+          celdaAltoPctInicial={proyecto.celdaAltoPct ?? 12.5}
+        />
         <LotesManager proyectoId={proyecto.id} lotes={lotes} />
         <ProgresoManager proyectoId={proyecto.id} progreso={progreso} />
       </div>

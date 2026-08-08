@@ -11,9 +11,6 @@ const COLOR_ESTADO: Record<EstadoLote, string> = {
   no_disponible: "#9ca3af",
 };
 
-const LOTE_ANCHO_PCT = 1.7;
-const LOTE_ALTO_PCT = 12.5;
-
 const inputClass = "w-full rounded-lg border border-black/10 px-2 py-1.5 text-sm";
 const labelClass = "mb-1 block text-[11px] font-medium text-brand-black/50";
 
@@ -21,15 +18,21 @@ export default function CalibrarPlanoForm({
   proyectoId,
   imagenMasterplan,
   lotes,
+  celdaAnchoPctInicial,
+  celdaAltoPctInicial,
 }: {
   proyectoId: string;
   imagenMasterplan?: string;
   lotes: Lote[];
+  celdaAnchoPctInicial: number;
+  celdaAltoPctInicial: number;
 }) {
   const manzanas = useMemo(() => Array.from(new Set(lotes.map((l) => l.manzana))).sort(), [lotes]);
 
   const [xMin, setXMin] = useState(4);
   const [xMax, setXMax] = useState(96);
+  const [celdaAncho, setCeldaAncho] = useState(celdaAnchoPctInicial);
+  const [celdaAlto, setCeldaAlto] = useState(celdaAltoPctInicial);
   const [bandas, setBandas] = useState(manzanas.map((_, i) => ({ yTop: 15 + i * 26, yBottom: 30 + i * 26 })));
   const [pending, startTransition] = useTransition();
   const [mensaje, setMensaje] = useState<string | null>(null);
@@ -43,7 +46,13 @@ export default function CalibrarPlanoForm({
   const guardar = () => {
     setMensaje(null);
     startTransition(async () => {
-      const res = await recalcularPosicionesLotesAction(proyectoId, { xMin, xMax, bandas });
+      const res = await recalcularPosicionesLotesAction(proyectoId, {
+        xMin,
+        xMax,
+        bandas,
+        celdaAnchoPct: celdaAncho,
+        celdaAltoPct: celdaAlto,
+      });
       setMensaje(res.ok ? "Posiciones actualizadas." : res.error);
     });
   };
@@ -77,6 +86,29 @@ export default function CalibrarPlanoForm({
             <div>
               <label className={labelClass}>X final (%)</label>
               <input type="number" value={xMax} onChange={(e) => setXMax(Number(e.target.value))} className={inputClass} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={labelClass}>Ancho de celda (%)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={celdaAncho}
+                onChange={(e) => setCeldaAncho(Number(e.target.value))}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Alto de celda (%)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={celdaAlto}
+                onChange={(e) => setCeldaAlto(Number(e.target.value))}
+                className={inputClass}
+              />
             </div>
           </div>
 
@@ -137,8 +169,8 @@ export default function CalibrarPlanoForm({
                 style={{
                   left: `${posX}%`,
                   top: `${posY}%`,
-                  width: `${LOTE_ANCHO_PCT}%`,
-                  height: `${LOTE_ALTO_PCT}%`,
+                  width: `${celdaAncho}%`,
+                  height: `${celdaAlto}%`,
                   backgroundColor: COLOR_ESTADO[lote.estado],
                   opacity: 0.6,
                   borderColor: "color-mix(in srgb, " + COLOR_ESTADO[lote.estado] + " 70%, black)",
