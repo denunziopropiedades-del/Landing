@@ -35,6 +35,7 @@ function LeadCard({
   puedeAsignar,
   puedeBorrar,
   onMoved,
+  onActualizado,
 }: {
   lead: Lead;
   vendedores: Perfil[];
@@ -42,6 +43,7 @@ function LeadCard({
   puedeAsignar: boolean;
   puedeBorrar: boolean;
   onMoved: () => void;
+  onActualizado: (id: string, patch: Partial<Lead>) => void;
 }) {
   const [observaciones, setObservaciones] = useState(lead.observaciones);
   const [numeroTransaccion, setNumeroTransaccion] = useState(lead.numeroTransaccion ?? "");
@@ -57,12 +59,16 @@ function LeadCard({
 
   // Todas las acciones de guardado "onBlur" avisan si falla (antes fallaban en
   // silencio: el campo parecía guardado pero, al no persistir, volvía a verse
-  // vacío en la próxima carga de la página).
+  // vacío en la próxima carga de la página). Si funcionan, avisan al tablero
+  // (onActualizado) para que la tarjeta no "vuelva atrás" al cambiar de columna
+  // (antes solo se actualizaba el estado local de este componente, y al mover
+  // el lead a otra columna se remonta desde el dato viejo que tenía el tablero).
   const guardarObservaciones = () => {
     if (observaciones === lead.observaciones) return;
     startTransition(() => {
       actualizarObservacionesLeadAction(lead.id, observaciones).then((res) => {
         if (!res.ok) alert(`No se pudo guardar la observación: ${res.error}`);
+        else onActualizado(lead.id, { observaciones });
       });
     });
   };
@@ -73,6 +79,11 @@ function LeadCard({
     startTransition(() => {
       actualizarPagoLeadAction(lead.id, numeroTransaccion, importeCobrado).then((res) => {
         if (!res.ok) alert(`No se pudo guardar el pago: ${res.error}`);
+        else
+          onActualizado(lead.id, {
+            numeroTransaccion: numeroTransaccion || null,
+            importeCobrado: importeCobrado ? Number(importeCobrado) : null,
+          });
       });
     });
   };
@@ -82,6 +93,11 @@ function LeadCard({
     startTransition(() => {
       actualizarFirmaEscribaniaLeadAction(lead.id, fechaFirma, horarioFirma).then((res) => {
         if (!res.ok) alert(`No se pudo guardar la fecha/horario de firma: ${res.error}`);
+        else
+          onActualizado(lead.id, {
+            fechaFirmaEscribania: fechaFirma || null,
+            horarioFirmaEscribania: horarioFirma || null,
+          });
       });
     });
   };
@@ -97,6 +113,13 @@ function LeadCard({
     startTransition(() => {
       actualizarComisionHonorariosLeadAction(lead.id, comisionUsd, honorariosUsd, honorariosArs, gastosArs).then((res) => {
         if (!res.ok) alert(`No se pudo guardar comisión/honorarios/gastos: ${res.error}`);
+        else
+          onActualizado(lead.id, {
+            comisionUsd: comisionUsd ? Number(comisionUsd) : null,
+            honorariosUsd: honorariosUsd ? Number(honorariosUsd) : null,
+            honorariosArs: honorariosArs ? Number(honorariosArs) : null,
+            gastosArs: gastosArs ? Number(gastosArs) : null,
+          });
       });
     });
   };
@@ -159,11 +182,15 @@ function LeadCard({
           {puedeAsignar ? (
             <select
               defaultValue={lead.proyectoId ?? ""}
-              onChange={(e) =>
+              onChange={(e) => {
+                const proyectoId = e.target.value || null;
+                const proyectoNombre = proyectos.find((p) => p.id === proyectoId)?.nombre;
                 startTransition(() => {
-                  cambiarProyectoLeadAction(lead.id, e.target.value || null);
-                })
-              }
+                  cambiarProyectoLeadAction(lead.id, proyectoId).then((res) => {
+                    if (res.ok) onActualizado(lead.id, { proyectoId, proyectoNombre });
+                  });
+                });
+              }}
               className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs text-brand-black/70"
             >
               <option value="">Sin desarrollo</option>
@@ -189,11 +216,15 @@ function LeadCard({
           {puedeAsignar && (
             <select
               defaultValue={lead.asignadoA ?? ""}
-              onChange={(e) =>
+              onChange={(e) => {
+                const asignadoA = e.target.value || null;
+                const asignadoNombre = vendedores.find((v) => v.id === asignadoA)?.nombre ?? undefined;
                 startTransition(() => {
-                  asignarLeadAction(lead.id, e.target.value || null);
-                })
-              }
+                  asignarLeadAction(lead.id, asignadoA).then((res) => {
+                    if (res.ok) onActualizado(lead.id, { asignadoA, asignadoNombre });
+                  });
+                });
+              }}
               className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
             >
               <option value="">Sin asignar</option>
@@ -304,11 +335,14 @@ function LeadCard({
                 <input
                   type="date"
                   defaultValue={lead.fechaNacimiento ?? ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const fechaNacimiento = e.target.value || null;
                     startTransition(() => {
-                      actualizarFechaNacimientoLeadAction(lead.id, e.target.value || null);
-                    })
-                  }
+                      actualizarFechaNacimientoLeadAction(lead.id, fechaNacimiento).then((res) => {
+                        if (res.ok) onActualizado(lead.id, { fechaNacimiento });
+                      });
+                    });
+                  }}
                   className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
                 />
               </div>
@@ -318,11 +352,14 @@ function LeadCard({
                 </label>
                 <select
                   defaultValue={lead.sexo ?? ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const sexo = (e.target.value || null) as "M" | "F" | null;
                     startTransition(() => {
-                      actualizarSexoLeadAction(lead.id, (e.target.value || null) as "M" | "F" | null);
-                    })
-                  }
+                      actualizarSexoLeadAction(lead.id, sexo).then((res) => {
+                        if (res.ok) onActualizado(lead.id, { sexo });
+                      });
+                    });
+                  }}
                   className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
                 >
                   <option value="">Sin definir</option>
@@ -378,6 +415,13 @@ export default function KanbanBoard({
     }
   };
 
+  // El tablero es la fuente de verdad de cada lead mientras la página está
+  // abierta; cada guardado exitoso en la tarjeta actualiza esta copia para
+  // que no se "revierta" al mover el lead a otra columna.
+  const actualizarLeadLocal = (id: string, patch: Partial<Lead>) => {
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+  };
+
   return (
     <div className="flex gap-4 overflow-x-auto pb-4">
       {columnas.map((col) => (
@@ -414,6 +458,7 @@ export default function KanbanBoard({
                 puedeAsignar={puedeAsignar}
                 puedeBorrar={puedeBorrar}
                 onMoved={() => setDragOver(null)}
+                onActualizado={actualizarLeadLocal}
               />
             ))}
             {col.leads.length === 0 && <p className="px-1 py-6 text-center text-xs text-brand-black/30">Sin leads</p>}
