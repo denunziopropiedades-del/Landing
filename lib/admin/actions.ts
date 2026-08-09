@@ -521,6 +521,21 @@ export async function actualizarPreciosMasivoAction(
   }
 }
 
+export async function actualizarEstadoLotesMasivoAction(ids: string[], estado: EstadoLote): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+    const { error } = await admin.from("lotes").update({ estado }).in("id", ids);
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "actualizar-estado-masivo", "lote", null, { cantidad: ids.length, estado });
+    revalidatePath("/admin/lotes");
+    revalidatePath("/proyectos/[slug]", "page");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function actualizarEstadoLoteAction(id: string, estado: EstadoLote): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor");

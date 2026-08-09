@@ -4,6 +4,7 @@ import { Fragment, useActionState, useMemo, useState, useTransition } from "reac
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import {
   actualizarEstadoLoteAction,
+  actualizarEstadoLotesMasivoAction,
   actualizarPreciosMasivoAction,
   eliminarLoteAction,
   eliminarLotesAction,
@@ -145,6 +146,7 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
   const [seleccionados, setSeleccionados] = useState<string[]>([]);
   const [modoPrecio, setModoPrecio] = useState<"porcentaje" | "fijo">("porcentaje");
   const [valorPrecio, setValorPrecio] = useState("");
+  const [estadoMasivo, setEstadoMasivo] = useState<EstadoLote>("disponible");
   const [pending, startTransition] = useTransition();
 
   const [filtroManzana, setFiltroManzana] = useState("");
@@ -158,9 +160,15 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
   const lotesFiltrados = useMemo(() => {
     const min = filtroPrecioMin ? Number(filtroPrecioMin) : null;
     const max = filtroPrecioMax ? Number(filtroPrecioMax) : null;
+    // Admite varios números separados por coma (ej. "5, 10, 15") para filtrar/seleccionar
+    // varios lotes puntuales a la vez.
+    const numerosBuscados = filtroNumero
+      .split(",")
+      .map((n) => n.trim().toLowerCase())
+      .filter(Boolean);
     return lotes.filter((l) => {
       if (filtroManzana && l.manzana !== filtroManzana) return false;
-      if (filtroNumero && !l.numero.toLowerCase().includes(filtroNumero.trim().toLowerCase())) return false;
+      if (numerosBuscados.length > 0 && !numerosBuscados.some((n) => l.numero.toLowerCase().includes(n))) return false;
       if (filtroEstado && l.estado !== filtroEstado) return false;
       if (min !== null && l.precioUsd < min) return false;
       if (max !== null && l.precioUsd > max) return false;
@@ -224,6 +232,13 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
     });
   };
 
+  const aplicarEstadoMasivo = () => {
+    if (!confirm(`¿Cambiar el estado de ${seleccionados.length} lotes a "${ESTADO_LABEL[estadoMasivo]}"?`)) return;
+    startTransition(async () => {
+      await actualizarEstadoLotesMasivoAction(seleccionados, estadoMasivo);
+    });
+  };
+
   return (
     <div className="space-y-8">
       <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
@@ -264,6 +279,25 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
             >
               Aplicar precio
             </button>
+            <select
+              value={estadoMasivo}
+              onChange={(e) => setEstadoMasivo(e.target.value as EstadoLote)}
+              className="rounded-lg border border-black/10 px-2 py-2 text-sm"
+            >
+              {ESTADOS.map((e) => (
+                <option key={e} value={e}>
+                  {ESTADO_LABEL[e]}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={aplicarEstadoMasivo}
+              className="rounded-full bg-brand-black px-4 py-2 text-sm font-semibold text-white hover:bg-brand-black/85 disabled:opacity-60"
+            >
+              Cambiar estado
+            </button>
             <button
               type="button"
               disabled={pending}
@@ -292,7 +326,12 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
           </div>
           <div>
             <label className={labelClass}>N° de lote</label>
-            <input value={filtroNumero} onChange={(e) => setFiltroNumero(e.target.value)} placeholder="Ej: 15" className={inputClass} />
+            <input
+              value={filtroNumero}
+              onChange={(e) => setFiltroNumero(e.target.value)}
+              placeholder="Ej: 5, 10, 15"
+              className={inputClass}
+            />
           </div>
           <div>
             <label className={labelClass}>Estado</label>
