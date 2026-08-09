@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useActionState, useState, useTransition } from "react";
+import { Fragment, useActionState, useMemo, useState, useTransition } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import {
   actualizarEstadoLoteAction,
@@ -147,6 +147,38 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
   const [valorPrecio, setValorPrecio] = useState("");
   const [pending, startTransition] = useTransition();
 
+  const [filtroManzana, setFiltroManzana] = useState("");
+  const [filtroNumero, setFiltroNumero] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("");
+  const [filtroPrecioMin, setFiltroPrecioMin] = useState("");
+  const [filtroPrecioMax, setFiltroPrecioMax] = useState("");
+
+  const manzanas = useMemo(() => Array.from(new Set(lotes.map((l) => l.manzana))).sort(), [lotes]);
+
+  const lotesFiltrados = useMemo(() => {
+    const min = filtroPrecioMin ? Number(filtroPrecioMin) : null;
+    const max = filtroPrecioMax ? Number(filtroPrecioMax) : null;
+    return lotes.filter((l) => {
+      if (filtroManzana && l.manzana !== filtroManzana) return false;
+      if (filtroNumero && !l.numero.toLowerCase().includes(filtroNumero.trim().toLowerCase())) return false;
+      if (filtroEstado && l.estado !== filtroEstado) return false;
+      if (min !== null && l.precioUsd < min) return false;
+      if (max !== null && l.precioUsd > max) return false;
+      return true;
+    });
+  }, [lotes, filtroManzana, filtroNumero, filtroEstado, filtroPrecioMin, filtroPrecioMax]);
+
+  const limpiarFiltros = () => {
+    setFiltroManzana("");
+    setFiltroNumero("");
+    setFiltroEstado("");
+    setFiltroPrecioMin("");
+    setFiltroPrecioMax("");
+  };
+
+  const hayFiltrosActivos =
+    filtroManzana || filtroNumero || filtroEstado || filtroPrecioMin || filtroPrecioMax;
+
   const eliminar = (id: string) => {
     if (!confirm("¿Eliminar este lote?")) return;
     startTransition(() => {
@@ -165,7 +197,7 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
   };
 
   const toggleSeleccionarTodos = () => {
-    setSeleccionados((prev) => (prev.length === lotes.length ? [] : lotes.map((l) => l.id)));
+    setSeleccionados((prev) => (prev.length === lotesFiltrados.length ? [] : lotesFiltrados.map((l) => l.id)));
   };
 
   const eliminarSeleccionados = () => {
@@ -245,6 +277,70 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
         </div>
       )}
 
+      <div className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div>
+            <label className={labelClass}>Manzana</label>
+            <select value={filtroManzana} onChange={(e) => setFiltroManzana(e.target.value)} className={inputClass}>
+              <option value="">Todas</option>
+              {manzanas.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelClass}>N° de lote</label>
+            <input value={filtroNumero} onChange={(e) => setFiltroNumero(e.target.value)} placeholder="Ej: 15" className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Estado</label>
+            <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} className={inputClass}>
+              <option value="">Todos</option>
+              {ESTADOS.map((e) => (
+                <option key={e} value={e}>
+                  {ESTADO_LABEL[e]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelClass}>Precio mayor a (USD)</label>
+            <input
+              type="number"
+              value={filtroPrecioMin}
+              onChange={(e) => setFiltroPrecioMin(e.target.value)}
+              placeholder="Ej: 2000"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Precio menor a (USD)</label>
+            <input
+              type="number"
+              value={filtroPrecioMax}
+              onChange={(e) => setFiltroPrecioMax(e.target.value)}
+              placeholder="Ej: 8000"
+              className={inputClass}
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={limpiarFiltros}
+              disabled={!hayFiltrosActivos}
+              className="w-full rounded-lg border border-black/10 px-3 py-2 text-sm font-medium text-brand-black/70 hover:bg-black/5 disabled:opacity-40"
+            >
+              Limpiar filtros
+            </button>
+          </div>
+        </div>
+        <p className="mt-3 text-xs text-brand-black/50">
+          Mostrando {lotesFiltrados.length} de {lotes.length} lotes.
+        </p>
+      </div>
+
       <div className="overflow-x-auto rounded-2xl border border-black/5 bg-white shadow-sm">
         <table className="w-full min-w-[820px] text-left text-sm">
           <thead className="border-b border-black/10 text-brand-black/50">
@@ -252,7 +348,7 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
               <th className="w-10 px-4 py-3">
                 <input
                   type="checkbox"
-                  checked={lotes.length > 0 && seleccionados.length === lotes.length}
+                  checked={lotesFiltrados.length > 0 && seleccionados.length === lotesFiltrados.length}
                   onChange={toggleSeleccionarTodos}
                   aria-label="Seleccionar todos"
                 />
@@ -266,7 +362,7 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
             </tr>
           </thead>
           <tbody>
-            {lotes.map((lote) => (
+            {lotesFiltrados.map((lote) => (
               <Fragment key={lote.id}>
                 <tr className="border-b border-black/5 last:border-0">
                   <td className="px-4 py-3">
@@ -315,10 +411,10 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
                 )}
               </Fragment>
             ))}
-            {lotes.length === 0 && (
+            {lotesFiltrados.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center text-brand-black/50">
-                  Todavía no hay lotes cargados para este proyecto.
+                  {lotes.length === 0 ? "Todavía no hay lotes cargados para este proyecto." : "Ningún lote coincide con los filtros."}
                 </td>
               </tr>
             )}
