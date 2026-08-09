@@ -17,6 +17,13 @@ import type {
 } from "@/types/site";
 import type { Novedad } from "@/lib/content";
 
+// Convierte a número o null. Trata null Y undefined como "sin valor" (una columna
+// que todavía no existe en la base, por ejemplo, llega como undefined y no debe
+// transformarse en NaN).
+function numOrNull(v: unknown): number | null {
+  return v === null || v === undefined ? null : Number(v);
+}
+
 /**
  * Getters "crudos" para el panel admin: a diferencia de lib/content.ts, NO
  * devuelven contenido semilla como fallback ni filtran por publicado/activo,
@@ -71,11 +78,11 @@ export async function getLotesAdmin(proyectoId: string): Promise<Lote[]> {
     precioUsd: Number(l.precio_usd),
     estado: l.estado,
     destacado: l.destacado,
-    posX: l.pos_x === null ? null : Number(l.pos_x),
-    posY: l.pos_y === null ? null : Number(l.pos_y),
-    anticipoFinanciadoUsd: l.anticipo_financiado_usd === null ? null : Number(l.anticipo_financiado_usd),
-    cuotasFinanciado: l.cuotas_financiado === null ? null : Number(l.cuotas_financiado),
-    valorCuotaFinanciadoUsd: l.valor_cuota_financiado_usd === null ? null : Number(l.valor_cuota_financiado_usd),
+    posX: numOrNull(l.pos_x),
+    posY: numOrNull(l.pos_y),
+    anticipoFinanciadoUsd: numOrNull(l.anticipo_financiado_usd),
+    cuotasFinanciado: numOrNull(l.cuotas_financiado),
+    valorCuotaFinanciadoUsd: numOrNull(l.valor_cuota_financiado_usd),
   }));
 }
 
@@ -98,11 +105,11 @@ export async function getLotesAdminTodos(): Promise<Lote[]> {
     precioUsd: Number(l.precio_usd),
     estado: l.estado,
     destacado: l.destacado,
-    posX: l.pos_x === null ? null : Number(l.pos_x),
-    posY: l.pos_y === null ? null : Number(l.pos_y),
-    anticipoFinanciadoUsd: l.anticipo_financiado_usd === null ? null : Number(l.anticipo_financiado_usd),
-    cuotasFinanciado: l.cuotas_financiado === null ? null : Number(l.cuotas_financiado),
-    valorCuotaFinanciadoUsd: l.valor_cuota_financiado_usd === null ? null : Number(l.valor_cuota_financiado_usd),
+    posX: numOrNull(l.pos_x),
+    posY: numOrNull(l.pos_y),
+    anticipoFinanciadoUsd: numOrNull(l.anticipo_financiado_usd),
+    cuotasFinanciado: numOrNull(l.cuotas_financiado),
+    valorCuotaFinanciadoUsd: numOrNull(l.valor_cuota_financiado_usd),
   }));
 }
 
@@ -271,14 +278,14 @@ export async function getLeads(): Promise<Lead[]> {
     asignadoNombre: (l.perfiles as { nombre: string; email: string } | null)?.nombre,
     fechaNacimiento: l.fecha_nacimiento ?? null,
     numeroTransaccion: l.numero_transaccion ?? null,
-    importeCobrado: l.importe_cobrado === null ? null : Number(l.importe_cobrado),
+    importeCobrado: numOrNull(l.importe_cobrado),
     sexo: l.sexo ?? null,
     fechaFirmaEscribania: l.fecha_firma_escribania ?? null,
     horarioFirmaEscribania: l.horario_firma_escribania ?? null,
-    comisionUsd: l.comision_usd === null ? null : Number(l.comision_usd),
-    honorariosUsd: l.honorarios_usd === null ? null : Number(l.honorarios_usd),
-    honorariosArs: l.honorarios_ars === null ? null : Number(l.honorarios_ars),
-    gastosArs: l.gastos_ars === null ? null : Number(l.gastos_ars),
+    comisionUsd: numOrNull(l.comision_usd),
+    honorariosUsd: numOrNull(l.honorarios_usd),
+    honorariosArs: numOrNull(l.honorarios_ars),
+    gastosArs: numOrNull(l.gastos_ars),
   }));
 }
 
@@ -364,7 +371,7 @@ export async function getGastosAdmin(): Promise<Gasto[]> {
     fecha: g.fecha,
     concepto: g.concepto,
     categoria: g.categoria,
-    montoArs: Number(g.monto_ars),
+    montoArs: numOrNull(g.monto_ars) ?? 0,
     creadoEn: g.creado_en,
   }));
 }

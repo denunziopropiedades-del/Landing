@@ -55,10 +55,15 @@ function LeadCard({
   const [expandido, setExpandido] = useState(false);
   const [, startTransition] = useTransition();
 
+  // Todas las acciones de guardado "onBlur" avisan si falla (antes fallaban en
+  // silencio: el campo parecía guardado pero, al no persistir, volvía a verse
+  // vacío en la próxima carga de la página).
   const guardarObservaciones = () => {
     if (observaciones === lead.observaciones) return;
     startTransition(() => {
-      actualizarObservacionesLeadAction(lead.id, observaciones);
+      actualizarObservacionesLeadAction(lead.id, observaciones).then((res) => {
+        if (!res.ok) alert(`No se pudo guardar la observación: ${res.error}`);
+      });
     });
   };
 
@@ -66,14 +71,18 @@ function LeadCard({
     if (numeroTransaccion === (lead.numeroTransaccion ?? "") && importeCobrado === (lead.importeCobrado?.toString() ?? ""))
       return;
     startTransition(() => {
-      actualizarPagoLeadAction(lead.id, numeroTransaccion, importeCobrado);
+      actualizarPagoLeadAction(lead.id, numeroTransaccion, importeCobrado).then((res) => {
+        if (!res.ok) alert(`No se pudo guardar el pago: ${res.error}`);
+      });
     });
   };
 
   const guardarFirma = () => {
     if (fechaFirma === (lead.fechaFirmaEscribania ?? "") && horarioFirma === (lead.horarioFirmaEscribania ?? "")) return;
     startTransition(() => {
-      actualizarFirmaEscribaniaLeadAction(lead.id, fechaFirma, horarioFirma);
+      actualizarFirmaEscribaniaLeadAction(lead.id, fechaFirma, horarioFirma).then((res) => {
+        if (!res.ok) alert(`No se pudo guardar la fecha/horario de firma: ${res.error}`);
+      });
     });
   };
 
@@ -86,7 +95,9 @@ function LeadCard({
     )
       return;
     startTransition(() => {
-      actualizarComisionHonorariosLeadAction(lead.id, comisionUsd, honorariosUsd, honorariosArs, gastosArs);
+      actualizarComisionHonorariosLeadAction(lead.id, comisionUsd, honorariosUsd, honorariosArs, gastosArs).then((res) => {
+        if (!res.ok) alert(`No se pudo guardar comisión/honorarios/gastos: ${res.error}`);
+      });
     });
   };
 

@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { crearGastoAction, eliminarGastoAction } from "@/lib/admin/actions";
+import { actualizarGastoAction, crearGastoAction, eliminarGastoAction } from "@/lib/admin/actions";
 import { formatArs, formatUsd } from "@/lib/utils";
 import type { Gasto, Lead, Proyecto } from "@/types/site";
 
@@ -30,6 +30,67 @@ function labelMes(clave: string) {
 
 function hoy() {
   return new Date().toISOString().slice(0, 10);
+}
+
+const cellInputClass = "w-full rounded-lg border border-transparent px-2 py-1 text-sm hover:border-black/10 focus:border-brand-green-600 focus:outline-none";
+
+function FilaGasto({ gasto, onEliminar, pendienteEliminar }: { gasto: Gasto; onEliminar: (id: string) => void; pendienteEliminar: boolean }) {
+  const [fecha, setFecha] = useState(gasto.fecha);
+  const [concepto, setConcepto] = useState(gasto.concepto);
+  const [categoria, setCategoria] = useState(gasto.categoria ?? "");
+  const [montoArs, setMontoArs] = useState(gasto.montoArs.toString());
+  const [, startTransition] = useTransition();
+
+  const guardar = () => {
+    if (
+      fecha === gasto.fecha &&
+      concepto === gasto.concepto &&
+      categoria === (gasto.categoria ?? "") &&
+      montoArs === gasto.montoArs.toString()
+    )
+      return;
+    startTransition(() => {
+      actualizarGastoAction(gasto.id, fecha, concepto, categoria, montoArs).then((res) => {
+        if (!res.ok) alert(`No se pudo guardar el gasto: ${res.error}`);
+      });
+    });
+  };
+
+  return (
+    <tr className="border-b border-black/5 last:border-0">
+      <td className="px-1 py-1.5">
+        <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} onBlur={guardar} className={cellInputClass} />
+      </td>
+      <td className="px-1 py-1.5">
+        <input value={concepto} onChange={(e) => setConcepto(e.target.value)} onBlur={guardar} className={cellInputClass} />
+      </td>
+      <td className="px-1 py-1.5">
+        <input value={categoria} onChange={(e) => setCategoria(e.target.value)} onBlur={guardar} className={cellInputClass} />
+      </td>
+      <td className="px-1 py-1.5 text-brand-black/60">{gasto.proyectoNombre ?? "General"}</td>
+      <td className="px-1 py-1.5">
+        <input
+          type="number"
+          min="0.01"
+          step="0.01"
+          value={montoArs}
+          onChange={(e) => setMontoArs(e.target.value)}
+          onBlur={guardar}
+          className={`${cellInputClass} text-right`}
+        />
+      </td>
+      <td className="px-4 py-3 text-right">
+        <button
+          type="button"
+          disabled={pendienteEliminar}
+          onClick={() => onEliminar(gasto.id)}
+          className="text-red-600 hover:underline disabled:opacity-50"
+        >
+          <Trash2 className="inline h-4 w-4" />
+        </button>
+      </td>
+    </tr>
+  );
 }
 
 export default function FacturacionManager({
@@ -299,7 +360,9 @@ export default function FacturacionManager({
         {gastoState && !gastoState.ok && <p className="mt-2 text-xs text-red-600">{gastoState.error}</p>}
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-black/5 bg-white shadow-sm">
+      <div className="space-y-2">
+        <p className="text-xs text-brand-black/50">Tocá cualquier campo de la tabla para editarlo (se guarda solo).</p>
+        <div className="overflow-x-auto rounded-2xl border border-black/5 bg-white shadow-sm">
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="border-b border-black/10 text-brand-black/50">
             <tr>
@@ -313,23 +376,7 @@ export default function FacturacionManager({
           </thead>
           <tbody>
             {gastosFiltrados.map((g) => (
-              <tr key={g.id} className="border-b border-black/5 last:border-0">
-                <td className="px-4 py-3">{new Date(`${g.fecha}T00:00:00`).toLocaleDateString("es-AR")}</td>
-                <td className="px-4 py-3">{g.concepto}</td>
-                <td className="px-4 py-3 text-brand-black/60">{g.categoria ?? "—"}</td>
-                <td className="px-4 py-3 text-brand-black/60">{g.proyectoNombre ?? "General"}</td>
-                <td className="px-4 py-3 text-right">{formatArs(g.montoArs)}</td>
-                <td className="px-4 py-3 text-right">
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => eliminarGasto(g.id)}
-                    className="text-red-600 hover:underline disabled:opacity-50"
-                  >
-                    <Trash2 className="inline h-4 w-4" />
-                  </button>
-                </td>
-              </tr>
+              <FilaGasto key={g.id} gasto={g} onEliminar={eliminarGasto} pendienteEliminar={pending} />
             ))}
             {gastosFiltrados.length === 0 && (
               <tr>
@@ -340,6 +387,7 @@ export default function FacturacionManager({
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

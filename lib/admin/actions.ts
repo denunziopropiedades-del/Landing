@@ -1356,6 +1356,35 @@ export async function crearGastoAction(_prev: ActionResult | null, formData: For
   }
 }
 
+export async function actualizarGastoAction(
+  id: string,
+  fecha: string,
+  concepto: string,
+  categoria: string,
+  montoArs: string
+): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const monto = Number(montoArs);
+    if (!fecha || !concepto.trim() || !Number.isFinite(monto) || monto <= 0) {
+      return { ok: false, error: "Completá fecha, concepto y un monto válido." };
+    }
+
+    const { error } = await admin
+      .from("gastos")
+      .update({ fecha, concepto: concepto.trim(), categoria: categoria.trim() || null, monto_ars: monto })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "actualizar", "gasto", id, { fecha, concepto, categoria, montoArs: monto });
+    revalidatePath("/admin/facturacion");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function eliminarGastoAction(id: string): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor");
