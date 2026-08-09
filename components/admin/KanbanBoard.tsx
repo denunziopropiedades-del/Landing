@@ -20,6 +20,7 @@ const COLUMNAS: { estado: EstadoLead; label: string; color: string }[] = [
   { estado: "nuevo", label: "Nuevo", color: "border-t-blue-500" },
   { estado: "contactado", label: "Contactado", color: "border-t-purple-500" },
   { estado: "visita_programada", label: "Visita Programada", color: "border-t-amber-500" },
+  { estado: "visita_realizada", label: "Visita realizada / Seguimiento", color: "border-t-sky-500" },
   { estado: "reservado", label: "Reservado", color: "border-t-yellow-500" },
   { estado: "pendiente_firma_escribania", label: "Pendiente firma escribanía", color: "border-t-orange-500" },
   { estado: "firmado_escribania", label: "Firmado escribanía", color: "border-t-teal-500" },

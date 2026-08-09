@@ -9,6 +9,7 @@ const ESTADOS_FUNNEL: { estado: EstadoLead; label: string }[] = [
   { estado: "nuevo", label: "Nuevo" },
   { estado: "contactado", label: "Contactado" },
   { estado: "visita_programada", label: "Visita Programada" },
+  { estado: "visita_realizada", label: "Visita realizada" },
   { estado: "reservado", label: "Reservado" },
   { estado: "vendido", label: "Vendido" },
 ];

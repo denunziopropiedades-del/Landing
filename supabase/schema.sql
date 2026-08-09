@@ -278,7 +278,8 @@ create table progreso_desarrollo (
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- Leads (CRM) — pipeline: nuevo → contactado → visita_programada →
--- reservado → vendido, con "descartado" como salida en cualquier punto.
+-- visita_realizada → reservado → vendido, con "descartado" como salida en
+-- cualquier punto.
 -- ═══════════════════════════════════════════════════════════════════════
 
 create table leads (
@@ -298,7 +299,7 @@ create table leads (
   observaciones text not null default '',
   estado text not null default 'nuevo'
     check (estado in (
-      'nuevo', 'contactado', 'visita_programada', 'reservado',
+      'nuevo', 'contactado', 'visita_programada', 'visita_realizada', 'reservado',
       'pendiente_firma_escribania', 'firmado_escribania', 'vendido', 'descartado'
     )),
   asignado_a uuid references perfiles(id) on delete set null,

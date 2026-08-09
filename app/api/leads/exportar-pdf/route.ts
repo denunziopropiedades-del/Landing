@@ -10,7 +10,10 @@ const ESTADOS: { estado: EstadoLead; label: string; color: string }[] = [
   { estado: "nuevo", label: "Nuevo", color: "#3b82f6" },
   { estado: "contactado", label: "Contactado", color: "#a855f7" },
   { estado: "visita_programada", label: "Visita Programada", color: "#f59e0b" },
+  { estado: "visita_realizada", label: "Visita realizada", color: "#0ea5e9" },
   { estado: "reservado", label: "Reservado", color: "#eab308" },
+  { estado: "pendiente_firma_escribania", label: "Pend. firma escribanía", color: "#fb923c" },
+  { estado: "firmado_escribania", label: "Firmado escribanía", color: "#14b8a6" },
   { estado: "vendido", label: "Vendido", color: "#16a34a" },
   { estado: "descartado", label: "Descartado", color: "#ef4444" },
 ];

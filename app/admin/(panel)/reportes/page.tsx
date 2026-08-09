@@ -6,6 +6,7 @@ const ESTADOS = [
   "nuevo",
   "contactado",
   "visita_programada",
+  "visita_realizada",
   "reservado",
   "pendiente_firma_escribania",
   "firmado_escribania",
