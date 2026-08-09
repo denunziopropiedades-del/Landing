@@ -5,6 +5,7 @@ import Hero from "@/components/Hero";
 import Banners from "@/components/Banners";
 import PromoCountdown from "@/components/PromoCountdown";
 import LotesGrid from "@/components/LotesGrid";
+import ComboLotes from "@/components/ComboLotes";
 import MapaLotes from "@/components/MapaLotes";
 import Beneficios from "@/components/Beneficios";
 import Ubicacion from "@/components/Ubicacion";
@@ -22,6 +23,7 @@ import { accesos, beneficios } from "@/lib/data";
 import {
   agruparLotesPorTipo,
   getBanners,
+  getComboLotes,
   getFaqs,
   getFinanciacionConfig,
   getGaleria,
@@ -69,7 +71,7 @@ export default async function ProyectoPage({ params }: { params: Promise<Params>
   const proyecto = await getProyectoBySlug(slug);
   if (!proyecto || !proyecto.publicado) notFound();
 
-  const [lotes, promocion, financiacion, galeria, progreso, testimonios, faqs, novedades, banners, textos] =
+  const [lotes, promocion, financiacion, galeria, progreso, testimonios, faqs, novedades, banners, textos, combo] =
     await Promise.all([
       getLotes(proyecto.id),
       getPromocionActiva(proyecto.id),
@@ -81,6 +83,7 @@ export default async function ProyectoPage({ params }: { params: Promise<Params>
       getNovedades(proyecto.id),
       getBanners(proyecto.id),
       getSiteTextos(),
+      getComboLotes(proyecto.id),
     ]);
 
   const tiposLotes = agruparLotesPorTipo(lotes);
@@ -121,6 +124,7 @@ export default async function ProyectoPage({ params }: { params: Promise<Params>
         <Banners items={banners} numero={numero} />
         <PromoCountdown promo={promocion} />
         <LotesGrid tiposLotes={tiposLotes} numero={numero} />
+        <ComboLotes combo={combo} />
 
         {masterplan && lotes.some((l) => l.posX !== null) && (
           <section className="bg-brand-cream pb-20 sm:pb-28">

@@ -13,6 +13,7 @@ import {
 } from "@/lib/data";
 import type {
   Banner,
+  ComboLotes,
   ConfigFinanciacion,
   FaqItem,
   ItemGaleria,
@@ -188,6 +189,25 @@ export async function getFinanciacionConfig(proyectoId: string): Promise<ConfigF
     anticipoMaximoPct: Number(data.anticipo_maximo_pct),
     cuotasOpciones: data.cuotas_opciones,
     interesAnualPct: Number(data.interes_anual_pct),
+  };
+}
+
+export async function getComboLotes(proyectoId: string): Promise<ComboLotes | null> {
+  const supabase = await getSupabasePublicClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("combos_lotes")
+    .select("*")
+    .eq("proyecto_id", proyectoId)
+    .maybeSingle();
+  if (error || !data) return null;
+
+  return {
+    proyectoId: data.proyecto_id,
+    precio1LoteUsd: data.precio_1_lote_usd === null ? null : Number(data.precio_1_lote_usd),
+    precio2LotesUsd: data.precio_2_lotes_usd === null ? null : Number(data.precio_2_lotes_usd),
+    precio3LotesUsd: data.precio_3_lotes_usd === null ? null : Number(data.precio_3_lotes_usd),
   };
 }
 

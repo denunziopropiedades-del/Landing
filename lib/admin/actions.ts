@@ -568,6 +568,31 @@ export async function upsertFinanciacionAction(_prev: ActionResult | null, formD
   }
 }
 
+export async function upsertComboLotesAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+    const proyectoId = str(formData, "proyectoId");
+
+    const { error } = await admin.from("combos_lotes").upsert(
+      {
+        proyecto_id: proyectoId,
+        precio_1_lote_usd: formData.get("precio1LoteUsd") ? num(formData, "precio1LoteUsd") : null,
+        precio_2_lotes_usd: formData.get("precio2LotesUsd") ? num(formData, "precio2LotesUsd") : null,
+        precio_3_lotes_usd: formData.get("precio3LotesUsd") ? num(formData, "precio3LotesUsd") : null,
+      },
+      { onConflict: "proyecto_id" }
+    );
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "actualizar", "combos-lotes", proyectoId);
+    revalidatePath("/admin/lotes");
+    revalidatePath("/proyectos/[slug]", "page");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 // ── Promociones ────────────────────────────────────────────────────────
 
 export async function upsertPromocionAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {

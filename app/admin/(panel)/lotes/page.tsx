@@ -1,11 +1,12 @@
 import LotesManager from "@/components/admin/LotesManager";
 import ImportarLotesForm from "@/components/admin/ImportarLotesForm";
 import PreciosPorMedidaForm from "@/components/admin/PreciosPorMedidaForm";
+import ComboLotesForm from "@/components/admin/ComboLotesForm";
 import ActualizarEstadosLotesForm from "@/components/admin/ActualizarEstadosLotesForm";
 import CalibrarPlanoForm from "@/components/admin/CalibrarPlanoForm";
 import ProgresoManager from "@/components/admin/ProgresoManager";
 import ProyectoSwitcher from "@/components/admin/ProyectoSwitcher";
-import { getLotesAdmin, getProgresoAdmin, getProyectosAdmin } from "@/lib/admin/data";
+import { getComboLotesAdmin, getLotesAdmin, getProgresoAdmin, getProyectosAdmin } from "@/lib/admin/data";
 import { getGaleria } from "@/lib/content";
 
 export default async function AdminLotesPage({
@@ -26,10 +27,11 @@ export default async function AdminLotesPage({
     );
   }
 
-  const [lotes, progreso, galeria] = await Promise.all([
+  const [lotes, progreso, galeria, combo] = await Promise.all([
     getLotesAdmin(proyecto.id),
     getProgresoAdmin(proyecto.id),
     getGaleria(proyecto.id),
+    getComboLotesAdmin(proyecto.id),
   ]);
   const masterplan = galeria.find((g) => g.categoria === "masterplan")?.url;
 
@@ -47,6 +49,7 @@ export default async function AdminLotesPage({
       <div className="space-y-8">
         <ImportarLotesForm proyectoId={proyecto.id} />
         <PreciosPorMedidaForm proyectoId={proyecto.id} lotes={lotes} />
+        <ComboLotesForm proyectoId={proyecto.id} combo={combo} />
         <ActualizarEstadosLotesForm proyectoId={proyecto.id} />
         <CalibrarPlanoForm
           proyectoId={proyecto.id}

@@ -20,6 +20,7 @@ drop table if exists testimonios cascade;
 drop table if exists galeria cascade;
 drop table if exists site_textos cascade;
 drop table if exists financiacion_config cascade;
+drop table if exists combos_lotes cascade;
 drop table if exists promociones cascade;
 drop table if exists promocion cascade;
 drop table if exists banners cascade;
@@ -169,6 +170,16 @@ create table financiacion_config (
   anticipo_maximo_pct numeric not null default 50,
   cuotas_opciones integer[] not null default '{12,24,36,48,60}',
   interes_anual_pct numeric not null default 6
+);
+
+-- Precios para quien quiera combinar 2 o 3 lotes contiguos en una sola operación
+-- (mismo lote físico de 10x30, pero comprando varios juntos con un precio propio).
+create table combos_lotes (
+  id uuid primary key default gen_random_uuid(),
+  proyecto_id uuid not null unique references proyectos(id) on delete cascade,
+  precio_1_lote_usd numeric,
+  precio_2_lotes_usd numeric,
+  precio_3_lotes_usd numeric
 );
 
 -- ═══════════════════════════════════════════════════════════════════════
@@ -377,6 +388,7 @@ alter table lotes enable row level security;
 alter table banners enable row level security;
 alter table promociones enable row level security;
 alter table financiacion_config enable row level security;
+alter table combos_lotes enable row level security;
 alter table site_textos enable row level security;
 alter table galeria enable row level security;
 alter table testimonios enable row level security;
@@ -421,6 +433,9 @@ create policy "Admin/supervisor gestionan promociones" on promociones for all us
 -- Financiación
 create policy "Lectura pública de financiación" on financiacion_config for select using (true);
 create policy "Admin/supervisor gestionan financiación" on financiacion_config for all using (mi_rol() in ('administrador', 'supervisor'));
+
+create policy "Lectura pública de combos de lotes" on combos_lotes for select using (true);
+create policy "Admin/supervisor gestionan combos de lotes" on combos_lotes for all using (mi_rol() in ('administrador', 'supervisor'));
 
 -- Textos del sitio
 create policy "Lectura pública de textos" on site_textos for select using (true);

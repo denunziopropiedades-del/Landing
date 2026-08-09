@@ -70,6 +70,14 @@ export type LoteTipo = {
   valorCuotaFinanciadoUsd: number | null;
 };
 
+/** Precio por comprar 1, 2 o 3 lotes contiguos juntos en una misma operación. */
+export type ComboLotes = {
+  proyectoId: string;
+  precio1LoteUsd: number | null;
+  precio2LotesUsd: number | null;
+  precio3LotesUsd: number | null;
+};
+
 export type Banner = {
   id: string;
   proyectoId: string | null;

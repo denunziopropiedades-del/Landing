@@ -2,6 +2,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type {
   ActividadLog,
   Banner,
+  ComboLotes,
   ConfigFinanciacion,
   FaqItem,
   Gasto,
@@ -159,6 +160,22 @@ export async function getFinanciacionAdmin(proyectoId: string): Promise<ConfigFi
     anticipoMaximoPct: Number(data.anticipo_maximo_pct),
     cuotasOpciones: data.cuotas_opciones,
     interesAnualPct: Number(data.interes_anual_pct),
+  };
+}
+
+export async function getComboLotesAdmin(proyectoId: string): Promise<ComboLotes> {
+  const fallback: ComboLotes = { proyectoId, precio1LoteUsd: null, precio2LotesUsd: null, precio3LotesUsd: null };
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return fallback;
+
+  const { data, error } = await supabase.from("combos_lotes").select("*").eq("proyecto_id", proyectoId).maybeSingle();
+  if (error || !data) return fallback;
+
+  return {
+    proyectoId,
+    precio1LoteUsd: numOrNull(data.precio_1_lote_usd),
+    precio2LotesUsd: numOrNull(data.precio_2_lotes_usd),
+    precio3LotesUsd: numOrNull(data.precio_3_lotes_usd),
   };
 }
 
