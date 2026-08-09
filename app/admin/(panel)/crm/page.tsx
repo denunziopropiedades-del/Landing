@@ -1,3 +1,4 @@
+import ImportarLeadsMetaForm from "@/components/admin/ImportarLeadsMetaForm";
 import KanbanBoard from "@/components/admin/KanbanBoard";
 import NuevoClienteForm from "@/components/admin/NuevoClienteForm";
 import { getLeads, getLotesAdminTodos, getPerfiles, getProyectosAdmin } from "@/lib/admin/data";
@@ -25,6 +26,12 @@ export default async function AdminCrmPage() {
       <div className="mt-8">
         <NuevoClienteForm proyectos={proyectos} lotes={lotes} vendedores={vendedores} rolActual={actual?.rol ?? "vendedor"} />
       </div>
+
+      {(actual?.rol === "administrador" || actual?.rol === "supervisor") && (
+        <div className="mt-8">
+          <ImportarLeadsMetaForm proyectos={proyectos} />
+        </div>
+      )}
 
       <div className="mt-8">
         <KanbanBoard leads={leads} vendedores={vendedores} proyectos={proyectos} rolActual={actual?.rol ?? "vendedor"} />

@@ -297,6 +297,166 @@ export async function actualizarEstadosLotesAction(_prev: ImportResult | null, f
   }
 }
 
+// ── Importar leads de Meta Ads desde CSV ──────────────────────────────
+
+type ImportLeadsResult =
+  | { ok: true; creados: number; duplicados: number; filasConError: number }
+  | { ok: false; error: string };
+
+// Meta exporta el CSV de "Formularios de Clientes potenciales" en UTF-16 (con BOM) y separado por tabs,
+// con columnas fijas (id, created_time, ad_id, ...) seguidas de las preguntas propias de cada formulario.
+function decodificarCsvMeta(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const esUtf16Le = bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe;
+  const esUtf16Be = bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff;
+  if (esUtf16Le) return new TextDecoder("utf-16le").decode(buffer);
+  if (esUtf16Be) return new TextDecoder("utf-16be").decode(buffer);
+  return new TextDecoder("utf-8").decode(buffer);
+}
+
+function parseLineaCsv(linea: string): string[] {
+  return linea.split("\t").map((celda) => {
+    const limpia = celda.trim();
+    if (limpia.startsWith('"') && limpia.endsWith('"')) {
+      return limpia.slice(1, -1).replace(/""/g, '"').trim();
+    }
+    return limpia;
+  });
+}
+
+function humanizarPregunta(header: string): string {
+  return header
+    .replace(/^¿?/, "")
+    .replace(/\?$/, "")
+    .replace(/_/g, " ")
+    .trim();
+}
+
+export async function importarLeadsMetaCsvAction(
+  _prev: ImportLeadsResult | null,
+  formData: FormData
+): Promise<ImportLeadsResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const proyectoId = optStr(formData, "proyectoId");
+    const archivo = formData.get("archivo");
+    if (!(archivo instanceof File) || archivo.size === 0) {
+      return { ok: false, error: "Subí el archivo CSV que exportaste desde Meta Ads (Administrador de anuncios)." };
+    }
+
+    const texto = decodificarCsvMeta(await archivo.arrayBuffer());
+    const lineas = texto.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    if (lineas.length < 2) {
+      return { ok: false, error: "El archivo no tiene filas de leads." };
+    }
+
+    const encabezados = parseLineaCsv(lineas[0]).map((h) => h.toLowerCase());
+    const idxId = encabezados.findIndex((h) => h === "id");
+    const idxCreado = encabezados.findIndex((h) => h === "created_time");
+    const idxEmail = encabezados.findIndex((h) => h === "email");
+    const idxTelefono = encabezados.findIndex((h) => h.includes("phone"));
+    const idxCiudad = encabezados.findIndex((h) => h === "city");
+    const idxCampana = encabezados.findIndex((h) => h === "campaign_name");
+    const idxFormulario = encabezados.findIndex((h) => h === "form_name");
+    const idxPlataforma = encabezados.findIndex((h) => h === "platform");
+    const idxNombre = encabezados.findIndex((h) => h.includes("nombre") || h === "full_name");
+    const idxPreguntas = encabezados
+      .map((h, i) => ({ h, i }))
+      .filter(({ h, i }) => h.includes("?") && i !== idxNombre);
+
+    if (idxId === -1 || idxEmail === -1 || idxTelefono === -1) {
+      return {
+        ok: false,
+        error: "El CSV no tiene el formato esperado de Meta (faltan columnas id, email o phone_number).",
+      };
+    }
+
+    type FilaLead = {
+      external_id: string;
+      creado_en: string | undefined;
+      nombre: string;
+      email: string;
+      telefono: string;
+      observaciones: string;
+    };
+
+    const filas: FilaLead[] = [];
+    let filasConError = 0;
+
+    for (const linea of lineas.slice(1)) {
+      const celdas = parseLineaCsv(linea);
+      const idRaw = celdas[idxId]?.trim();
+      const email = celdas[idxEmail]?.trim() ?? "";
+      const telefonoRaw = celdas[idxTelefono]?.trim() ?? "";
+      const telefono = telefonoRaw.replace(/^p:/, "");
+      const nombre = (idxNombre !== -1 ? celdas[idxNombre]?.trim() : "") || "Consulta de Meta Ads";
+
+      if (!idRaw || (!email && !telefono)) {
+        filasConError += 1;
+        continue;
+      }
+
+      const externalId = idRaw.replace(/^l:/, "");
+      const creadoRaw = idxCreado !== -1 ? celdas[idxCreado]?.trim() : undefined;
+      const creadoEn = creadoRaw && !Number.isNaN(Date.parse(creadoRaw)) ? new Date(creadoRaw).toISOString() : undefined;
+
+      const detalles: string[] = [];
+      if (idxCampana !== -1 && celdas[idxCampana]) detalles.push(`Campaña: ${celdas[idxCampana]}`);
+      if (idxFormulario !== -1 && celdas[idxFormulario]) detalles.push(`Formulario: ${celdas[idxFormulario]}`);
+      if (idxPlataforma !== -1 && celdas[idxPlataforma]) detalles.push(`Plataforma: ${celdas[idxPlataforma]}`);
+      if (idxCiudad !== -1 && celdas[idxCiudad]) detalles.push(`Ciudad: ${celdas[idxCiudad]}`);
+      for (const { h, i } of idxPreguntas) {
+        if (celdas[i]) detalles.push(`${humanizarPregunta(h)}: ${celdas[i].replace(/_/g, " ")}`);
+      }
+
+      filas.push({
+        external_id: externalId,
+        creado_en: creadoEn,
+        nombre,
+        email: email || "sin-email@matulotes.app",
+        telefono: telefono || "-",
+        observaciones: ["Lead importado desde CSV de Meta Ads (Facebook/Instagram).", ...detalles].join("\n"),
+      });
+    }
+
+    if (filas.length === 0) {
+      return { ok: false, error: "No se encontró ninguna fila válida para importar." };
+    }
+
+    const idsDelLote = filas.map((f) => f.external_id);
+    const { data: existentes } = await admin.from("leads").select("external_id").in("external_id", idsDelLote);
+    const idsExistentes = new Set((existentes ?? []).map((e) => e.external_id));
+
+    const nuevas = filas.filter((f) => !idsExistentes.has(f.external_id));
+    const duplicados = filas.length - nuevas.length;
+
+    if (nuevas.length > 0) {
+      const payload = nuevas.map((f) => ({
+        tipo: "meta" as const,
+        external_id: f.external_id,
+        ...(f.creado_en ? { creado_en: f.creado_en } : {}),
+        proyecto_id: proyectoId,
+        nombre: f.nombre,
+        email: f.email,
+        telefono: f.telefono,
+        estado: "nuevo" as const,
+        observaciones: f.observaciones,
+      }));
+      const { error } = await admin.from("leads").insert(payload);
+      if (error) throw new Error(error.message);
+      await registrarActividad(actor, "importar-csv", "lead", null, { cantidad: nuevas.length });
+    }
+
+    revalidatePath("/admin/crm");
+    revalidatePath("/admin");
+    return { ok: true, creados: nuevas.length, duplicados, filasConError };
+  } catch (err) {
+    return fail(err) as ImportLeadsResult;
+  }
+}
+
 export type CalibracionPlano = {
   xMin: number;
   xMax: number;
