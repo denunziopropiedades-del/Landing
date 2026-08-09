@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getProyectos } from "@/lib/content";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.matulotes.com.ar";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://matulotes.app";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const proyectos = await getProyectos();

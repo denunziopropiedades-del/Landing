@@ -1267,7 +1267,7 @@ export async function invitarUsuarioAction(_prev: ActionResult | null, formData:
     const nombre = str(formData, "nombre");
     const rol = str(formData, "rol") as Rol;
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.matulotes.com.ar";
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://matulotes.app";
     const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
       data: { nombre },
       redirectTo: `${siteUrl}/admin/login`,
