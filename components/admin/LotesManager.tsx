@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useActionState, useMemo, useState, useTransition } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Pencil, Plus, Trash2 } from "lucide-react";
 import {
   actualizarEstadoLoteAction,
   actualizarEstadoLotesMasivoAction,
@@ -30,6 +30,21 @@ const ESTADO_COLOR: Record<EstadoLote, string> = {
 const inputClass =
   "w-full rounded-lg border border-black/10 px-3 py-2 text-sm focus:border-brand-green-600 focus:outline-none";
 const labelClass = "mb-1 block text-xs font-medium text-brand-black/70";
+
+type CampoOrden = "manzana" | "tipologia" | "superficie" | "precio" | "estado";
+
+function IconoOrden({
+  campo,
+  campoActivo,
+  direccion,
+}: {
+  campo: CampoOrden;
+  campoActivo: CampoOrden | null;
+  direccion: "asc" | "desc";
+}) {
+  if (campoActivo !== campo) return <ArrowUpDown className="h-3 w-3 text-brand-black/30" />;
+  return direccion === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
+}
 
 function LoteForm({ proyectoId, lote, onDone }: { proyectoId: string; lote?: Lote; onDone?: () => void }) {
   const [state, formAction, pending] = useActionState(upsertLoteAction, null);
@@ -176,6 +191,42 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
     });
   }, [lotes, filtroManzana, filtroNumero, filtroEstado, filtroPrecioMin, filtroPrecioMax]);
 
+  const [campoOrden, setCampoOrden] = useState<CampoOrden | null>(null);
+  const [direccionOrden, setDireccionOrden] = useState<"asc" | "desc">("asc");
+
+  const ordenarPor = (campo: CampoOrden) => {
+    if (campoOrden === campo) {
+      setDireccionOrden((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setCampoOrden(campo);
+      setDireccionOrden("asc");
+    }
+  };
+
+  const lotesOrdenados = useMemo(() => {
+    if (!campoOrden) return lotesFiltrados;
+    const signo = direccionOrden === "asc" ? 1 : -1;
+    return [...lotesFiltrados].sort((a, b) => {
+      switch (campoOrden) {
+        case "manzana": {
+          const manzana = a.manzana.localeCompare(b.manzana, undefined, { numeric: true });
+          if (manzana !== 0) return manzana * signo;
+          return a.numero.localeCompare(b.numero, undefined, { numeric: true }) * signo;
+        }
+        case "tipologia":
+          return a.nombre.localeCompare(b.nombre) * signo;
+        case "superficie":
+          return (a.superficieM2 - b.superficieM2) * signo;
+        case "precio":
+          return (a.precioUsd - b.precioUsd) * signo;
+        case "estado":
+          return a.estado.localeCompare(b.estado) * signo;
+        default:
+          return 0;
+      }
+    });
+  }, [lotesFiltrados, campoOrden, direccionOrden]);
+
   const limpiarFiltros = () => {
     setFiltroManzana("");
     setFiltroNumero("");
@@ -205,7 +256,7 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
   };
 
   const toggleSeleccionarTodos = () => {
-    setSeleccionados((prev) => (prev.length === lotesFiltrados.length ? [] : lotesFiltrados.map((l) => l.id)));
+    setSeleccionados((prev) => (prev.length === lotesOrdenados.length ? [] : lotesOrdenados.map((l) => l.id)));
   };
 
   const eliminarSeleccionados = () => {
@@ -376,7 +427,7 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
           </div>
         </div>
         <p className="mt-3 text-xs text-brand-black/50">
-          Mostrando {lotesFiltrados.length} de {lotes.length} lotes.
+          Mostrando {lotesOrdenados.length} de {lotes.length} lotes.
         </p>
       </div>
 
@@ -387,21 +438,41 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
               <th className="w-10 px-4 py-3">
                 <input
                   type="checkbox"
-                  checked={lotesFiltrados.length > 0 && seleccionados.length === lotesFiltrados.length}
+                  checked={lotesOrdenados.length > 0 && seleccionados.length === lotesOrdenados.length}
                   onChange={toggleSeleccionarTodos}
                   aria-label="Seleccionar todos"
                 />
               </th>
-              <th className="px-4 py-3 font-medium">Manzana / Lote</th>
-              <th className="px-4 py-3 font-medium">Tipología</th>
-              <th className="px-4 py-3 font-medium">Superficie</th>
-              <th className="px-4 py-3 font-medium">Precio</th>
-              <th className="px-4 py-3 font-medium">Estado</th>
+              <th className="px-4 py-3 font-medium">
+                <button type="button" onClick={() => ordenarPor("manzana")} className="inline-flex items-center gap-1 hover:text-brand-black">
+                  Manzana / Lote <IconoOrden campo="manzana" campoActivo={campoOrden} direccion={direccionOrden} />
+                </button>
+              </th>
+              <th className="px-4 py-3 font-medium">
+                <button type="button" onClick={() => ordenarPor("tipologia")} className="inline-flex items-center gap-1 hover:text-brand-black">
+                  Tipología <IconoOrden campo="tipologia" campoActivo={campoOrden} direccion={direccionOrden} />
+                </button>
+              </th>
+              <th className="px-4 py-3 font-medium">
+                <button type="button" onClick={() => ordenarPor("superficie")} className="inline-flex items-center gap-1 hover:text-brand-black">
+                  Superficie <IconoOrden campo="superficie" campoActivo={campoOrden} direccion={direccionOrden} />
+                </button>
+              </th>
+              <th className="px-4 py-3 font-medium">
+                <button type="button" onClick={() => ordenarPor("precio")} className="inline-flex items-center gap-1 hover:text-brand-black">
+                  Precio <IconoOrden campo="precio" campoActivo={campoOrden} direccion={direccionOrden} />
+                </button>
+              </th>
+              <th className="px-4 py-3 font-medium">
+                <button type="button" onClick={() => ordenarPor("estado")} className="inline-flex items-center gap-1 hover:text-brand-black">
+                  Estado <IconoOrden campo="estado" campoActivo={campoOrden} direccion={direccionOrden} />
+                </button>
+              </th>
               <th className="px-4 py-3 font-medium text-right">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {lotesFiltrados.map((lote) => (
+            {lotesOrdenados.map((lote) => (
               <Fragment key={lote.id}>
                 <tr className="border-b border-black/5 last:border-0">
                   <td className="px-4 py-3">
@@ -450,7 +521,7 @@ export default function LotesManager({ proyectoId, lotes }: { proyectoId: string
                 )}
               </Fragment>
             ))}
-            {lotesFiltrados.length === 0 && (
+            {lotesOrdenados.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center text-brand-black/50">
                   {lotes.length === 0 ? "Todavía no hay lotes cargados para este proyecto." : "Ningún lote coincide con los filtros."}
