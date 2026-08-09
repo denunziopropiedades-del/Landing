@@ -11,7 +11,9 @@ export default async function AdminCrmPage() {
     getLotesAdminTodos(),
     getPerfilActual(),
   ]);
-  const vendedores = perfiles.filter((p) => p.rol === "vendedor" && p.activo);
+  // Cualquier miembro activo del staff puede recibir leads asignados, no solo los que
+  // tienen el rol puntual "vendedor" (un administrador/supervisor también puede vender).
+  const vendedores = perfiles.filter((p) => p.activo);
 
   return (
     <div>
