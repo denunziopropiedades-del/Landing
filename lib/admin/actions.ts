@@ -410,6 +410,52 @@ export async function upsertLoteAction(_prev: ActionResult | null, formData: For
   }
 }
 
+/**
+ * Actualiza precio (y opcionalmente el plan de financiación fijo) de TODOS los
+ * lotes de un proyecto que compartan la misma medida (ej. "10 x 30"), en vez de
+ * tener que editar lote por lote. De paso, normaliza el nombre para que todos
+ * queden agrupados en una sola tarjeta comercial en el sitio público.
+ */
+export async function actualizarPrecioPorMedidaAction(
+  proyectoId: string,
+  dimensiones: string,
+  precioUsd: string,
+  anticipoUsd: string,
+  cuotas: string,
+  valorCuotaUsd: string
+): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const precio = Number(precioUsd);
+    if (!dimensiones.trim() || !Number.isFinite(precio) || precio <= 0) {
+      return { ok: false, error: "Falta la medida o el precio no es válido." };
+    }
+    const superficieM2 = parseSuperficie(dimensiones);
+
+    const payload: Record<string, unknown> = { precio_usd: precio };
+    if (superficieM2) payload.nombre = `Lote ${superficieM2} m²`;
+    payload.anticipo_financiado_usd = anticipoUsd.trim() ? Number(anticipoUsd) : null;
+    payload.cuotas_financiado = cuotas.trim() ? Number(cuotas) : null;
+    payload.valor_cuota_financiado_usd = valorCuotaUsd.trim() ? Number(valorCuotaUsd) : null;
+
+    const { error, count } = await admin
+      .from("lotes")
+      .update(payload, { count: "exact" })
+      .eq("proyecto_id", proyectoId)
+      .eq("dimensiones", dimensiones);
+    if (error) throw new Error(error.message);
+
+    await registrarActividad(actor, "actualizar-precio-medida", "lote", proyectoId, { dimensiones, ...payload, cantidad: count });
+    revalidatePath("/admin/lotes");
+    revalidatePath("/proyectos/[slug]", "page");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function eliminarLoteAction(id: string): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor");

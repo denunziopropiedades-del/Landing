@@ -1,5 +1,6 @@
 import LotesManager from "@/components/admin/LotesManager";
 import ImportarLotesForm from "@/components/admin/ImportarLotesForm";
+import PreciosPorMedidaForm from "@/components/admin/PreciosPorMedidaForm";
 import ActualizarEstadosLotesForm from "@/components/admin/ActualizarEstadosLotesForm";
 import CalibrarPlanoForm from "@/components/admin/CalibrarPlanoForm";
 import ProgresoManager from "@/components/admin/ProgresoManager";
@@ -45,6 +46,7 @@ export default async function AdminLotesPage({
 
       <div className="space-y-8">
         <ImportarLotesForm proyectoId={proyecto.id} />
+        <PreciosPorMedidaForm proyectoId={proyecto.id} lotes={lotes} />
         <ActualizarEstadosLotesForm proyectoId={proyecto.id} />
         <CalibrarPlanoForm
           proyectoId={proyecto.id}
