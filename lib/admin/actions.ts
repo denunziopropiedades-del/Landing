@@ -577,8 +577,11 @@ export async function upsertComboLotesAction(_prev: ActionResult | null, formDat
     const { error } = await admin.from("combos_lotes").upsert(
       {
         proyecto_id: proyectoId,
+        label_1_lote: str(formData, "label1Lote") || "1 lote",
         precio_1_lote_usd: formData.get("precio1LoteUsd") ? num(formData, "precio1LoteUsd") : null,
+        label_2_lotes: str(formData, "label2Lotes") || "2 lotes juntos",
         precio_2_lotes_usd: formData.get("precio2LotesUsd") ? num(formData, "precio2LotesUsd") : null,
+        label_3_lotes: str(formData, "label3Lotes") || "3 lotes juntos",
         precio_3_lotes_usd: formData.get("precio3LotesUsd") ? num(formData, "precio3LotesUsd") : null,
       },
       { onConflict: "proyecto_id" }

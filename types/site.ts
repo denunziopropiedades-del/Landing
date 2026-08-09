@@ -73,8 +73,11 @@ export type LoteTipo = {
 /** Precio por comprar 1, 2 o 3 lotes contiguos juntos en una misma operación. */
 export type ComboLotes = {
   proyectoId: string;
+  label1Lote: string;
   precio1LoteUsd: number | null;
+  label2Lotes: string;
   precio2LotesUsd: number | null;
+  label3Lotes: string;
   precio3LotesUsd: number | null;
 };
 

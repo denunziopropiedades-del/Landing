@@ -177,8 +177,11 @@ create table financiacion_config (
 create table combos_lotes (
   id uuid primary key default gen_random_uuid(),
   proyecto_id uuid not null unique references proyectos(id) on delete cascade,
+  label_1_lote text not null default '1 lote',
   precio_1_lote_usd numeric,
+  label_2_lotes text not null default '2 lotes juntos',
   precio_2_lotes_usd numeric,
+  label_3_lotes text not null default '3 lotes juntos',
   precio_3_lotes_usd numeric
 );
 

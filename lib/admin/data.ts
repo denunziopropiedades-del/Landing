@@ -164,7 +164,15 @@ export async function getFinanciacionAdmin(proyectoId: string): Promise<ConfigFi
 }
 
 export async function getComboLotesAdmin(proyectoId: string): Promise<ComboLotes> {
-  const fallback: ComboLotes = { proyectoId, precio1LoteUsd: null, precio2LotesUsd: null, precio3LotesUsd: null };
+  const fallback: ComboLotes = {
+    proyectoId,
+    label1Lote: "1 lote",
+    precio1LoteUsd: null,
+    label2Lotes: "2 lotes juntos",
+    precio2LotesUsd: null,
+    label3Lotes: "3 lotes juntos",
+    precio3LotesUsd: null,
+  };
   const supabase = await getSupabaseServerClient();
   if (!supabase) return fallback;
 
@@ -173,8 +181,11 @@ export async function getComboLotesAdmin(proyectoId: string): Promise<ComboLotes
 
   return {
     proyectoId,
+    label1Lote: data.label_1_lote ?? "1 lote",
     precio1LoteUsd: numOrNull(data.precio_1_lote_usd),
+    label2Lotes: data.label_2_lotes ?? "2 lotes juntos",
     precio2LotesUsd: numOrNull(data.precio_2_lotes_usd),
+    label3Lotes: data.label_3_lotes ?? "3 lotes juntos",
     precio3LotesUsd: numOrNull(data.precio_3_lotes_usd),
   };
 }

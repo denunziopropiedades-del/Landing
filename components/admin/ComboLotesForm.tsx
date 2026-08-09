@@ -15,20 +15,32 @@ export default function ComboLotesForm({ proyectoId, combo }: { proyectoId: stri
       <h2 className="mb-1 font-display text-lg font-bold text-brand-black">Precio por combinar lotes</h2>
       <p className="mb-4 text-sm text-brand-black/60">
         Para el cliente que quiere comprar 2 o 3 lotes juntos en una sola operación. Se muestra como cuadro de
-        precios en el sitio público. Dejá un campo vacío para no mostrar esa opción.
+        precios en el sitio público. Dejá el precio vacío para no mostrar esa opción.
       </p>
       <form action={formAction} className="grid gap-4 sm:grid-cols-3">
         <input type="hidden" name="proyectoId" value={proyectoId} />
         <div>
-          <label className={labelClass}>1 lote (USD)</label>
+          <label className={labelClass}>Texto</label>
+          <input name="label1Lote" defaultValue={combo.label1Lote} className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Texto</label>
+          <input name="label2Lotes" defaultValue={combo.label2Lotes} className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Texto</label>
+          <input name="label3Lotes" defaultValue={combo.label3Lotes} className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Precio (USD)</label>
           <input type="number" name="precio1LoteUsd" defaultValue={combo.precio1LoteUsd ?? ""} className={inputClass} />
         </div>
         <div>
-          <label className={labelClass}>2 lotes juntos (USD)</label>
+          <label className={labelClass}>Precio (USD)</label>
           <input type="number" name="precio2LotesUsd" defaultValue={combo.precio2LotesUsd ?? ""} className={inputClass} />
         </div>
         <div>
-          <label className={labelClass}>3 lotes juntos (USD)</label>
+          <label className={labelClass}>Precio (USD)</label>
           <input type="number" name="precio3LotesUsd" defaultValue={combo.precio3LotesUsd ?? ""} className={inputClass} />
         </div>
         <div className="flex items-end gap-3 sm:col-span-3">

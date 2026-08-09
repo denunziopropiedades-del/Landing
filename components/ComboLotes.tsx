@@ -4,9 +4,9 @@ import type { ComboLotes as ComboLotesType } from "@/types/site";
 
 export default function ComboLotes({ combo }: { combo: ComboLotesType | null }) {
   const opciones = [
-    { cantidad: 1, label: "1 lote", precio: combo?.precio1LoteUsd },
-    { cantidad: 2, label: "2 lotes juntos", precio: combo?.precio2LotesUsd },
-    { cantidad: 3, label: "3 lotes juntos", precio: combo?.precio3LotesUsd },
+    { cantidad: 1, label: combo?.label1Lote ?? "1 lote", precio: combo?.precio1LoteUsd },
+    { cantidad: 2, label: combo?.label2Lotes ?? "2 lotes juntos", precio: combo?.precio2LotesUsd },
+    { cantidad: 3, label: combo?.label3Lotes ?? "3 lotes juntos", precio: combo?.precio3LotesUsd },
   ].filter((o) => o.precio !== null && o.precio !== undefined);
 
   if (opciones.length === 0) return null;
