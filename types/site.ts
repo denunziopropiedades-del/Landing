@@ -79,6 +79,9 @@ export type ComboLotes = {
   precio2LotesUsd: number | null;
   label3Lotes: string;
   precio3LotesUsd: number | null;
+  beneficio1: string | null;
+  beneficio2: string | null;
+  beneficio3: string | null;
 };
 
 export type Banner = {

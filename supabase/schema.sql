@@ -182,7 +182,11 @@ create table combos_lotes (
   label_2_lotes text not null default '2 lotes juntos',
   precio_2_lotes_usd numeric,
   label_3_lotes text not null default '3 lotes juntos',
-  precio_3_lotes_usd numeric
+  precio_3_lotes_usd numeric,
+  -- Beneficios con tilde verde, compartidos por las 3 tarjetas (vacío = no se muestra esa línea).
+  beneficio_1 text default 'Escritura garantizada',
+  beneficio_2 text,
+  beneficio_3 text
 );
 
 -- ═══════════════════════════════════════════════════════════════════════

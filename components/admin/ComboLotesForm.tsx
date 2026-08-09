@@ -43,6 +43,16 @@ export default function ComboLotesForm({ proyectoId, combo }: { proyectoId: stri
           <label className={labelClass}>Precio (USD)</label>
           <input type="number" name="precio3LotesUsd" defaultValue={combo.precio3LotesUsd ?? ""} className={inputClass} />
         </div>
+        <div className="sm:col-span-3">
+          <p className="mb-2 text-xs font-medium text-brand-black/70">
+            Beneficios con tilde verde (se muestran en las 3 tarjetas, dejá vacío el que no quieras usar)
+          </p>
+          <div className="grid gap-2 sm:grid-cols-3">
+            <input name="beneficio1" defaultValue={combo.beneficio1 ?? ""} placeholder="Ej. Escritura garantizada" className={inputClass} />
+            <input name="beneficio2" defaultValue={combo.beneficio2 ?? ""} placeholder="Ej. Financiación disponible" className={inputClass} />
+            <input name="beneficio3" defaultValue={combo.beneficio3 ?? ""} placeholder="Ej. Barrio perimetrado" className={inputClass} />
+          </div>
+        </div>
         <div className="flex items-end gap-3 sm:col-span-3">
           <button
             type="submit"

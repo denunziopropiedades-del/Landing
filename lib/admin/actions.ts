@@ -587,6 +587,9 @@ export async function upsertComboLotesAction(_prev: ActionResult | null, formDat
         precio_2_lotes_usd: formData.get("precio2LotesUsd") ? num(formData, "precio2LotesUsd") : null,
         label_3_lotes: str(formData, "label3Lotes") || "3 lotes juntos",
         precio_3_lotes_usd: formData.get("precio3LotesUsd") ? num(formData, "precio3LotesUsd") : null,
+        beneficio_1: optStr(formData, "beneficio1"),
+        beneficio_2: optStr(formData, "beneficio2"),
+        beneficio_3: optStr(formData, "beneficio3"),
       },
       { onConflict: "proyecto_id" }
     );

@@ -11,6 +11,10 @@ export default function ComboLotes({ combo }: { combo: ComboLotesType | null }) 
 
   if (opciones.length === 0) return null;
 
+  const beneficios = [combo?.beneficio1, combo?.beneficio2, combo?.beneficio3].filter(
+    (b): b is string => !!b && b.trim().length > 0
+  );
+
   return (
     <section className="bg-white py-16 sm:py-20">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
@@ -33,10 +37,16 @@ export default function ComboLotes({ combo }: { combo: ComboLotesType | null }) 
             >
               <p className="font-display text-lg font-bold text-brand-black">{o.label}</p>
               <p className="mt-3 font-display text-3xl font-bold text-brand-green-700">{formatUsd(o.precio!)}</p>
-              <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-brand-black/60">
-                <Check className="h-3.5 w-3.5 text-brand-green-700" />
-                Escritura garantizada
-              </p>
+              {beneficios.length > 0 && (
+                <div className="mt-3 space-y-1">
+                  {beneficios.map((b) => (
+                    <p key={b} className="flex items-center justify-center gap-1.5 text-xs text-brand-black/60">
+                      <Check className="h-3.5 w-3.5 shrink-0 text-brand-green-700" />
+                      {b}
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>

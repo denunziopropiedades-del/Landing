@@ -211,6 +211,9 @@ export async function getComboLotes(proyectoId: string): Promise<ComboLotes | nu
     precio2LotesUsd: data.precio_2_lotes_usd === null ? null : Number(data.precio_2_lotes_usd),
     label3Lotes: data.label_3_lotes ?? "3 lotes juntos",
     precio3LotesUsd: data.precio_3_lotes_usd === null ? null : Number(data.precio_3_lotes_usd),
+    beneficio1: data.beneficio_1 ?? null,
+    beneficio2: data.beneficio_2 ?? null,
+    beneficio3: data.beneficio_3 ?? null,
   };
 }
 

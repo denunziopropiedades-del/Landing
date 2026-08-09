@@ -172,6 +172,9 @@ export async function getComboLotesAdmin(proyectoId: string): Promise<ComboLotes
     precio2LotesUsd: null,
     label3Lotes: "3 lotes juntos",
     precio3LotesUsd: null,
+    beneficio1: "Escritura garantizada",
+    beneficio2: null,
+    beneficio3: null,
   };
   const supabase = await getSupabaseServerClient();
   if (!supabase) return fallback;
@@ -187,6 +190,9 @@ export async function getComboLotesAdmin(proyectoId: string): Promise<ComboLotes
     precio2LotesUsd: numOrNull(data.precio_2_lotes_usd),
     label3Lotes: data.label_3_lotes ?? "3 lotes juntos",
     precio3LotesUsd: numOrNull(data.precio_3_lotes_usd),
+    beneficio1: data.beneficio_1 ?? null,
+    beneficio2: data.beneficio_2 ?? null,
+    beneficio3: data.beneficio_3 ?? null,
   };
 }
 
