@@ -44,6 +44,20 @@ function secretValido(request: Request): boolean {
   return crypto.timingSafeEqual(a, b);
 }
 
+// Permite probar la URL desde el navegador (como sugiere Zapier) sin mandar un lead real.
+export async function GET(request: Request) {
+  if (!SECRET) {
+    return NextResponse.json(
+      { ok: false, mensaje: "ZAPIER_WEBHOOK_SECRET no está configurado en este entorno." },
+      { status: 500 }
+    );
+  }
+  if (!secretValido(request)) {
+    return NextResponse.json({ ok: false, mensaje: "El secreto de la URL no coincide." }, { status: 401 });
+  }
+  return NextResponse.json({ ok: true, mensaje: "Endpoint activo y secreto correcto. Listo para recibir leads por POST." });
+}
+
 export async function POST(request: Request) {
   if (!secretValido(request)) {
     return NextResponse.json({ error: "Secreto inválido" }, { status: 401 });
