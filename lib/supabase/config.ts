@@ -9,5 +9,13 @@ export const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
  * (leads, reservas, panel admin, etc).
  */
 export function isSupabaseConfigured() {
-  return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return false;
+  // Si la variable de entorno quedó mal cargada (espacios, comillas, url incompleta),
+  // preferimos caer al contenido semilla en vez de tirar abajo todo el build/sitio.
+  try {
+    new URL(SUPABASE_URL);
+    return true;
+  } catch {
+    return false;
+  }
 }
