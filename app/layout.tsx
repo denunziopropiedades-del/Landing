@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Poppins } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { getSiteTextos } from "@/lib/content";
@@ -11,9 +11,10 @@ const inter = Inter({
   display: "swap",
 });
 
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
+const poppins = Poppins({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
   display: "swap",
 });
 
@@ -78,7 +79,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const textos = await getSiteTextos();
 
   return (
-    <html lang="es-AR" className={`${inter.variable} ${playfair.variable} h-full antialiased`}>
+    <html lang="es-AR" className={`${inter.variable} ${poppins.variable} h-full antialiased`}>
       <head>
         <script
           type="application/ld+json"

@@ -543,21 +543,25 @@ export async function upsertFinanciacionAction(_prev: ActionResult | null, formD
     const actor = await requireRole("administrador", "supervisor");
     const admin = (await getSupabaseAdminClient())!;
     const proyectoId = str(formData, "proyectoId");
-    const cuotas = str(formData, "cuotasOpciones")
-      .split(",")
-      .map((c) => Number(c.trim()))
-      .filter((c) => !Number.isNaN(c) && c > 0);
 
-    const { error } = await admin.from("financiacion_config").upsert(
-      {
-        proyecto_id: proyectoId,
-        anticipo_minimo_pct: num(formData, "anticipoMinimoPct"),
-        anticipo_maximo_pct: num(formData, "anticipoMaximoPct"),
-        cuotas_opciones: cuotas,
-        interes_anual_pct: num(formData, "interesAnualPct"),
-      },
-      { onConflict: "proyecto_id" }
-    );
+    // Todos los campos son opcionales: cada proyecto puede tener su plan fijo de
+    // anticipo/cuotas por medida de lote en vez de esta calculadora por porcentaje.
+    // Un campo vacío deja el valor existente sin tocar (o el default de la tabla
+    // si el proyecto todavía no tenía fila).
+    const payload: Record<string, unknown> = { proyecto_id: proyectoId };
+    if (optStr(formData, "anticipoMinimoPct")) payload.anticipo_minimo_pct = num(formData, "anticipoMinimoPct");
+    if (optStr(formData, "anticipoMaximoPct")) payload.anticipo_maximo_pct = num(formData, "anticipoMaximoPct");
+    if (optStr(formData, "interesAnualPct")) payload.interes_anual_pct = num(formData, "interesAnualPct");
+    const cuotasStr = optStr(formData, "cuotasOpciones");
+    if (cuotasStr) {
+      const cuotas = cuotasStr
+        .split(",")
+        .map((c) => Number(c.trim()))
+        .filter((c) => !Number.isNaN(c) && c > 0);
+      if (cuotas.length > 0) payload.cuotas_opciones = cuotas;
+    }
+
+    const { error } = await admin.from("financiacion_config").upsert(payload, { onConflict: "proyecto_id" });
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "actualizar", "financiacion", proyectoId);
     revalidatePath("/admin/contenido");

@@ -25,22 +25,27 @@ function FinanciacionForm({ proyectoId, config }: { proyectoId: string; config: 
 
   return (
     <form action={formAction} className="grid gap-4 sm:grid-cols-2">
+      <p className="text-xs text-brand-black/50 sm:col-span-2">
+        Opcional: esta calculadora por porcentaje es un cálculo aproximado. Si ya cargaste un plan fijo de
+        anticipo/cuotas por medida de lote (en Lotes y precios), ese plan fijo tiene prioridad y no hace falta
+        completar esto.
+      </p>
       <input type="hidden" name="proyectoId" value={proyectoId} />
       <div>
         <label className={labelClass}>Anticipo mínimo (%)</label>
-        <input type="number" name="anticipoMinimoPct" defaultValue={config.anticipoMinimoPct} required className={inputClass} />
+        <input type="number" name="anticipoMinimoPct" defaultValue={config.anticipoMinimoPct} className={inputClass} />
       </div>
       <div>
         <label className={labelClass}>Anticipo máximo (%)</label>
-        <input type="number" name="anticipoMaximoPct" defaultValue={config.anticipoMaximoPct} required className={inputClass} />
+        <input type="number" name="anticipoMaximoPct" defaultValue={config.anticipoMaximoPct} className={inputClass} />
       </div>
       <div>
         <label className={labelClass}>Cuotas disponibles (separadas por coma)</label>
-        <input name="cuotasOpciones" defaultValue={config.cuotasOpciones.join(", ")} required className={inputClass} />
+        <input name="cuotasOpciones" defaultValue={config.cuotasOpciones.join(", ")} className={inputClass} />
       </div>
       <div>
         <label className={labelClass}>Interés anual (%)</label>
-        <input type="number" name="interesAnualPct" defaultValue={config.interesAnualPct} required className={inputClass} />
+        <input type="number" name="interesAnualPct" defaultValue={config.interesAnualPct} className={inputClass} />
       </div>
       <div className="flex items-end gap-3">
         <SaveButton pending={pending} />
