@@ -21,7 +21,12 @@ const poppins = Poppins({
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://matulotes.app";
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID;
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
-const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+// Admite uno o varios Pixels de Meta separados por coma (ej. "123,456") para poder
+// trackear con más de una cuenta de Meta Ads Manager al mismo tiempo.
+const META_PIXEL_IDS = (process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "")
+  .split(",")
+  .map((id) => id.trim())
+  .filter(Boolean);
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -100,9 +105,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             </Script>
           </>
         )}
-        {META_PIXEL_ID && (
+        {META_PIXEL_IDS.length > 0 && (
           <Script id="meta-pixel" strategy="afterInteractive">
-            {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init', '${META_PIXEL_ID}');fbq('track', 'PageView');`}
+            {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');${META_PIXEL_IDS.map((id) => `fbq('init', '${id}');`).join("")}fbq('track', 'PageView');`}
           </Script>
         )}
         {children}
