@@ -22,7 +22,17 @@ export default function ReservaForm({
   const [ultimaReserva, setUltimaReserva] = useState<ReservaInput | null>(null);
   const [pago, setPago] = useState<"idle" | "cargando" | "no-disponible">("idle");
 
-  const lotesDisponibles = useMemo(() => lotes.filter((l) => l.estado === "disponible"), [lotes]);
+  const lotesDisponibles = useMemo(
+    () =>
+      lotes
+        .filter((l) => l.estado === "disponible")
+        .sort(
+          (a, b) =>
+            a.manzana.localeCompare(b.manzana, undefined, { numeric: true }) ||
+            a.numero.localeCompare(b.numero, undefined, { numeric: true })
+        ),
+    [lotes]
+  );
 
   const {
     register,
