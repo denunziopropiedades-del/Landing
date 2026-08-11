@@ -271,7 +271,7 @@ function LeadCard({
               />
             </div>
             <div>
-              <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Importe cobrado</label>
+              <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Importe cobrado (seña, $ ARS)</label>
               <input
                 type="number"
                 value={importeCobrado}

@@ -118,11 +118,11 @@ export default function FacturacionManager({
   const porMes = useMemo(() => {
     const mapa = new Map<
       string,
-      { ingresosUsd: number; comisionesUsd: number; honorariosUsd: number; honorariosArs: number; gastosArs: number }
+      { ingresosArs: number; comisionesUsd: number; honorariosUsd: number; honorariosArs: number; gastosArs: number }
     >();
     const asegurar = (clave: string) => {
       if (!mapa.has(clave))
-        mapa.set(clave, { ingresosUsd: 0, comisionesUsd: 0, honorariosUsd: 0, honorariosArs: 0, gastosArs: 0 });
+        mapa.set(clave, { ingresosArs: 0, comisionesUsd: 0, honorariosUsd: 0, honorariosArs: 0, gastosArs: 0 });
       return mapa.get(clave)!;
     };
 
@@ -130,7 +130,7 @@ export default function FacturacionManager({
       if (!lead.importeCobrado && !lead.comisionUsd && !lead.honorariosUsd && !lead.honorariosArs && !lead.gastosArs)
         continue;
       const fila = asegurar(claveMes(lead.actualizadoEn));
-      fila.ingresosUsd += lead.importeCobrado ?? 0;
+      fila.ingresosArs += lead.importeCobrado ?? 0;
       fila.comisionesUsd += lead.comisionUsd ?? 0;
       fila.honorariosUsd += lead.honorariosUsd ?? 0;
       fila.honorariosArs += lead.honorariosArs ?? 0;
@@ -146,7 +146,7 @@ export default function FacturacionManager({
       .map(([clave, valores]) => ({
         mes: labelMes(clave),
         ...valores,
-        totalUsd: valores.ingresosUsd + valores.comisionesUsd + valores.honorariosUsd,
+        totalUsd: valores.comisionesUsd + valores.honorariosUsd,
         netoArs: valores.honorariosArs - valores.gastosArs,
       }));
   }, [leadsFiltrados, gastosFiltrados]);
@@ -155,7 +155,7 @@ export default function FacturacionManager({
     () =>
       porMes.reduce(
         (acc, m) => ({
-          ingresosUsd: acc.ingresosUsd + m.ingresosUsd,
+          ingresosArs: acc.ingresosArs + m.ingresosArs,
           comisionesUsd: acc.comisionesUsd + m.comisionesUsd,
           honorariosUsd: acc.honorariosUsd + m.honorariosUsd,
           honorariosArs: acc.honorariosArs + m.honorariosArs,
@@ -163,7 +163,7 @@ export default function FacturacionManager({
           totalUsd: acc.totalUsd + m.totalUsd,
           netoArs: acc.netoArs + m.netoArs,
         }),
-        { ingresosUsd: 0, comisionesUsd: 0, honorariosUsd: 0, honorariosArs: 0, gastosArs: 0, totalUsd: 0, netoArs: 0 }
+        { ingresosArs: 0, comisionesUsd: 0, honorariosUsd: 0, honorariosArs: 0, gastosArs: 0, totalUsd: 0, netoArs: 0 }
       ),
     [porMes]
   );
@@ -176,12 +176,12 @@ export default function FacturacionManager({
   };
 
   const tarjetasUsd = [
-    { label: "Ingresos", valor: totales.ingresosUsd },
     { label: "Comisiones", valor: totales.comisionesUsd },
     { label: "Honorarios", valor: totales.honorariosUsd },
     { label: "Total USD", valor: totales.totalUsd, destacado: true },
   ];
   const tarjetasArs = [
+    { label: "Ingresos (señas)", valor: totales.ingresosArs },
     { label: "Honorarios", valor: totales.honorariosArs },
     { label: "Gastos", valor: totales.gastosArs },
     { label: "Neto ARS", valor: totales.netoArs, destacado: true },
@@ -203,7 +203,7 @@ export default function FacturacionManager({
 
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-black/40">En dólares (USD)</p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {tarjetasUsd.map((t) => (
             <div key={t.label} className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
               <p className="text-xs text-brand-black/50">{t.label}</p>
@@ -217,7 +217,7 @@ export default function FacturacionManager({
 
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-black/40">En pesos (ARS)</p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {tarjetasArs.map((t) => (
             <div key={t.label} className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
               <p className="text-xs text-brand-black/50">{t.label}</p>
@@ -240,7 +240,7 @@ export default function FacturacionManager({
       ) : (
         <>
           <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-            <h3 className="mb-1 font-display text-lg font-bold text-brand-black">Ingresos, comisiones y honorarios por mes (USD)</h3>
+            <h3 className="mb-1 font-display text-lg font-bold text-brand-black">Comisiones y honorarios por mes (USD)</h3>
             <p className="mb-4 text-xs text-brand-black/50">
               Se agrupan por la fecha de última actualización del lead.
             </p>
@@ -251,7 +251,6 @@ export default function FacturacionManager({
                 <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
                 <Tooltip formatter={(v) => formatUsd(Number(v))} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="ingresosUsd" name="Ingresos" fill="#237046" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="comisionesUsd" name="Comisiones" fill="#d4af37" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="honorariosUsd" name="Honorarios" fill="#96741f" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -259,10 +258,10 @@ export default function FacturacionManager({
           </div>
 
           <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-            <h3 className="mb-1 font-display text-lg font-bold text-brand-black">Honorarios y gastos por mes (ARS)</h3>
+            <h3 className="mb-1 font-display text-lg font-bold text-brand-black">Ingresos, honorarios y gastos por mes (ARS)</h3>
             <p className="mb-4 text-xs text-brand-black/50">
-              Los honorarios y gastos por cliente se agrupan por la fecha de última actualización del lead; los
-              gastos generales, por su fecha cargada.
+              Los ingresos (señas), honorarios y gastos por cliente se agrupan por la fecha de última actualización
+              del lead; los gastos generales, por su fecha cargada.
             </p>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={porMes}>
@@ -271,6 +270,7 @@ export default function FacturacionManager({
                 <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
                 <Tooltip formatter={(v) => formatArs(Number(v))} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="ingresosArs" name="Ingresos (señas)" fill="#237046" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="honorariosArs" name="Honorarios" fill="#96741f" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="gastosArs" name="Gastos" fill="#ef4444" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -282,10 +282,10 @@ export default function FacturacionManager({
               <thead className="border-b border-black/10 text-brand-black/50">
                 <tr>
                   <th className="px-4 py-3 font-medium">Mes</th>
-                  <th className="px-4 py-3 font-medium text-right">Ingresos USD</th>
                   <th className="px-4 py-3 font-medium text-right">Comisiones USD</th>
                   <th className="px-4 py-3 font-medium text-right">Honorarios USD</th>
                   <th className="px-4 py-3 font-medium text-right">Total USD</th>
+                  <th className="px-4 py-3 font-medium text-right">Ingresos ARS</th>
                   <th className="px-4 py-3 font-medium text-right">Honorarios ARS</th>
                   <th className="px-4 py-3 font-medium text-right">Gastos ARS</th>
                   <th className="px-4 py-3 font-medium text-right">Neto ARS</th>
@@ -295,10 +295,10 @@ export default function FacturacionManager({
                 {porMes.map((m) => (
                   <tr key={m.mes} className="border-b border-black/5 last:border-0">
                     <td className="px-4 py-3 font-medium capitalize">{m.mes}</td>
-                    <td className="px-4 py-3 text-right">{formatUsd(m.ingresosUsd)}</td>
                     <td className="px-4 py-3 text-right">{formatUsd(m.comisionesUsd)}</td>
                     <td className="px-4 py-3 text-right">{formatUsd(m.honorariosUsd)}</td>
                     <td className="px-4 py-3 text-right font-semibold text-brand-green-700">{formatUsd(m.totalUsd)}</td>
+                    <td className="px-4 py-3 text-right">{formatArs(m.ingresosArs)}</td>
                     <td className="px-4 py-3 text-right">{formatArs(m.honorariosArs)}</td>
                     <td className="px-4 py-3 text-right">{formatArs(m.gastosArs)}</td>
                     <td className={`px-4 py-3 text-right font-semibold ${m.netoArs >= 0 ? "text-brand-green-700" : "text-red-600"}`}>
