@@ -30,6 +30,17 @@ function optStr(fd: FormData, key: string) {
   return v.length > 0 ? v : null;
 }
 
+// Convierte un link normal de YouTube (watch?v=, youtu.be, shorts) al formato "embed"
+// que hace falta para mostrarlo en un iframe dentro de la galería. Si no es de YouTube
+// o ya viene en formato embed, lo deja igual.
+function normalizarUrlVideo(url: string): string {
+  const match = url.match(
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/
+  );
+  if (!match) return url;
+  return `https://www.youtube.com/embed/${match[1]}`;
+}
+
 function slugify(texto: string) {
   return texto
     .toLowerCase()
@@ -896,10 +907,12 @@ export async function addGaleriaItemAction(_prev: ActionResult | null, formData:
   try {
     const actor = await requireRole("administrador", "supervisor");
     const admin = (await getSupabaseAdminClient())!;
+    const categoria = str(formData, "categoria");
+    const urlIngresada = str(formData, "url");
     const payload = {
       proyecto_id: str(formData, "proyectoId"),
-      categoria: str(formData, "categoria"),
-      url: str(formData, "url"),
+      categoria,
+      url: categoria === "videos" ? normalizarUrlVideo(urlIngresada) : urlIngresada,
       titulo: str(formData, "titulo"),
     };
     const { data, error } = await admin.from("galeria").insert(payload).select("id").single();
