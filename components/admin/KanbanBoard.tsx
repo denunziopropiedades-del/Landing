@@ -14,6 +14,7 @@ import {
   cambiarProyectoLeadAction,
   deleteLeadAction,
 } from "@/lib/admin/actions";
+import { buildWhatsappClienteUrl } from "@/lib/whatsapp";
 import type { EstadoLead, Lead, Perfil, Proyecto, Rol } from "@/types/site";
 
 const COLUMNAS: { estado: EstadoLead; label: string; color: string }[] = [
@@ -209,9 +210,16 @@ function LeadCard({
             <p className="flex items-center gap-1.5">
               <Mail className="h-3 w-3" /> {lead.email}
             </p>
-            <p className="flex items-center gap-1.5">
+            <a
+              href={buildWhatsappClienteUrl(lead.telefono)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 hover:text-brand-green-700 hover:underline"
+              title="Abrir conversación de WhatsApp"
+            >
               <Phone className="h-3 w-3" /> {lead.telefono}
-            </p>
+            </a>
           </div>
 
           {puedeAsignar && (
