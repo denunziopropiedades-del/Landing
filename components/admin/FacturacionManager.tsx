@@ -147,7 +147,7 @@ export default function FacturacionManager({
         mes: labelMes(clave),
         ...valores,
         totalUsd: valores.comisionesUsd + valores.honorariosUsd,
-        netoArs: valores.honorariosArs - valores.gastosArs,
+        netoArs: valores.ingresosArs + valores.honorariosArs - valores.gastosArs,
       }));
   }, [leadsFiltrados, gastosFiltrados]);
 
