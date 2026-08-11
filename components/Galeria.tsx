@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { Minus, Plus, RotateCcw, X } from "lucide-react";
+import { Maximize2, Minus, Plus, RotateCcw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ItemGaleria } from "@/types/site";
 
@@ -12,6 +12,11 @@ const ZOOM_MAX = 5;
 
 function clamp(valor: number, min: number, max: number) {
   return Math.min(max, Math.max(min, valor));
+}
+
+// Los videos de TikTok son verticales (9:16); los de YouTube son horizontales (16:9).
+function esVideoVertical(url: string) {
+  return url.includes("tiktok.com");
 }
 
 const TABS: { key: ItemGaleria["categoria"]; label: string }[] = [
@@ -95,7 +100,7 @@ export default function Galeria({ items }: { items: ItemGaleria[] }) {
           {filtrados.map((item) =>
             item.categoria === "videos" ? (
               <div key={item.id} className="overflow-hidden rounded-2xl border border-black/5 shadow-sm">
-                <div className="aspect-video">
+                <div className="relative aspect-video">
                   <iframe
                     className="h-full w-full"
                     src={item.url}
@@ -104,6 +109,15 @@ export default function Galeria({ items }: { items: ItemGaleria[] }) {
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />
+                  <button
+                    type="button"
+                    onClick={() => abrirLightbox(item)}
+                    aria-label="Ver en tamaño completo"
+                    title="Ver en tamaño completo"
+                    className="absolute right-2 top-2 rounded-full bg-black/60 p-2 text-white transition hover:bg-black/80"
+                  >
+                    <Maximize2 className="h-4 w-4" />
+                  </button>
                 </div>
                 <p className="p-3 text-sm font-medium text-brand-black/80">{item.titulo}</p>
               </div>
@@ -151,81 +165,104 @@ export default function Galeria({ items }: { items: ItemGaleria[] }) {
               <X className="h-8 w-8" />
             </button>
 
-            <div
-              className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full bg-black/60 p-1.5 backdrop-blur"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                type="button"
-                onClick={() => cambiarZoom(-0.6)}
-                aria-label="Alejar"
-                className="rounded-full p-2 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30"
-                disabled={zoom <= ZOOM_MIN}
-              >
-                <Minus className="h-4 w-4" />
-              </button>
-              <span className="min-w-[3.5rem] text-center text-xs font-medium text-white/80">
-                {Math.round(zoom * 100)}%
-              </span>
-              <button
-                type="button"
-                onClick={() => cambiarZoom(0.6)}
-                aria-label="Acercar"
-                className="rounded-full p-2 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30"
-                disabled={zoom >= ZOOM_MAX}
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setZoom(1);
-                  setPan({ x: 0, y: 0 });
-                }}
-                aria-label="Restablecer zoom"
-                className="rounded-full p-2 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30"
-                disabled={zoom === ZOOM_MIN}
-              >
-                <RotateCcw className="h-4 w-4" />
-              </button>
-            </div>
-
-            <motion.div
-              initial={{ scale: 0.92, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="relative h-[85vh] w-full max-w-6xl overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-              onWheel={onWheel}
-              onDoubleClick={() => {
-                if (zoom > 1) {
-                  setZoom(1);
-                  setPan({ x: 0, y: 0 });
-                } else {
-                  setZoom(2.5);
-                }
-              }}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerLeave={onPointerUp}
-              style={{ cursor: zoom > 1 ? "grab" : "default" }}
-            >
+            {lightbox.categoria !== "videos" && (
               <div
-                className="relative h-full w-full transition-transform duration-100 ease-out"
-                style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
+                className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full bg-black/60 p-1.5 backdrop-blur"
+                onClick={(e) => e.stopPropagation()}
               >
-                <Image
-                  src={lightbox.url}
-                  alt={lightbox.titulo}
-                  fill
-                  sizes="100vw"
-                  quality={95}
-                  className="object-contain"
-                  draggable={false}
-                />
+                <button
+                  type="button"
+                  onClick={() => cambiarZoom(-0.6)}
+                  aria-label="Alejar"
+                  className="rounded-full p-2 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30"
+                  disabled={zoom <= ZOOM_MIN}
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="min-w-[3.5rem] text-center text-xs font-medium text-white/80">
+                  {Math.round(zoom * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => cambiarZoom(0.6)}
+                  aria-label="Acercar"
+                  className="rounded-full p-2 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30"
+                  disabled={zoom >= ZOOM_MAX}
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setZoom(1);
+                    setPan({ x: 0, y: 0 });
+                  }}
+                  aria-label="Restablecer zoom"
+                  className="rounded-full p-2 text-white/80 hover:bg-white/10 hover:text-white disabled:opacity-30"
+                  disabled={zoom === ZOOM_MIN}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </button>
               </div>
-            </motion.div>
+            )}
+
+            {lightbox.categoria === "videos" ? (
+              <motion.div
+                initial={{ scale: 0.92, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className={cn(
+                  "relative overflow-hidden rounded-2xl bg-black",
+                  esVideoVertical(lightbox.url) ? "h-[85vh] max-w-[478px]" : "aspect-video w-full max-w-4xl"
+                )}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <iframe
+                  className="h-full w-full"
+                  src={lightbox.url}
+                  title={lightbox.titulo}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ scale: 0.92, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="relative h-[85vh] w-full max-w-6xl overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+                onWheel={onWheel}
+                onDoubleClick={() => {
+                  if (zoom > 1) {
+                    setZoom(1);
+                    setPan({ x: 0, y: 0 });
+                  } else {
+                    setZoom(2.5);
+                  }
+                }}
+                onPointerDown={onPointerDown}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                onPointerLeave={onPointerUp}
+                style={{ cursor: zoom > 1 ? "grab" : "default" }}
+              >
+                <div
+                  className="relative h-full w-full transition-transform duration-100 ease-out"
+                  style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
+                >
+                  <Image
+                    src={lightbox.url}
+                    alt={lightbox.titulo}
+                    fill
+                    sizes="100vw"
+                    quality={95}
+                    className="object-contain"
+                    draggable={false}
+                  />
+                </div>
+              </motion.div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
