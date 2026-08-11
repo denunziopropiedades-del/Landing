@@ -192,11 +192,11 @@ export default function GaleriaManager({ proyectoId, items }: { proyectoId: stri
       )}
 
       <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-        <h2 className="mb-1 font-display text-lg font-bold text-brand-black">Agregar videos de YouTube (o cualquier URL)</h2>
+        <h2 className="mb-1 font-display text-lg font-bold text-brand-black">Agregar videos de YouTube o TikTok</h2>
         <p className="mb-4 text-sm text-brand-black/60">
           Para videos: subilo a YouTube (puede ser &ldquo;no listado&rdquo; si no querés que aparezca en las
-          búsquedas de YouTube) y pegá acá el link normal que te da el botón Compartir — lo convertimos solos al
-          formato que necesita la página.
+          búsquedas) o compartilo desde TikTok, y pegá acá el link normal que te da el botón Compartir de cada
+          app — lo convertimos solos al formato que necesita la página.
         </p>
         <form action={formAction} className="mt-4 grid gap-4 sm:grid-cols-2">
           <input type="hidden" name="proyectoId" value={proyectoId} />

@@ -30,15 +30,28 @@ function optStr(fd: FormData, key: string) {
   return v.length > 0 ? v : null;
 }
 
-// Convierte un link normal de YouTube (watch?v=, youtu.be, shorts) al formato "embed"
-// que hace falta para mostrarlo en un iframe dentro de la galería. Si no es de YouTube
-// o ya viene en formato embed, lo deja igual.
-function normalizarUrlVideo(url: string): string {
-  const match = url.match(
+// Convierte un link normal de YouTube o TikTok al formato "embed" que hace falta para
+// mostrarlo en un iframe dentro de la galería. Si no es de ninguno de los dos, lo deja igual.
+async function normalizarUrlVideo(url: string): Promise<string> {
+  const yt = url.match(
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/
   );
-  if (!match) return url;
-  return `https://www.youtube.com/embed/${match[1]}`;
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+
+  let urlTiktok = url;
+  if (/vm\.tiktok\.com|vt\.tiktok\.com|tiktok\.com\/t\//.test(url)) {
+    // Los links cortos que copia la app de TikTok redirigen a la URL completa con el ID del video.
+    try {
+      const res = await fetch(url, { redirect: "follow" });
+      urlTiktok = res.url;
+    } catch {
+      // Si falla la resolución del link corto, seguimos con la URL original.
+    }
+  }
+  const tk = urlTiktok.match(/tiktok\.com\/@[\w.-]+\/video\/(\d+)/);
+  if (tk) return `https://www.tiktok.com/embed/v2/${tk[1]}`;
+
+  return url;
 }
 
 function slugify(texto: string) {
@@ -912,7 +925,7 @@ export async function addGaleriaItemAction(_prev: ActionResult | null, formData:
     const payload = {
       proyecto_id: str(formData, "proyectoId"),
       categoria,
-      url: categoria === "videos" ? normalizarUrlVideo(urlIngresada) : urlIngresada,
+      url: categoria === "videos" ? await normalizarUrlVideo(urlIngresada) : urlIngresada,
       titulo: str(formData, "titulo"),
     };
     const { data, error } = await admin.from("galeria").insert(payload).select("id").single();
