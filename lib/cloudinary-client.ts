@@ -20,8 +20,10 @@ export async function uploadToCloudinary(file: File): Promise<string> {
     body: formData,
   });
 
-  if (!res.ok) throw new Error("Error al subir el archivo a Cloudinary");
-
   const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.error?.message || "Error al subir el archivo a Cloudinary");
+  }
+
   return data.secure_url as string;
 }

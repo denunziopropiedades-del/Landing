@@ -913,6 +913,32 @@ export async function addGaleriaItemAction(_prev: ActionResult | null, formData:
   }
 }
 
+export async function addGaleriaItemsMasivoAction(
+  items: { categoria: string; titulo: string; url: string }[],
+  proyectoId: string
+): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+    if (items.length === 0) return { ok: true };
+
+    const payload = items.map((item) => ({
+      proyecto_id: proyectoId,
+      categoria: item.categoria,
+      titulo: item.titulo,
+      url: item.url,
+    }));
+    const { error } = await admin.from("galeria").insert(payload);
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "crear-masivo", "galeria", proyectoId, { cantidad: items.length });
+    revalidatePath("/admin/galeria");
+    revalidatePath("/proyectos/[slug]", "page");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function deleteGaleriaItemAction(id: string): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor");

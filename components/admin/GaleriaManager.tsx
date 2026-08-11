@@ -1,8 +1,9 @@
 "use client";
 
 import { useActionState, useRef, useState, useTransition } from "react";
-import { Loader2, Trash2, UploadCloud } from "lucide-react";
-import { addGaleriaItemAction, deleteGaleriaItemAction } from "@/lib/admin/actions";
+import { useRouter } from "next/navigation";
+import { Loader2, Trash2, UploadCloud, X } from "lucide-react";
+import { addGaleriaItemAction, addGaleriaItemsMasivoAction, deleteGaleriaItemAction } from "@/lib/admin/actions";
 import { isCloudinaryConfigured, uploadToCloudinary } from "@/lib/cloudinary-client";
 import type { ItemGaleria } from "@/types/site";
 
@@ -18,25 +19,82 @@ const inputClass =
   "w-full rounded-lg border border-black/10 px-3 py-2 text-sm focus:border-brand-green-600 focus:outline-none";
 const labelClass = "mb-1 block text-xs font-medium text-brand-black/70";
 
+function nombreSinExtension(nombreArchivo: string) {
+  return nombreArchivo.replace(/\.[^/.]+$/, "");
+}
+
+type ItemCola = {
+  id: string;
+  nombreArchivo: string;
+  titulo: string;
+  categoria: ItemGaleria["categoria"];
+  estado: "subiendo" | "listo" | "error";
+  url: string;
+  error?: string;
+};
+
 export default function GaleriaManager({ proyectoId, items }: { proyectoId: string; items: ItemGaleria[] }) {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(addGaleriaItemAction, null);
-  const [subiendo, setSubiendo] = useState(false);
-  const [urlSubida, setUrlSubida] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const [deletePending, startTransition] = useTransition();
   const cloudinaryListo = isCloudinaryConfigured();
 
-  const handleFile = async (file: File) => {
-    setSubiendo(true);
+  const [cola, setCola] = useState<ItemCola[]>([]);
+  const [agregandoTodos, setAgregandoTodos] = useState(false);
+
+  const actualizarItemCola = (id: string, patch: Partial<ItemCola>) => {
+    setCola((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  };
+
+  const handleFiles = async (files: FileList) => {
+    const nuevos: ItemCola[] = Array.from(files).map((file) => ({
+      id: crypto.randomUUID(),
+      nombreArchivo: file.name,
+      titulo: nombreSinExtension(file.name),
+      categoria: file.type.startsWith("video/") ? "videos" : "fotos",
+      estado: "subiendo",
+      url: "",
+    }));
+    setCola((prev) => [...prev, ...nuevos]);
+
+    Array.from(files).forEach((file, i) => {
+      const id = nuevos[i].id;
+      uploadToCloudinary(file)
+        .then((url) => actualizarItemCola(id, { estado: "listo", url }))
+        .catch((err) =>
+          actualizarItemCola(id, {
+            estado: "error",
+            error: err instanceof Error ? err.message : "Error al subir el archivo",
+          })
+        );
+    });
+  };
+
+  const quitarDeCola = (id: string) => setCola((prev) => prev.filter((it) => it.id !== id));
+
+  const agregarTodosALaGaleria = async () => {
+    const listos = cola.filter((it) => it.estado === "listo" && it.titulo.trim());
+    if (listos.length === 0) return;
+    setAgregandoTodos(true);
     try {
-      const url = await uploadToCloudinary(file);
-      setUrlSubida(url);
-    } catch {
-      alert("No se pudo subir el archivo. Verificá la configuración de Cloudinary.");
+      const res = await addGaleriaItemsMasivoAction(
+        listos.map((it) => ({ categoria: it.categoria, titulo: it.titulo.trim(), url: it.url })),
+        proyectoId
+      );
+      if (!res.ok) {
+        alert(`No se pudo agregar el contenido: ${res.error}`);
+        return;
+      }
+      setCola((prev) => prev.filter((it) => !listos.some((l) => l.id === it.id)));
+      router.refresh();
     } finally {
-      setSubiendo(false);
+      setAgregandoTodos(false);
     }
   };
+
+  const hayListosParaAgregar = cola.some((it) => it.estado === "listo" && it.titulo.trim());
+  const haySubiendo = cola.some((it) => it.estado === "subiendo");
 
   const eliminar = (id: string) => {
     if (!confirm("¿Eliminar este elemento de la galería?")) return;
@@ -47,33 +105,96 @@ export default function GaleriaManager({ proyectoId, items }: { proyectoId: stri
 
   return (
     <div className="space-y-8">
+      {cloudinaryListo && (
+        <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
+          <h2 className="mb-1 font-display text-lg font-bold text-brand-black">Subir fotos y videos en cantidad</h2>
+          <p className="mb-4 text-sm text-brand-black/60">
+            Elegí varios archivos a la vez. A cada uno le podés poner su título y elegir su sección (Fotos, Videos,
+            Drone, etc.) antes de agregarlo a la galería.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="inline-flex items-center gap-2 rounded-lg border border-dashed border-black/20 px-4 py-3 text-sm text-brand-black/70 hover:border-brand-green-600"
+          >
+            <UploadCloud className="h-4 w-4" />
+            Elegir archivos
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0) handleFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+
+          {cola.length > 0 && (
+            <div className="mt-5 space-y-2">
+              {cola.map((it) => (
+                <div key={it.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-black/10 p-2.5 sm:flex-nowrap">
+                  <div className="min-w-0 flex-1">
+                    <input
+                      value={it.titulo}
+                      onChange={(e) => actualizarItemCola(it.id, { titulo: e.target.value })}
+                      placeholder="Título"
+                      className={inputClass}
+                    />
+                  </div>
+                  <select
+                    value={it.categoria}
+                    onChange={(e) => actualizarItemCola(it.id, { categoria: e.target.value as ItemGaleria["categoria"] })}
+                    className={`${inputClass} sm:w-40`}
+                  >
+                    {CATEGORIAS.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex w-full items-center justify-between gap-2 text-xs sm:w-auto sm:justify-start">
+                    {it.estado === "subiendo" && (
+                      <span className="inline-flex items-center gap-1 text-brand-black/50">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Subiendo...
+                      </span>
+                    )}
+                    {it.estado === "listo" && <span className="text-brand-green-700">Listo</span>}
+                    {it.estado === "error" && <span className="text-red-600">{it.error ?? "Error"}</span>}
+                    <button
+                      type="button"
+                      onClick={() => quitarDeCola(it.id)}
+                      className="text-brand-black/40 hover:text-red-600"
+                      aria-label="Quitar de la lista"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={agregarTodosALaGaleria}
+                disabled={!hayListosParaAgregar || agregandoTodos || haySubiendo}
+                className="mt-2 inline-flex items-center gap-2 rounded-full bg-brand-green-700 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-green-600 disabled:opacity-60"
+              >
+                {agregandoTodos && <Loader2 className="h-4 w-4 animate-spin" />}
+                Agregar {cola.filter((it) => it.estado === "listo").length || ""} a la galería
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 font-display text-lg font-bold text-brand-black">Agregar contenido</h2>
-
-        {cloudinaryListo && (
-          <div className="mb-4">
-            <label className={labelClass}>Subir imagen o video (Cloudinary)</label>
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={subiendo}
-              className="inline-flex items-center gap-2 rounded-lg border border-dashed border-black/20 px-4 py-3 text-sm text-brand-black/70 hover:border-brand-green-600 disabled:opacity-60"
-            >
-              {subiendo ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
-              {subiendo ? "Subiendo..." : "Elegir archivo"}
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*,video/*"
-              className="hidden"
-              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-            />
-            {urlSubida && <p className="mt-2 truncate text-xs text-brand-green-700">Listo: {urlSubida}</p>}
-          </div>
-        )}
-
-        <form action={formAction} className="grid gap-4 sm:grid-cols-2">
+        <h2 className="mb-1 font-display text-lg font-bold text-brand-black">
+          Agregar un elemento por URL {cloudinaryListo && "(ej. un video embebido de YouTube)"}
+        </h2>
+        <form action={formAction} className="mt-4 grid gap-4 sm:grid-cols-2">
           <input type="hidden" name="proyectoId" value={proyectoId} />
           <div>
             <label className={labelClass}>Categoría</label>
@@ -90,17 +211,8 @@ export default function GaleriaManager({ proyectoId, items }: { proyectoId: stri
             <input name="titulo" required className={inputClass} />
           </div>
           <div className="sm:col-span-2">
-            <label className={labelClass}>
-              URL {cloudinaryListo ? "(se completa sola al subir un archivo, o pegá una manualmente)" : "de la imagen o video embebido"}
-            </label>
-            <input
-              name="url"
-              required
-              defaultValue={urlSubida}
-              key={urlSubida}
-              placeholder="https://..."
-              className={inputClass}
-            />
+            <label className={labelClass}>URL</label>
+            <input name="url" required placeholder="https://..." className={inputClass} />
           </div>
           <div className="flex items-end gap-3">
             <button

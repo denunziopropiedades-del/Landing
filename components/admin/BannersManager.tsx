@@ -22,8 +22,8 @@ function BannerForm({ proyectos, banner, onDone }: { proyectos: Proyecto[]; bann
     try {
       const url = await uploadToCloudinary(file);
       setUrlSubida(url);
-    } catch {
-      alert("No se pudo subir el archivo. Verificá la configuración de Cloudinary.");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "No se pudo subir el archivo. Verificá la configuración de Cloudinary.");
     } finally {
       setSubiendo(false);
     }
