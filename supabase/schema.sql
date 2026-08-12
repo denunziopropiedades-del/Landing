@@ -315,6 +315,9 @@ create table leads (
   -- Fecha/horario acordado para la firma en escribanía.
   fecha_firma_escribania date,
   horario_firma_escribania text,
+  -- Id del evento de Google Calendar creado para esa firma, para poder borrarlo/recrearlo
+  -- cuando cambia la fecha u horario.
+  escribania_calendar_event_id text,
   -- Comisión (USD), honorarios (USD y ARS) y gastos (ARS) de la venta, cargados a mano.
   comision_usd numeric,
   honorarios_usd numeric,

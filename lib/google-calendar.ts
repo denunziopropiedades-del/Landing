@@ -27,10 +27,13 @@ const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID?.trim();
 const TIMEZONE = process.env.GOOGLE_CALENDAR_TIMEZONE ?? "America/Argentina/Buenos_Aires";
 
 const DURACION_VISITA_MINUTOS = 45;
+const DURACION_ESCRIBANIA_MINUTOS = 60;
 
-/** Tomato/rojo — https://developers.google.com/calendar/api/v3/reference/colors */
-const COLOR_ID_ROJO = "11";
+/** https://developers.google.com/calendar/api/v3/reference/colors */
+const COLOR_ID_ROJO = "11"; // Tomato
+const COLOR_ID_AZUL = "9"; // Blueberry
 const ETIQUETA_VISITA_ONLINE = "VISITA ONLINE";
+const ETIQUETA_ESCRIBANIA = "FIRMA ESCRIBANÍA";
 
 export function isGoogleCalendarConfigured() {
   return Boolean(CLIENT_EMAIL && PRIVATE_KEY && CALENDAR_ID);
@@ -125,6 +128,60 @@ export async function crearEventoVisita(visita: VisitaParaCalendario): Promise<s
 
     if (!res.ok) {
       console.error("Error creando evento de Google Calendar", await res.text());
+      return null;
+    }
+
+    const data = await res.json();
+    return (data.id as string) ?? null;
+  } catch (err) {
+    console.error("Error de conexión con Google Calendar", err);
+    return null;
+  }
+}
+
+export type EscribaniaParaCalendario = {
+  nombreCliente: string;
+  fecha: string;
+  horario: string;
+  manzana?: string;
+  lote?: string;
+  proyectoNombre?: string;
+};
+
+/**
+ * Crea un evento en Google Calendar para una firma en escribanía, con la
+ * etiqueta "FIRMA ESCRIBANÍA" y color azul. Devuelve el id del evento creado,
+ * o null si Google Calendar no está configurado o la creación falla.
+ */
+export async function crearEventoEscribania(datos: EscribaniaParaCalendario): Promise<string | null> {
+  if (!isGoogleCalendarConfigured()) return null;
+
+  try {
+    const accessToken = await getAccessToken();
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID!)}/events`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          summary: `${ETIQUETA_ESCRIBANIA} - ${datos.nombreCliente}`,
+          description: [
+            "Firma en escribanía.",
+            datos.proyectoNombre ? `Proyecto: ${datos.proyectoNombre}` : null,
+            datos.manzana ? `Manzana: ${datos.manzana}` : null,
+            datos.lote ? `Lote: ${datos.lote}` : null,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          start: { dateTime: sumarMinutos(datos.fecha, datos.horario, 0), timeZone: TIMEZONE },
+          end: { dateTime: sumarMinutos(datos.fecha, datos.horario, DURACION_ESCRIBANIA_MINUTOS), timeZone: TIMEZONE },
+          colorId: COLOR_ID_AZUL,
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      console.error("Error creando evento de escribanía en Google Calendar", await res.text());
       return null;
     }
 

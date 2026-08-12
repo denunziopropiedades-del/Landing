@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/server";
 import { requireRole, AdminActionError } from "@/lib/admin/auth";
 import { registrarActividad } from "@/lib/admin/activity";
-import { cancelarEventoVisita } from "@/lib/google-calendar";
+import { cancelarEventoVisita, crearEventoEscribania } from "@/lib/google-calendar";
 import { NOTA_RESERVA_LOTE_HTML, sendEmail } from "@/lib/email";
 import type { EstadoLead, EstadoLote, EstadoVisita, Rol } from "@/types/site";
 
@@ -1348,11 +1348,40 @@ export async function actualizarFirmaEscribaniaLeadAction(
     const actor = await requireRole("administrador", "supervisor", "vendedor");
     await verificarPropiedadLead(actor.id, actor.rol, id);
     const admin = (await getSupabaseAdminClient())!;
+
+    const { data: lead } = await admin
+      .from("leads")
+      .select("nombre, apellido, manzana, escribania_calendar_event_id, lotes(manzana, numero), proyectos(nombre)")
+      .eq("id", id)
+      .maybeSingle();
+
+    // Si ya había un evento cargado (fecha/horario anteriores), se borra: al guardar de nuevo
+    // se crea uno nuevo con los datos actualizados, así nunca queda un evento viejo duplicado.
+    if (lead?.escribania_calendar_event_id) {
+      await cancelarEventoVisita(lead.escribania_calendar_event_id);
+    }
+
+    const fechaLimpia = fecha || "";
+    const horarioLimpio = horario.trim();
+    let eventId: string | null = null;
+    if (fechaLimpia && horarioLimpio && lead) {
+      const lote = lead.lotes as unknown as { manzana: string; numero: string } | null;
+      eventId = await crearEventoEscribania({
+        nombreCliente: `${lead.nombre} ${lead.apellido ?? ""}`.trim(),
+        fecha: fechaLimpia,
+        horario: horarioLimpio,
+        manzana: lote?.manzana ?? lead.manzana ?? undefined,
+        lote: lote?.numero ?? undefined,
+        proyectoNombre: (lead.proyectos as unknown as { nombre: string } | null)?.nombre,
+      });
+    }
+
     const { error } = await admin
       .from("leads")
       .update({
-        fecha_firma_escribania: fecha || null,
-        horario_firma_escribania: horario.trim() || null,
+        fecha_firma_escribania: fechaLimpia || null,
+        horario_firma_escribania: horarioLimpio || null,
+        escribania_calendar_event_id: eventId,
         actualizado_en: new Date().toISOString(),
       })
       .eq("id", id);
