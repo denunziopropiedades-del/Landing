@@ -37,6 +37,7 @@ export type Proyecto = {
   /** Datos de la escribanía asignada a este proyecto, para el mail de firma al cliente. */
   escribaniaNombre?: string | null;
   escribaniaDireccion?: string | null;
+  escribaniaMapsUrl?: string | null;
   escribaniaInstrucciones?: string | null;
   /** Documentación que hay que llevar a la firma, específica de este proyecto. */
   documentosRequeridos?: string[];

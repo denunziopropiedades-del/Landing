@@ -56,6 +56,7 @@ export async function getProyectosAdmin(): Promise<Proyecto[]> {
     celdaAltoPct: p.celda_alto_pct ?? null,
     escribaniaNombre: p.escribania_nombre ?? null,
     escribaniaDireccion: p.escribania_direccion ?? null,
+    escribaniaMapsUrl: p.escribania_maps_url ?? null,
     escribaniaInstrucciones: p.escribania_instrucciones ?? null,
     documentosRequeridos: (p.documentos_requeridos as string[] | null) ?? [],
   }));

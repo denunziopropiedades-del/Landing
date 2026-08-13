@@ -98,6 +98,7 @@ export function armarMailFirmaEscribania(datos: {
   horario: string;
   escribaniaNombre: string | null;
   escribaniaDireccion: string | null;
+  escribaniaMapsUrl: string | null;
   escribaniaInstrucciones: string | null;
   documentosRequeridos: string[];
 }) {
@@ -126,7 +127,12 @@ export function armarMailFirmaEscribania(datos: {
     ${
       datos.escribaniaNombre || datos.escribaniaDireccion
         ? `<p style="margin: 16px 0 4px; color: #333;"><b>ESCRIBANÍA:</b> ${datos.escribaniaNombre ?? ""}</p>
-           ${datos.escribaniaDireccion ? `<p style="margin: 0 0 4px; color: #333;"><b>DIRECCIÓN:</b> ${datos.escribaniaDireccion}</p>` : ""}`
+           ${datos.escribaniaDireccion ? `<p style="margin: 0 0 4px; color: #333;"><b>DIRECCIÓN:</b> ${datos.escribaniaDireccion}</p>` : ""}
+           ${
+             datos.escribaniaMapsUrl
+               ? `<p style="margin: 0 0 4px;"><a href="${datos.escribaniaMapsUrl}" target="_blank" rel="noopener noreferrer" style="color: #16a34a; font-weight: 600;">Ver ubicación en Google Maps</a></p>`
+               : ""
+           }`
         : ""
     }
     <div style="margin-top: 20px; padding: 16px; border: 1px solid #f5c6cb; background: #fff5f5; border-radius: 8px;">

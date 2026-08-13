@@ -138,6 +138,7 @@ export async function upsertProyectoAction(_prev: ActionResult | null, formData:
       destacado: formData.get("destacado") === "on",
       escribania_nombre: optStr(formData, "escribaniaNombre"),
       escribania_direccion: optStr(formData, "escribaniaDireccion"),
+      escribania_maps_url: optStr(formData, "escribaniaMapsUrl"),
       escribania_instrucciones: optStr(formData, "escribaniaInstrucciones"),
       documentos_requeridos: str(formData, "documentosRequeridos")
         .split("\n")
@@ -1415,7 +1416,7 @@ export async function actualizarFirmaEscribaniaLeadAction(
     const { data: lead } = await admin
       .from("leads")
       .select(
-        "nombre, apellido, email, manzana, escribania_calendar_event_id, lotes(manzana, numero), lead_lotes(lotes(manzana, numero, superficie_m2)), proyectos(nombre, escribania_nombre, escribania_direccion, escribania_instrucciones, documentos_requeridos)"
+        "nombre, apellido, email, manzana, escribania_calendar_event_id, lotes(manzana, numero), lead_lotes(lotes(manzana, numero, superficie_m2)), proyectos(nombre, escribania_nombre, escribania_direccion, escribania_maps_url, escribania_instrucciones, documentos_requeridos)"
       )
       .eq("id", id)
       .maybeSingle();
@@ -1444,6 +1445,7 @@ export async function actualizarFirmaEscribaniaLeadAction(
         nombre: string;
         escribania_nombre: string | null;
         escribania_direccion: string | null;
+        escribania_maps_url: string | null;
         escribania_instrucciones: string | null;
         documentos_requeridos: string[] | null;
       } | null;
@@ -1476,6 +1478,7 @@ export async function actualizarFirmaEscribaniaLeadAction(
               horario: horarioLimpio,
               escribaniaNombre: proyecto?.escribania_nombre ?? null,
               escribaniaDireccion: proyecto?.escribania_direccion ?? null,
+              escribaniaMapsUrl: proyecto?.escribania_maps_url ?? null,
               escribaniaInstrucciones: proyecto?.escribania_instrucciones ?? null,
               documentosRequeridos: proyecto?.documentos_requeridos ?? [],
             })

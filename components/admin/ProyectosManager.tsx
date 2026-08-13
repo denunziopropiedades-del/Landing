@@ -87,6 +87,15 @@ function ProyectoForm({ proyecto, onDone }: { proyecto?: Proyecto; onDone?: () =
         <label className={labelClass}>Dirección de la escribanía</label>
         <input name="escribaniaDireccion" defaultValue={proyecto?.escribaniaDireccion ?? ""} className={inputClass} />
       </div>
+      <div>
+        <label className={labelClass}>Link de Google Maps de la escribanía (opcional, para el mail de firma)</label>
+        <input
+          name="escribaniaMapsUrl"
+          defaultValue={proyecto?.escribaniaMapsUrl ?? ""}
+          placeholder="https://maps.app.goo.gl/..."
+          className={inputClass}
+        />
+      </div>
       <div className="sm:col-span-2">
         <label className={labelClass}>Instrucciones adicionales para la firma (opcional)</label>
         <textarea

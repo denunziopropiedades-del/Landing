@@ -98,6 +98,7 @@ create table proyectos (
   -- Datos de la escribanía y documentación requerida, para el mail de firma al cliente.
   escribania_nombre text,
   escribania_direccion text,
+  escribania_maps_url text,
   escribania_instrucciones text,
   documentos_requeridos jsonb not null default '[]'::jsonb,
   creado_en timestamptz not null default now(),
