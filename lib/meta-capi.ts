@@ -57,8 +57,11 @@ export async function enviarEventoConversion(evento: EventoConversion): Promise<
         body: JSON.stringify(payload),
       }
     );
+    const textoRespuesta = await res.text();
     if (!res.ok) {
-      console.error("Error enviando evento de conversión a Meta", await res.text());
+      console.error("Error enviando evento de conversión a Meta", textoRespuesta);
+    } else {
+      console.log("Meta CAPI OK:", evento.nombreEvento, textoRespuesta);
     }
   } catch (err) {
     console.error("Error de conexión con la API de conversiones de Meta", err);
