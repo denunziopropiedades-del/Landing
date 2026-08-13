@@ -203,7 +203,18 @@ function LeadCard({
               ))}
             </select>
           ) : (
-            lead.loteNombre && <p className="text-xs text-brand-black/50">{lead.loteNombre}</p>
+            lead.lotes.length > 0 && (
+              <div className="text-xs text-brand-black/50">
+                {lead.lotes.length > 1 && (
+                  <p className="font-medium text-brand-black/70">{lead.lotes.length} lotes en esta operación</p>
+                )}
+                {lead.lotes.map((l) => (
+                  <p key={l.id}>
+                    Manzana {l.manzana} — Lote {l.numero} ({l.superficieM2} m²)
+                  </p>
+                ))}
+              </div>
+            )
           )}
 
           <div className="space-y-1 text-xs text-brand-black/60">

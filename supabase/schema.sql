@@ -335,6 +335,92 @@ create unique index leads_lote_activo_idx on leads (lote_id)
     and estado in ('reservado', 'pendiente_firma_escribania', 'firmado_escribania', 'vendido');
 
 -- ═══════════════════════════════════════════════════════════════════════
+-- Lead ↔ lotes (operaciones de 1 a 3 lotes juntos para un mismo cliente).
+-- `leads.lote_id` queda solo para compatibilidad con leads viejos de un
+-- solo lote; las reservas nuevas usan esta tabla, sin importar cuántos
+-- lotes elija el cliente.
+-- ═══════════════════════════════════════════════════════════════════════
+
+create table lead_lotes (
+  id uuid primary key default gen_random_uuid(),
+  lead_id uuid not null references leads(id) on delete cascade,
+  lote_id uuid not null references lotes(id) on delete cascade,
+  creado_en timestamptz not null default now(),
+  unique (lead_id, lote_id)
+);
+
+create index lead_lotes_lead_idx on lead_lotes (lead_id);
+create index lead_lotes_lote_idx on lead_lotes (lote_id);
+
+-- Migra los leads viejos de un solo lote a la tabla nueva, para que también
+-- aparezcan agrupados con el mismo modelo.
+insert into lead_lotes (lead_id, lote_id)
+select id, lote_id from leads where lote_id is not null
+on conflict do nothing;
+
+alter table lead_lotes enable row level security;
+
+create policy "lead_lotes: staff activo puede ver todo" on lead_lotes
+  for select using (mi_rol() is not null);
+
+create policy "lead_lotes: admin/supervisor/vendedor puede gestionar" on lead_lotes
+  for all using (mi_rol() in ('administrador', 'supervisor', 'vendedor'))
+  with check (mi_rol() in ('administrador', 'supervisor', 'vendedor'));
+
+-- Reserva de 1 a 3 lotes en una sola operación atómica: bloquea las filas de
+-- los lotes elegidos, valida que TODOS estén disponibles, crea el lead, los
+-- vincula en lead_lotes y los pasa a "reservado" — todo o nada, para que dos
+-- clientes nunca puedan quedarse con el mismo lote en simultáneo.
+create or replace function reservar_lotes(
+  p_lote_ids uuid[],
+  p_proyecto_id uuid,
+  p_nombre text,
+  p_apellido text,
+  p_dni text,
+  p_email text,
+  p_telefono text
+) returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_lead_id uuid;
+  v_manzana text;
+  v_lote record;
+  v_encontrados int := 0;
+begin
+  -- Bloquea las filas de los lotes elegidos (una por una, a medida que las
+  -- recorre) para que ninguna otra operación concurrente pueda tocarlas
+  -- hasta que termine esta transacción.
+  for v_lote in select id, estado from lotes where id = any(p_lote_ids) for update
+  loop
+    v_encontrados := v_encontrados + 1;
+    if v_lote.estado <> 'disponible' then
+      raise exception 'Uno o más lotes seleccionados ya no están disponibles.';
+    end if;
+  end loop;
+
+  if v_encontrados <> array_length(p_lote_ids, 1) then
+    raise exception 'Uno o más lotes seleccionados no existen.';
+  end if;
+
+  select manzana into v_manzana from lotes where id = p_lote_ids[1];
+
+  insert into leads (tipo, proyecto_id, lote_id, nombre, apellido, dni, email, telefono, manzana, estado)
+  values ('reserva', p_proyecto_id, p_lote_ids[1], p_nombre, p_apellido, p_dni, p_email, p_telefono, v_manzana, 'nuevo')
+  returning id into v_lead_id;
+
+  insert into lead_lotes (lead_id, lote_id)
+  select v_lead_id, unnest(p_lote_ids);
+
+  update lotes set estado = 'reservado' where id = any(p_lote_ids);
+
+  return v_lead_id;
+end;
+$$;
+
+-- ═══════════════════════════════════════════════════════════════════════
 -- Gastos generales (planilla manual, en pesos, no atados a un cliente puntual)
 -- ═══════════════════════════════════════════════════════════════════════
 

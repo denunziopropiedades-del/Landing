@@ -9,6 +9,7 @@ import type {
   ItemGaleria,
   Lead,
   Lote,
+  LoteDeLead,
   Perfil,
   ProgresoItem,
   Promocion,
@@ -285,11 +286,50 @@ export async function getLeads(): Promise<Lead[]> {
 
   const { data, error } = await supabase
     .from("leads")
-    .select("*, proyectos(nombre), lotes(nombre, numero), perfiles(nombre, email)")
+    .select(
+      "*, proyectos(nombre), lotes(nombre, numero, manzana, superficie_m2), perfiles(nombre, email), lead_lotes(lotes(id, manzana, numero, superficie_m2, nombre))"
+    )
     .order("creado_en", { ascending: false });
   if (error || !data) return [];
 
-  return data.map((l) => ({
+  return data.map((l) => {
+    const lotesOperacion = (
+      (l.lead_lotes ?? []) as unknown as {
+        lotes: { id: string; manzana: string; numero: string; superficie_m2: number; nombre: string } | null;
+      }[]
+    )
+      .map((ll) => ll.lotes)
+      .filter((lo): lo is NonNullable<typeof lo> => lo !== null);
+
+    const loteSingular = l.lotes as unknown as {
+      nombre: string;
+      numero: string;
+      manzana: string;
+      superficie_m2: number;
+    } | null;
+
+    const lotes: LoteDeLead[] =
+      lotesOperacion.length > 0
+        ? lotesOperacion.map((lo) => ({
+            id: lo.id,
+            manzana: lo.manzana,
+            numero: lo.numero,
+            superficieM2: lo.superficie_m2,
+            nombre: lo.nombre,
+          }))
+        : loteSingular && l.lote_id
+          ? [
+              {
+                id: l.lote_id,
+                manzana: loteSingular.manzana,
+                numero: loteSingular.numero,
+                superficieM2: loteSingular.superficie_m2,
+                nombre: loteSingular.nombre,
+              },
+            ]
+          : [];
+
+    return {
     id: l.id,
     creadoEn: l.creado_en,
     actualizadoEn: l.actualizado_en,
@@ -297,8 +337,9 @@ export async function getLeads(): Promise<Lead[]> {
     proyectoId: l.proyecto_id,
     proyectoNombre: (l.proyectos as { nombre: string } | null)?.nombre,
     loteId: l.lote_id,
-    loteNombre: (l.lotes as { nombre: string; numero: string } | null)?.nombre,
-    loteNumero: (l.lotes as { nombre: string; numero: string } | null)?.numero,
+    loteNombre: lotes[0]?.nombre,
+    loteNumero: lotes.length > 1 ? lotes.map((x) => x.numero).join(", ") : lotes[0]?.numero,
+    lotes,
     nombre: l.nombre,
     apellido: l.apellido ?? undefined,
     dni: l.dni ?? undefined,
@@ -320,7 +361,8 @@ export async function getLeads(): Promise<Lead[]> {
     honorariosUsd: numOrNull(l.honorarios_usd),
     honorariosArs: numOrNull(l.honorarios_ars),
     gastosArs: numOrNull(l.gastos_ars),
-  }));
+    };
+  });
 }
 
 export async function getVisitas(): Promise<Visita[]> {

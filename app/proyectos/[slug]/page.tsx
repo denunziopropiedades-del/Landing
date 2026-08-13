@@ -19,6 +19,7 @@ import Faq from "@/components/Faq";
 import Contacto from "@/components/Contacto";
 import Footer from "@/components/Footer";
 import ReservaForm from "@/components/ReservaForm";
+import { SeleccionLotesProvider } from "@/components/SeleccionLotesContext";
 import { accesos, beneficios } from "@/lib/data";
 import {
   agruparLotesPorTipo,
@@ -126,40 +127,43 @@ export default async function ProyectoPage({ params }: { params: Promise<Params>
         <LotesGrid tiposLotes={tiposLotes} numero={numero} />
         <ComboLotes combo={combo} />
 
-        {masterplan && lotes.some((l) => l.posX !== null) && (
-          <section className="bg-brand-cream pb-20 sm:pb-28">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              <MapaLotes
-                imagenMasterplan={masterplan}
-                lotes={lotes}
-                numero={numero}
-                celdaAnchoPct={proyecto.celdaAnchoPct ?? undefined}
-                celdaAltoPct={proyecto.celdaAltoPct ?? undefined}
-              />
+        <SeleccionLotesProvider>
+          {masterplan && lotes.some((l) => l.posX !== null) && (
+            <section className="bg-brand-cream pb-20 sm:pb-28">
+              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <MapaLotes
+                  imagenMasterplan={masterplan}
+                  lotes={lotes}
+                  numero={numero}
+                  celdaAnchoPct={proyecto.celdaAnchoPct ?? undefined}
+                  celdaAltoPct={proyecto.celdaAltoPct ?? undefined}
+                />
+              </div>
+            </section>
+          )}
+
+          <Beneficios beneficios={beneficios} />
+          <Novedades novedades={novedades} />
+          <Ubicacion ubicacion={proyecto.ubicacion} accesos={accesos} />
+          <Galeria items={galeria} />
+          <ProgresoDesarrollo progreso={progreso} />
+          <Financiacion tiposLotes={tiposLotes} config={financiacion} />
+
+          <section id="reserva" className="bg-white py-20 sm:py-28">
+            <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+              <div className="mx-auto max-w-2xl text-center">
+                <h2 className="font-display text-3xl font-bold text-brand-black sm:text-4xl">Reserva online</h2>
+                <p className="mt-3 text-brand-black/70">
+                  Asegurá tu lote hoy mismo completando el formulario de reserva. Podés elegir hasta 3 lotes desde el
+                  plano interactivo o directamente acá abajo.
+                </p>
+              </div>
+              <div className="mt-12">
+                <ReservaForm proyectoId={proyecto.id} lotes={lotes} numero={numero} comboLotes={combo} />
+              </div>
             </div>
           </section>
-        )}
-
-        <Beneficios beneficios={beneficios} />
-        <Novedades novedades={novedades} />
-        <Ubicacion ubicacion={proyecto.ubicacion} accesos={accesos} />
-        <Galeria items={galeria} />
-        <ProgresoDesarrollo progreso={progreso} />
-        <Financiacion tiposLotes={tiposLotes} config={financiacion} />
-
-        <section id="reserva" className="bg-white py-20 sm:py-28">
-          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-2xl text-center">
-              <h2 className="font-display text-3xl font-bold text-brand-black sm:text-4xl">Reserva online</h2>
-              <p className="mt-3 text-brand-black/70">
-                Asegurá tu lote hoy mismo completando el formulario de reserva.
-              </p>
-            </div>
-            <div className="mt-12">
-              <ReservaForm proyectoId={proyecto.id} lotes={lotes} numero={numero} />
-            </div>
-          </div>
-        </section>
+        </SeleccionLotesProvider>
 
         <Testimonios testimonios={testimonios} />
         <AgendaVisita proyectoId={proyecto.id} />

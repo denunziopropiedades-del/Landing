@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { reservaSchema } from "@/lib/schemas";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
-import { sendNotificationEmail } from "@/lib/email";
+import { armarMailBienvenidaReserva, sendEmail, sendNotificationEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
@@ -20,39 +20,39 @@ export async function POST(request: Request) {
   const data = parsed.data;
   const supabase = await getSupabaseAdminClient();
 
-  let loteNombre = "";
+  let lotesReservados: { numero: string; manzana: string; superficieM2: number }[] = [];
+  let proyectoNombre = "";
   let manzana = "";
 
   if (supabase) {
-    const { data: lote } = await supabase
-      .from("lotes")
-      .select("nombre, manzana, numero, estado")
-      .eq("id", data.loteId)
-      .maybeSingle();
-
-    if (!lote || lote.estado !== "disponible") {
-      return NextResponse.json({ error: "El lote seleccionado ya no está disponible." }, { status: 409 });
-    }
-
-    loteNombre = `${lote.nombre} (Lote ${lote.numero})`;
-    manzana = lote.manzana;
-
-    const { error } = await supabase.from("leads").insert({
-      tipo: "reserva",
-      proyecto_id: data.proyectoId,
-      lote_id: data.loteId,
-      nombre: data.nombre,
-      apellido: data.apellido,
-      dni: data.dni,
-      email: data.email,
-      telefono: data.telefono,
-      manzana,
-      estado: "nuevo",
+    const { data: leadId, error: rpcError } = await supabase.rpc("reservar_lotes", {
+      p_lote_ids: data.loteIds,
+      p_proyecto_id: data.proyectoId,
+      p_nombre: data.nombre,
+      p_apellido: data.apellido,
+      p_dni: data.dni,
+      p_email: data.email,
+      p_telefono: data.telefono,
     });
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+
+    if (rpcError || !leadId) {
+      return NextResponse.json(
+        { error: rpcError?.message ?? "Uno o más lotes seleccionados ya no están disponibles." },
+        { status: 409 }
+      );
     }
+
+    const [{ data: lotes }, { data: proyecto }] = await Promise.all([
+      supabase.from("lotes").select("numero, manzana, superficie_m2").in("id", data.loteIds),
+      supabase.from("proyectos").select("nombre").eq("id", data.proyectoId).maybeSingle(),
+    ]);
+
+    lotesReservados = (lotes ?? []).map((l) => ({ numero: l.numero, manzana: l.manzana, superficieM2: l.superficie_m2 }));
+    proyectoNombre = proyecto?.nombre ?? "";
+    manzana = lotesReservados[0]?.manzana ?? "";
   }
+
+  const listaLotesTexto = lotesReservados.map((l) => `Lote ${l.numero} (${l.superficieM2} m²)`).join(", ");
 
   try {
     await sendNotificationEmail(
@@ -63,11 +63,28 @@ export async function POST(request: Request) {
          <li><b>DNI:</b> ${data.dni}</li>
          <li><b>Email:</b> ${data.email}</li>
          <li><b>Teléfono:</b> ${data.telefono}</li>
-         <li><b>Lote:</b> ${loteNombre || data.loteId}</li>
+         <li><b>Lotes (${lotesReservados.length}):</b> ${listaLotesTexto || data.loteIds.join(", ")}</li>
        </ul>`
     );
   } catch (err) {
     console.error("No se pudo enviar el email de notificación", err);
+  }
+
+  if (lotesReservados.length > 0) {
+    try {
+      await sendEmail(
+        data.email,
+        `Confirmamos tu reserva en ${proyectoNombre}`,
+        armarMailBienvenidaReserva({
+          nombre: data.nombre,
+          proyectoNombre,
+          manzana,
+          lotes: lotesReservados,
+        })
+      );
+    } catch (err) {
+      console.error("No se pudo enviar el mail de bienvenida al cliente", err);
+    }
   }
 
   return NextResponse.json({ ok: true });

@@ -1199,7 +1199,11 @@ export async function actualizarEstadoLeadAction(id: string, estado: EstadoLead)
     await verificarPropiedadLead(actor.id, actor.rol, id);
     const admin = (await getSupabaseAdminClient())!;
 
-    const { data: lead, error: errLead } = await admin.from("leads").select("lote_id").eq("id", id).maybeSingle();
+    const { data: lead, error: errLead } = await admin
+      .from("leads")
+      .select("lote_id, lead_lotes(lote_id)")
+      .eq("id", id)
+      .maybeSingle();
     if (errLead) throw new Error(errLead.message);
 
     const { error } = await admin
@@ -1213,13 +1217,20 @@ export async function actualizarEstadoLeadAction(id: string, estado: EstadoLead)
       throw new Error(error.message);
     }
 
-    if (lead?.lote_id) {
+    const loteIdsDelLead = Array.from(
+      new Set([
+        ...((lead?.lead_lotes ?? []) as unknown as { lote_id: string }[]).map((ll) => ll.lote_id),
+        ...(lead?.lote_id ? [lead.lote_id] : []),
+      ])
+    );
+
+    if (loteIdsDelLead.length > 0) {
       if (estado === "reservado") {
-        await admin.from("lotes").update({ estado: "reservado" }).eq("id", lead.lote_id);
+        await admin.from("lotes").update({ estado: "reservado" }).in("id", loteIdsDelLead);
       } else if (estado === "vendido") {
-        await admin.from("lotes").update({ estado: "vendido" }).eq("id", lead.lote_id);
+        await admin.from("lotes").update({ estado: "vendido" }).in("id", loteIdsDelLead);
       } else if (estado === "descartado") {
-        await admin.from("lotes").update({ estado: "disponible" }).eq("id", lead.lote_id).eq("estado", "reservado");
+        await admin.from("lotes").update({ estado: "disponible" }).in("id", loteIdsDelLead).eq("estado", "reservado");
       }
     }
 

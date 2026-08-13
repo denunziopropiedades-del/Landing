@@ -1,10 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Maximize2, MessageCircle, Minus, Plus, RotateCcw, X } from "lucide-react";
+import { Check, Maximize2, MessageCircle, Minus, Plus, RotateCcw, X } from "lucide-react";
 import type { EstadoLote, Lote } from "@/types/site";
 import { formatUsd } from "@/lib/utils";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
+import { useSeleccionLotes } from "@/components/SeleccionLotesContext";
 
 const COLOR_ESTADO: Record<EstadoLote, string> = {
   disponible: "#22c55e",
@@ -58,6 +59,7 @@ export default function MapaLotes({
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const arrastre = useRef<{ activo: boolean; x: number; y: number }>({ activo: false, x: 0, y: 0 });
+  const { seleccionados, toggleSeleccion, limiteAlcanzado } = useSeleccionLotes();
 
   const lotesEnMapa = lotes.filter((l) => l.posX !== null && l.posY !== null);
   if (lotesEnMapa.length === 0) return null;
@@ -127,42 +129,68 @@ export default function MapaLotes({
         {LABEL_ESTADO[seleccionado.estado]}
       </span>
       {seleccionado.estado === "disponible" && (
-        <a
-          href={buildWhatsappUrl(
-            `Hola, me interesa el Lote ${seleccionado.numero} de la Manzana ${seleccionado.manzana} (${seleccionado.superficieM2} m²).`,
-            numero
+        <>
+          <a
+            href={buildWhatsappUrl(
+              `Hola, me interesa el Lote ${seleccionado.numero} de la Manzana ${seleccionado.manzana} (${seleccionado.superficieM2} m²).`,
+              numero
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 flex items-center justify-center gap-2 rounded-full bg-brand-green-700 py-2 text-xs font-semibold text-white hover:bg-brand-green-600"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            Consultar este lote
+          </a>
+          <button
+            type="button"
+            onClick={() => toggleSeleccion(seleccionado.id)}
+            disabled={!seleccionados.includes(seleccionado.id) && limiteAlcanzado}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-brand-green-700 py-2 text-xs font-semibold text-brand-green-700 hover:bg-brand-green-700/10 disabled:opacity-40"
+          >
+            <Check className="h-3.5 w-3.5" />
+            {seleccionados.includes(seleccionado.id) ? "Quitar de mi reserva" : "Sumar a mi reserva"}
+          </button>
+          {!seleccionados.includes(seleccionado.id) && limiteAlcanzado && (
+            <p className="mt-1.5 text-center text-[11px] text-brand-black/50">Podés reservar hasta 3 lotes juntos.</p>
           )}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-3 flex items-center justify-center gap-2 rounded-full bg-brand-green-700 py-2 text-xs font-semibold text-white hover:bg-brand-green-600"
-        >
-          <MessageCircle className="h-3.5 w-3.5" />
-          Consultar este lote
-        </a>
+        </>
       )}
     </div>
   );
 
-  const celdas = lotesEnMapa.map((lote) => (
-    <button
-      key={lote.id}
-      type="button"
-      onClick={() => setSeleccionado(seleccionado?.id === lote.id ? null : lote)}
-      aria-label={`Lote ${lote.manzana}-${lote.numero}, ${LABEL_ESTADO[lote.estado]}`}
-      className="absolute -translate-x-1/2 -translate-y-1/2 border transition hover:z-10 hover:brightness-110"
-      style={{
-        left: `${lote.posX}%`,
-        top: `${lote.posY}%`,
-        width: `${celdaAnchoPct}%`,
-        height: `${celdaAltoPct}%`,
-        backgroundColor: COLOR_ESTADO[lote.estado],
-        opacity: seleccionado?.id === lote.id ? 0.85 : 0.6,
-        borderColor:
-          seleccionado?.id === lote.id ? "#fff" : "color-mix(in srgb, " + COLOR_ESTADO[lote.estado] + " 70%, black)",
-        borderWidth: seleccionado?.id === lote.id ? 2 : 1,
-      }}
-    />
-  ));
+  const celdas = lotesEnMapa.map((lote) => {
+    const enReserva = seleccionados.includes(lote.id);
+    return (
+      <button
+        key={lote.id}
+        type="button"
+        onClick={() => setSeleccionado(seleccionado?.id === lote.id ? null : lote)}
+        aria-label={`Lote ${lote.manzana}-${lote.numero}, ${LABEL_ESTADO[lote.estado]}${enReserva ? ", sumado a tu reserva" : ""}`}
+        className="absolute -translate-x-1/2 -translate-y-1/2 border transition hover:z-10 hover:brightness-110"
+        style={{
+          left: `${lote.posX}%`,
+          top: `${lote.posY}%`,
+          width: `${celdaAnchoPct}%`,
+          height: `${celdaAltoPct}%`,
+          backgroundColor: COLOR_ESTADO[lote.estado],
+          opacity: seleccionado?.id === lote.id || enReserva ? 0.9 : 0.6,
+          borderColor: enReserva
+            ? "#154a2e"
+            : seleccionado?.id === lote.id
+              ? "#fff"
+              : "color-mix(in srgb, " + COLOR_ESTADO[lote.estado] + " 70%, black)",
+          borderWidth: enReserva || seleccionado?.id === lote.id ? 2 : 1,
+        }}
+      >
+        {enReserva && (
+          <span className="pointer-events-none absolute -right-1 -top-1 flex h-3 w-3 items-center justify-center rounded-full bg-brand-green-700 text-white">
+            <Check className="h-2 w-2" strokeWidth={4} />
+          </span>
+        )}
+      </button>
+    );
+  });
 
   return (
     <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">

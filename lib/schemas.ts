@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const reservaSchema = z.object({
   proyectoId: z.string().min(1, "Proyecto inválido"),
-  loteId: z.string().min(1, "Seleccioná un lote"),
+  loteIds: z.array(z.string().min(1)).min(1, "Elegí al menos un lote").max(3, "Podés reservar hasta 3 lotes"),
   nombre: z.string().trim().min(2, "Ingresá tu nombre"),
   apellido: z.string().trim().min(2, "Ingresá tu apellido"),
   dni: z

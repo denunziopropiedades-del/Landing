@@ -164,6 +164,15 @@ export type EstadoLead =
   | "vendido"
   | "descartado";
 
+/** Datos resumidos de un lote vinculado a un lead, para operaciones de 1 a 3 lotes. */
+export type LoteDeLead = {
+  id: string;
+  manzana: string;
+  numero: string;
+  superficieM2: number;
+  nombre: string;
+};
+
 export type Lead = {
   id: string;
   creadoEn: string;
@@ -174,6 +183,8 @@ export type Lead = {
   loteId: string | null;
   loteNombre?: string;
   loteNumero?: string;
+  /** Todos los lotes de la operación (1 a 3). Para leads viejos de un solo lote, tiene 1 elemento. */
+  lotes: LoteDeLead[];
   nombre: string;
   apellido?: string;
   dni?: string;

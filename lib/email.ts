@@ -59,6 +59,34 @@ function conFirma(html: string) {
   return `${html}${FIRMA_HTML}`;
 }
 
+/** Arma el HTML del mail de bienvenida que recibe el cliente al reservar 1, 2 o 3 lotes juntos. */
+export function armarMailBienvenidaReserva(datos: {
+  nombre: string;
+  proyectoNombre: string;
+  manzana: string;
+  lotes: { numero: string; superficieM2: number }[];
+}) {
+  const filasLotes = datos.lotes
+    .map((l) => `<li>Lote ${l.numero} &ndash; ${l.superficieM2} m²</li>`)
+    .join("");
+
+  return `
+    <h2>¡Gracias por tu reserva, ${datos.nombre}!</h2>
+    <p style="color: #333;">Recibimos tu operación correctamente. Este es el detalle:</p>
+    <p style="margin: 16px 0 4px; color: #333;"><b>PROYECTO:</b> ${datos.proyectoNombre}</p>
+    <p style="margin: 0 0 4px; color: #333;"><b>MANZANA:</b> ${datos.manzana}</p>
+    <p style="margin: 0 0 4px; color: #333;"><b>LOTES RESERVADOS:</b></p>
+    <ul style="color: #333;">${filasLotes}</ul>
+    <p style="margin: 4px 0; color: #333;"><b>TOTAL DE LOTES:</b> ${datos.lotes.length}</p>
+    <p style="margin: 16px 0 4px; color: #333;"><b>Estado de la operación:</b> Reserva recibida</p>
+    <p style="margin: 16px 0 4px; color: #333;"><b>Próximos pasos:</b></p>
+    <p style="margin: 0; color: #333;">
+      Nuestro equipo se va a comunicar con vos para coordinar la seña y el resto de la
+      documentación. Ante cualquier consulta, respondé este correo o escribinos por WhatsApp.
+    </p>
+  `;
+}
+
 async function enviar(to: string, subject: string, html: string) {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",

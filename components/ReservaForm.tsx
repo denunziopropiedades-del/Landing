@@ -7,20 +7,27 @@ import { CheckCircle2, CreditCard, Loader2 } from "lucide-react";
 import { reservaSchema, type ReservaInput } from "@/lib/schemas";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 import { formatUsd } from "@/lib/utils";
-import type { Lote } from "@/types/site";
+import { useSeleccionLotes } from "@/components/SeleccionLotesContext";
+import type { ComboLotes, Lote } from "@/types/site";
+
+type DatosFormulario = Omit<ReservaInput, "loteIds">;
 
 export default function ReservaForm({
   proyectoId,
   lotes,
   numero,
+  comboLotes,
 }: {
   proyectoId: string;
   lotes: Lote[];
   numero?: string;
+  comboLotes?: ComboLotes | null;
 }) {
   const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
   const [ultimaReserva, setUltimaReserva] = useState<ReservaInput | null>(null);
   const [pago, setPago] = useState<"idle" | "cargando" | "no-disponible">("idle");
+  const [errorSeleccion, setErrorSeleccion] = useState("");
+  const { seleccionados, toggleSeleccion, limiteAlcanzado } = useSeleccionLotes();
 
   const lotesDisponibles = useMemo(
     () =>
@@ -34,17 +41,37 @@ export default function ReservaForm({
     [lotes]
   );
 
+  const lotesElegidos = useMemo(
+    () => lotesDisponibles.filter((l) => seleccionados.includes(l.id)),
+    [lotesDisponibles, seleccionados]
+  );
+
+  const totalUsd = useMemo(() => {
+    if (comboLotes) {
+      if (lotesElegidos.length === 2 && comboLotes.precio2LotesUsd) return comboLotes.precio2LotesUsd;
+      if (lotesElegidos.length === 3 && comboLotes.precio3LotesUsd) return comboLotes.precio3LotesUsd;
+    }
+    return lotesElegidos.reduce((acc, l) => acc + l.precioUsd, 0);
+  }, [lotesElegidos, comboLotes]);
+
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<ReservaInput>({
-    resolver: zodResolver(reservaSchema),
+  } = useForm<DatosFormulario>({
+    resolver: zodResolver(reservaSchema.omit({ loteIds: true })),
     defaultValues: { proyectoId },
   });
 
-  const onSubmit = async (data: ReservaInput) => {
+  const onSubmit = async (datosFormulario: DatosFormulario) => {
+    if (seleccionados.length === 0) {
+      setErrorSeleccion("Elegí al menos un lote de la lista.");
+      return;
+    }
+    setErrorSeleccion("");
+    const data: ReservaInput = { ...datosFormulario, loteIds: seleccionados };
+
     setEstado("enviando");
     try {
       const res = await fetch("/api/reservas", {
@@ -54,8 +81,8 @@ export default function ReservaForm({
       });
       if (!res.ok) throw new Error("request-failed");
 
-      const lote = lotesDisponibles.find((l) => l.id === data.loteId);
-      const mensaje = `Hola, quiero confirmar mi reserva del Lote ${lote?.numero ?? ""} — Manzana ${lote?.manzana ?? ""} (${lote?.nombre ?? "lote"}). Nombre: ${data.nombre} ${data.apellido}, DNI: ${data.dni}, Tel: ${data.telefono}.`;
+      const detalleLotes = lotesElegidos.map((l) => `Lote ${l.numero} (Manzana ${l.manzana})`).join(", ");
+      const mensaje = `Hola, quiero confirmar mi reserva de ${lotesElegidos.length === 1 ? "el" : "los"} ${detalleLotes}. Nombre: ${data.nombre} ${data.apellido}, DNI: ${data.dni}, Tel: ${data.telefono}.`;
       window.open(buildWhatsappUrl(mensaje, numero), "_blank");
 
       setUltimaReserva(data);
@@ -74,7 +101,7 @@ export default function ReservaForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          loteId: ultimaReserva.loteId,
+          loteIds: ultimaReserva.loteIds,
           nombre: `${ultimaReserva.nombre} ${ultimaReserva.apellido}`,
           email: ultimaReserva.email,
         }),
@@ -164,22 +191,59 @@ export default function ReservaForm({
       </div>
 
       <div className="sm:col-span-2">
-        <label className="mb-1.5 block text-sm font-medium text-brand-black/80">Lote</label>
-        <select {...register("loteId")} defaultValue="" className="w-full rounded-lg border border-black/10 px-4 py-2.5 focus:border-brand-green-600 focus:outline-none">
-          <option value="" disabled>
-            Seleccioná un lote disponible
-          </option>
-          {lotesDisponibles.map((l) => (
-            <option key={l.id} value={l.id}>
-              Manzana {l.manzana} — Lote {l.numero} ({l.superficieM2} m², {formatUsd(l.precioUsd)})
-            </option>
-          ))}
-        </select>
-        {errors.loteId && <p className="mt-1 text-xs text-red-600">{errors.loteId.message}</p>}
-        {lotesDisponibles.length === 0 && (
-          <p className="mt-1 text-xs text-brand-black/50">No hay lotes disponibles en este momento.</p>
-        )}
+        <div className="mb-1.5 flex items-center justify-between">
+          <label className="text-sm font-medium text-brand-black/80">Lotes (elegí hasta 3)</label>
+          {limiteAlcanzado && <span className="text-xs text-brand-black/50">Llegaste al máximo de 3 lotes</span>}
+        </div>
+        <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-black/10 p-2">
+          {lotesDisponibles.map((l) => {
+            const marcado = seleccionados.includes(l.id);
+            return (
+              <label
+                key={l.id}
+                className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-sm ${marcado ? "bg-brand-green-700/10" : "hover:bg-black/5"}`}
+              >
+                <span className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={marcado}
+                    disabled={!marcado && limiteAlcanzado}
+                    onChange={() => toggleSeleccion(l.id)}
+                    className="h-4 w-4 accent-brand-green-700"
+                  />
+                  Manzana {l.manzana} — Lote {l.numero} ({l.superficieM2} m²)
+                </span>
+                <span className="text-brand-black/60">{formatUsd(l.precioUsd)}</span>
+              </label>
+            );
+          })}
+          {lotesDisponibles.length === 0 && (
+            <p className="px-2 py-1 text-xs text-brand-black/50">No hay lotes disponibles en este momento.</p>
+          )}
+        </div>
+        {errorSeleccion && <p className="mt-1 text-xs text-red-600">{errorSeleccion}</p>}
       </div>
+
+      {lotesElegidos.length > 0 && (
+        <div className="sm:col-span-2 rounded-xl border border-brand-green-600/30 bg-brand-green-700/5 p-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-black/50">
+            {lotesElegidos.length} lote{lotesElegidos.length > 1 ? "s" : ""} seleccionado{lotesElegidos.length > 1 ? "s" : ""}
+          </p>
+          <ul className="space-y-1 text-sm text-brand-black/80">
+            {lotesElegidos.map((l) => (
+              <li key={l.id} className="flex justify-between">
+                <span>
+                  Manzana {l.manzana} — Lote {l.numero} ({l.superficieM2} m²)
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 flex items-center justify-between font-display text-lg font-bold text-brand-green-700">
+            <span>Total</span>
+            <span>{formatUsd(totalUsd)}</span>
+          </p>
+        </div>
+      )}
 
       <div className="flex items-start gap-2 sm:col-span-2">
         <input type="checkbox" id="terminos" {...register("terminos")} className="mt-1 h-4 w-4 accent-brand-green-700" />
