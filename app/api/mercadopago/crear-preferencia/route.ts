@@ -4,7 +4,7 @@ import { getPreferenceClient, isMercadoPagoConfigured } from "@/lib/mercadopago"
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 
-const SENA_ARS = 200000;
+const SENA_ARS = 10000; // TODO: volver a 200000 después de la prueba de pago real
 
 const bodySchema = z.object({
   leadId: z.string().min(1),
