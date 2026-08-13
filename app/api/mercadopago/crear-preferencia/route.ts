@@ -71,6 +71,7 @@ export async function POST(request: Request) {
       },
       auto_return: "approved",
       external_reference: leadId,
+      notification_url: `${siteUrl}/api/mercadopago/webhook`,
     },
   });
 
