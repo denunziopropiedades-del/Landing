@@ -5,6 +5,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendEmail, sendNotificationEmail } from "@/lib/email";
 import { generarComprobantePdf } from "@/lib/pdf-comprobante";
 import { registrarActividadSistema } from "@/lib/admin/activity";
+import { enviarEventoConversion } from "@/lib/meta-capi";
 
 export const runtime = "nodejs";
 
@@ -125,6 +126,14 @@ export async function POST(request: Request) {
       pagoId: String(dataId),
       importe,
     });
+
+    enviarEventoConversion({
+      nombreEvento: "Purchase",
+      email: lead.email,
+      telefono: lead.telefono,
+      valor: importe,
+      moneda: "ARS",
+    }).catch((err) => console.error("No se pudo enviar el evento de conversión a Meta", err));
 
     try {
       const comprobante = await generarComprobantePdf({

@@ -4,6 +4,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { armarMailBienvenidaReserva, sendEmail, sendNotificationEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { registrarActividadSistema } from "@/lib/admin/activity";
+import { enviarEventoConversion } from "@/lib/meta-capi";
 
 export async function POST(request: Request) {
   const rate = await checkRateLimit(request, "reservas");
@@ -59,6 +60,13 @@ export async function POST(request: Request) {
       ...(manzana ? { manzana } : {}),
       lote: lotesReservados.map((l) => l.numero).join(", "),
     });
+
+    enviarEventoConversion({
+      nombreEvento: "Lead",
+      email: data.email,
+      telefono: data.telefono,
+      urlOrigen: request.headers.get("referer") ?? undefined,
+    }).catch((err) => console.error("No se pudo enviar el evento de conversión a Meta", err));
   }
 
   const listaLotesTexto = lotesReservados.map((l) => `Lote ${l.numero} (${l.superficieM2} m²)`).join(", ");
