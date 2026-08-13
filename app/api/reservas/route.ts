@@ -3,6 +3,7 @@ import { reservaSchema } from "@/lib/schemas";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { armarMailBienvenidaReserva, sendEmail, sendNotificationEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { registrarActividadSistema } from "@/lib/admin/activity";
 
 export async function POST(request: Request) {
   const rate = await checkRateLimit(request, "reservas");
@@ -52,6 +53,12 @@ export async function POST(request: Request) {
     proyectoNombre = proyecto?.nombre ?? "";
     manzana = lotesReservados[0]?.manzana ?? "";
     leadId = leadIdCreado as string;
+
+    await registrarActividadSistema("crear", "lead", leadId, {
+      origen: "reserva online",
+      ...(manzana ? { manzana } : {}),
+      lote: lotesReservados.map((l) => l.numero).join(", "),
+    });
   }
 
   const listaLotesTexto = lotesReservados.map((l) => `Lote ${l.numero} (${l.superficieM2} m²)`).join(", ");

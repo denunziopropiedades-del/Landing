@@ -30,6 +30,37 @@ function optStr(fd: FormData, key: string) {
   return v.length > 0 ? v : null;
 }
 
+type AdminClient = NonNullable<Awaited<ReturnType<typeof getSupabaseAdminClient>>>;
+
+/** Manzana y número de lote de un lote puntual, para dejarlos siempre visibles en el
+ * registro de actividad (incluso después de que el lote se elimine). */
+async function contextoLote(admin: AdminClient, loteId: string): Promise<Record<string, unknown>> {
+  const { data } = await admin.from("lotes").select("manzana, numero").eq("id", loteId).maybeSingle();
+  return data ? { manzana: data.manzana, lote: data.numero } : {};
+}
+
+/** Manzana y lote(s) de la operación de un lead, para dejarlos siempre visibles en el
+ * registro de actividad (incluso después de que el lead se elimine). */
+async function contextoLead(admin: AdminClient, leadId: string): Promise<Record<string, unknown>> {
+  const { data } = await admin
+    .from("leads")
+    .select("manzana, lotes(numero), lead_lotes(lotes(numero))")
+    .eq("id", leadId)
+    .maybeSingle();
+  if (!data) return {};
+
+  const lotesOperacion = ((data.lead_lotes ?? []) as unknown as { lotes: { numero: string } | null }[])
+    .map((ll) => ll.lotes?.numero)
+    .filter((n): n is string => Boolean(n));
+  const loteSingular = (data.lotes as unknown as { numero: string } | null)?.numero;
+  const lotes = lotesOperacion.length > 0 ? lotesOperacion : loteSingular ? [loteSingular] : [];
+
+  return {
+    ...(data.manzana ? { manzana: data.manzana } : {}),
+    ...(lotes.length > 0 ? { lote: lotes.join(", ") } : {}),
+  };
+}
+
 // Convierte un link normal de YouTube o TikTok al formato "embed" que hace falta para
 // mostrarlo en un iframe dentro de la galería. Si no es de ninguno de los dos, lo deja igual.
 async function normalizarUrlVideo(url: string): Promise<string> {
@@ -651,9 +682,10 @@ export async function eliminarLoteAction(id: string): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor");
     const admin = (await getSupabaseAdminClient())!;
+    const ctx = await contextoLote(admin, id);
     const { error } = await admin.from("lotes").delete().eq("id", id);
     if (error) throw new Error(error.message);
-    await registrarActividad(actor, "eliminar", "lote", id);
+    await registrarActividad(actor, "eliminar", "lote", id, ctx);
     revalidatePath("/admin/lotes");
     revalidatePath("/proyectos/[slug]", "page");
     return { ok: true };
@@ -731,9 +763,10 @@ export async function actualizarEstadoLoteAction(id: string, estado: EstadoLote)
   try {
     const actor = await requireRole("administrador", "supervisor");
     const admin = (await getSupabaseAdminClient())!;
+    const ctx = await contextoLote(admin, id);
     const { error } = await admin.from("lotes").update({ estado }).eq("id", id);
     if (error) throw new Error(error.message);
-    await registrarActividad(actor, "cambiar-estado", "lote", id, { estado });
+    await registrarActividad(actor, "cambiar-estado", "lote", id, { ...ctx, estado });
     revalidatePath("/admin/lotes");
     revalidatePath("/proyectos/[slug]", "page");
     return { ok: true };
@@ -1168,9 +1201,11 @@ export async function crearLeadManualAction(_prev: ActionResult | null, formData
 
     const loteId = optStr(formData, "loteId");
     let manzana: string | null = null;
+    let numeroLote: string | null = null;
     if (loteId) {
-      const { data: lote } = await admin.from("lotes").select("manzana").eq("id", loteId).maybeSingle();
+      const { data: lote } = await admin.from("lotes").select("manzana, numero").eq("id", loteId).maybeSingle();
       manzana = lote?.manzana ?? null;
+      numeroLote = lote?.numero ?? null;
     }
 
     const payload = {
@@ -1191,7 +1226,11 @@ export async function crearLeadManualAction(_prev: ActionResult | null, formData
     const { data, error } = await admin.from("leads").insert(payload).select("id").single();
     if (error) throw new Error(error.message);
 
-    await registrarActividad(actor, "crear", "lead", data.id, { origen: "manual" });
+    await registrarActividad(actor, "crear", "lead", data.id, {
+      origen: "manual",
+      ...(manzana ? { manzana } : {}),
+      ...(numeroLote ? { lote: numeroLote } : {}),
+    });
     revalidatePath("/admin/crm");
     revalidatePath("/admin/consultas");
     return { ok: true };
@@ -1241,7 +1280,8 @@ export async function actualizarEstadoLeadAction(id: string, estado: EstadoLead)
       }
     }
 
-    await registrarActividad(actor, "cambiar-estado", "lead", id, { estado });
+    const ctxLead = await contextoLead(admin, id);
+    await registrarActividad(actor, "cambiar-estado", "lead", id, { ...ctxLead, estado });
     revalidatePath("/admin/crm");
     revalidatePath("/admin/consultas");
     revalidatePath("/admin/lotes");
@@ -1261,7 +1301,7 @@ export async function actualizarObservacionesLeadAction(id: string, observacione
       .update({ observaciones, actualizado_en: new Date().toISOString() })
       .eq("id", id);
     if (error) throw new Error(error.message);
-    await registrarActividad(actor, "anotar", "lead", id);
+    await registrarActividad(actor, "anotar", "lead", id, await contextoLead(admin, id));
     revalidatePath("/admin/crm");
     revalidatePath("/admin/consultas");
     return { ok: true };
@@ -1280,7 +1320,7 @@ export async function actualizarFechaNacimientoLeadAction(id: string, fecha: str
       .update({ fecha_nacimiento: fecha, actualizado_en: new Date().toISOString() })
       .eq("id", id);
     if (error) throw new Error(error.message);
-    await registrarActividad(actor, "actualizar", "lead", id, { fechaNacimiento: fecha });
+    await registrarActividad(actor, "actualizar", "lead", id, { ...(await contextoLead(admin, id)), fechaNacimiento: fecha });
     revalidatePath("/admin/crm");
     revalidatePath("/admin/consultas");
     return { ok: true };
@@ -1308,7 +1348,11 @@ export async function actualizarPagoLeadAction(
       })
       .eq("id", id);
     if (error) throw new Error(error.message);
-    await registrarActividad(actor, "actualizar", "lead", id, { numeroTransaccion, importeCobrado: importe });
+    await registrarActividad(actor, "actualizar", "lead", id, {
+      ...(await contextoLead(admin, id)),
+      numeroTransaccion,
+      importeCobrado: importe,
+    });
     revalidatePath("/admin/crm");
     revalidatePath("/admin/consultas");
     return { ok: true };
@@ -1344,6 +1388,7 @@ export async function actualizarComisionHonorariosLeadAction(
       .eq("id", id);
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "actualizar", "lead", id, {
+      ...(await contextoLead(admin, id)),
       comisionUsd: comision,
       honorariosUsd: honorariosU,
       honorariosArs: honorariosA,
@@ -1384,16 +1429,17 @@ export async function actualizarFirmaEscribaniaLeadAction(
     const fechaLimpia = fecha || "";
     const horarioLimpio = horario.trim();
     let eventId: string | null = null;
-    if (fechaLimpia && horarioLimpio && lead) {
-      const loteSingular = lead.lotes as unknown as { manzana: string; numero: string } | null;
-      const lotesOperacion = (
-        (lead.lead_lotes ?? []) as unknown as {
-          lotes: { manzana: string; numero: string; superficie_m2: number } | null;
-        }[]
-      )
-        .map((ll) => ll.lotes)
-        .filter((lo): lo is NonNullable<typeof lo> => lo !== null);
 
+    const loteSingular = lead?.lotes as unknown as { manzana: string; numero: string } | null;
+    const lotesOperacion = (
+      (lead?.lead_lotes ?? []) as unknown as {
+        lotes: { manzana: string; numero: string; superficie_m2: number } | null;
+      }[]
+    )
+      .map((ll) => ll.lotes)
+      .filter((lo): lo is NonNullable<typeof lo> => lo !== null);
+
+    if (fechaLimpia && horarioLimpio && lead) {
       const proyecto = lead.proyectos as unknown as {
         nombre: string;
         escribania_nombre: string | null;
@@ -1450,7 +1496,13 @@ export async function actualizarFirmaEscribaniaLeadAction(
       })
       .eq("id", id);
     if (error) throw new Error(error.message);
-    await registrarActividad(actor, "actualizar", "lead", id, { fechaFirmaEscribania: fecha, horarioFirmaEscribania: horario });
+    const numerosLote = lotesOperacion.length > 0 ? lotesOperacion.map((lo) => lo.numero) : loteSingular ? [loteSingular.numero] : [];
+    await registrarActividad(actor, "actualizar", "lead", id, {
+      ...(lead?.manzana || loteSingular?.manzana ? { manzana: lead?.manzana ?? loteSingular?.manzana } : {}),
+      ...(numerosLote.length > 0 ? { lote: numerosLote.join(", ") } : {}),
+      fechaFirmaEscribania: fecha,
+      horarioFirmaEscribania: horario,
+    });
     revalidatePath("/admin/crm");
     revalidatePath("/admin/consultas");
     return { ok: true };
@@ -1469,7 +1521,10 @@ export async function actualizarDocumentosLeadAction(id: string, documentos: str
       .update({ documentos_entregados: documentos, actualizado_en: new Date().toISOString() })
       .eq("id", id);
     if (error) throw new Error(error.message);
-    await registrarActividad(actor, "actualizar", "lead", id, { documentosEntregados: documentos });
+    await registrarActividad(actor, "actualizar", "lead", id, {
+      ...(await contextoLead(admin, id)),
+      documentosEntregados: documentos,
+    });
     revalidatePath("/admin/crm");
     return { ok: true };
   } catch (err) {
@@ -1484,7 +1539,7 @@ export async function actualizarSexoLeadAction(id: string, sexo: "M" | "F" | nul
     const admin = (await getSupabaseAdminClient())!;
     const { error } = await admin.from("leads").update({ sexo, actualizado_en: new Date().toISOString() }).eq("id", id);
     if (error) throw new Error(error.message);
-    await registrarActividad(actor, "actualizar", "lead", id, { sexo });
+    await registrarActividad(actor, "actualizar", "lead", id, { ...(await contextoLead(admin, id)), sexo });
     revalidatePath("/admin/crm");
     revalidatePath("/admin/consultas");
     return { ok: true };
@@ -1499,7 +1554,7 @@ export async function asignarLeadAction(id: string, vendedorId: string | null): 
     const admin = (await getSupabaseAdminClient())!;
     const { error } = await admin.from("leads").update({ asignado_a: vendedorId }).eq("id", id);
     if (error) throw new Error(error.message);
-    await registrarActividad(actor, "asignar", "lead", id, { vendedorId });
+    await registrarActividad(actor, "asignar", "lead", id, { ...(await contextoLead(admin, id)), vendedorId });
     revalidatePath("/admin/crm");
     revalidatePath("/admin/consultas");
     return { ok: true };
@@ -1527,6 +1582,7 @@ export async function cambiarProyectoLeadAction(id: string, proyectoId: string |
     if (error) throw new Error(error.message);
 
     await registrarActividad(actor, "cambiar-proyecto", "lead", id, {
+      ...(await contextoLead(admin, id)),
       anterior: (actual?.proyectos as unknown as { nombre: string } | null)?.nombre ?? "Sin desarrollo",
       nuevo: nuevo?.nombre ?? "Sin desarrollo",
     });
@@ -1568,9 +1624,10 @@ export async function deleteLeadAction(id: string): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador");
     const admin = (await getSupabaseAdminClient())!;
+    const ctx = await contextoLead(admin, id);
     const { error } = await admin.from("leads").delete().eq("id", id);
     if (error) throw new Error(error.message);
-    await registrarActividad(actor, "eliminar", "lead", id);
+    await registrarActividad(actor, "eliminar", "lead", id, ctx);
     revalidatePath("/admin/crm");
     revalidatePath("/admin/consultas");
     return { ok: true };

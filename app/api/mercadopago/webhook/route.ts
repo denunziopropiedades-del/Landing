@@ -120,6 +120,8 @@ export async function POST(request: Request) {
     const nombreCompleto = `${lead.nombre} ${lead.apellido ?? ""}`.trim();
 
     await registrarActividadSistema("confirmar-pago", "lead", leadId, {
+      ...(lead.manzana ? { manzana: lead.manzana } : {}),
+      ...(lotes.length > 0 ? { lote: lotes.map((l) => l.numero).join(", ") } : {}),
       pagoId: String(dataId),
       importe,
     });

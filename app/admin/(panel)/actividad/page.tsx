@@ -21,12 +21,16 @@ const ACCION_LABEL: Record<string, string> = {
 
 function formatearDetalle(detalle: Record<string, unknown> | null): string {
   if (!detalle) return "";
+  const partes: string[] = [];
   if (typeof detalle.anterior !== "undefined" && typeof detalle.nuevo !== "undefined") {
-    return `${detalle.anterior} → ${detalle.nuevo}`;
+    partes.push(`${detalle.anterior} → ${detalle.nuevo}`);
   }
-  return Object.entries(detalle)
-    .map(([clave, valor]) => `${clave}: ${valor}`)
-    .join(", ");
+  for (const [clave, valor] of Object.entries(detalle)) {
+    // manzana/lote ya se muestran en la columna Entidad, no hace falta repetirlos acá.
+    if (clave === "anterior" || clave === "nuevo" || clave === "manzana" || clave === "lote") continue;
+    partes.push(`${clave}: ${valor}`);
+  }
+  return partes.join(", ");
 }
 
 export default async function AdminActividadPage() {
@@ -56,7 +60,16 @@ export default async function AdminActividadPage() {
                 <td className="px-4 py-3">{ACCION_LABEL[r.accion] ?? r.accion}</td>
                 <td className="px-4 py-3 text-brand-black/60">
                   {r.entidad}
-                  {r.entidadId ? ` (${r.entidadId.slice(0, 8)})` : ""}
+                  {r.detalle?.manzana || r.detalle?.lote
+                    ? ` (${[
+                        r.detalle?.manzana ? `Manzana ${r.detalle.manzana}` : null,
+                        r.detalle?.lote ? `Lote ${r.detalle.lote}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" — ")})`
+                    : r.entidadId
+                      ? ` (${r.entidadId.slice(0, 8)})`
+                      : ""}
                 </td>
                 <td className="px-4 py-3 text-xs text-brand-black/50">{formatearDetalle(r.detalle)}</td>
               </tr>
