@@ -361,6 +361,8 @@ export async function getLeads(): Promise<Lead[]> {
     honorariosUsd: numOrNull(l.honorarios_usd),
     honorariosArs: numOrNull(l.honorarios_ars),
     gastosArs: numOrNull(l.gastos_ars),
+    pagoConfirmadoEn: l.pago_confirmado_en ?? null,
+    pagoMercadopagoId: l.pago_mercadopago_id ?? null,
     };
   });
 }

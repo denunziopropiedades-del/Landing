@@ -25,6 +25,7 @@ export default function ReservaForm({
 }) {
   const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
   const [ultimaReserva, setUltimaReserva] = useState<ReservaInput | null>(null);
+  const [ultimoLeadId, setUltimoLeadId] = useState<string | null>(null);
   const [pago, setPago] = useState<"idle" | "cargando" | "no-disponible">("idle");
   const [errorSeleccion, setErrorSeleccion] = useState("");
   const { seleccionados, toggleSeleccion, limiteAlcanzado } = useSeleccionLotes();
@@ -80,12 +81,14 @@ export default function ReservaForm({
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error("request-failed");
+      const json: { leadId?: string | null } = await res.json();
 
       const detalleLotes = lotesElegidos.map((l) => `Lote ${l.numero} (Manzana ${l.manzana})`).join(", ");
       const mensaje = `Hola, quiero confirmar mi reserva de ${lotesElegidos.length === 1 ? "el" : "los"} ${detalleLotes}. Nombre: ${data.nombre} ${data.apellido}, DNI: ${data.dni}, Tel: ${data.telefono}.`;
       window.open(buildWhatsappUrl(mensaje, numero), "_blank");
 
       setUltimaReserva(data);
+      setUltimoLeadId(json.leadId ?? null);
       setEstado("ok");
       reset();
     } catch {
@@ -94,14 +97,14 @@ export default function ReservaForm({
   };
 
   const pagarSena = async () => {
-    if (!ultimaReserva) return;
+    if (!ultimaReserva || !ultimoLeadId) return;
     setPago("cargando");
     try {
       const res = await fetch("/api/mercadopago/crear-preferencia", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          loteIds: ultimaReserva.loteIds,
+          leadId: ultimoLeadId,
           nombre: `${ultimaReserva.nombre} ${ultimaReserva.apellido}`,
           email: ultimaReserva.email,
         }),
@@ -130,7 +133,7 @@ export default function ReservaForm({
         <button
           type="button"
           onClick={pagarSena}
-          disabled={pago === "cargando"}
+          disabled={pago === "cargando" || !ultimoLeadId}
           className="mt-3 inline-flex items-center justify-center gap-2 rounded-full bg-[#009EE3] px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
         >
           {pago === "cargando" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}

@@ -26,3 +26,26 @@ export async function registrarActividad(
     detalle: detalle ?? null,
   });
 }
+
+/**
+ * Igual que registrarActividad, pero para acciones disparadas por el sistema
+ * (webhooks, cron jobs) que no tienen un usuario logueado detrás.
+ */
+export async function registrarActividadSistema(
+  accion: string,
+  entidad: string,
+  entidadId: string | null,
+  detalle?: Record<string, unknown>
+) {
+  const admin = await getSupabaseAdminClient();
+  if (!admin) return;
+
+  await admin.from("actividad_log").insert({
+    usuario_id: null,
+    usuario_email: "sistema",
+    accion,
+    entidad,
+    entidad_id: entidadId,
+    detalle: detalle ?? null,
+  });
+}

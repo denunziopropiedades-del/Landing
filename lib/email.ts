@@ -87,7 +87,9 @@ export function armarMailBienvenidaReserva(datos: {
   `;
 }
 
-async function enviar(to: string, subject: string, html: string) {
+export type AdjuntoEmail = { filename: string; content: string };
+
+async function enviar(to: string, subject: string, html: string, adjuntos?: AdjuntoEmail[]) {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -99,6 +101,7 @@ async function enviar(to: string, subject: string, html: string) {
       to: [to],
       subject,
       html: conFirma(html),
+      ...(adjuntos && adjuntos.length > 0 ? { attachments: adjuntos } : {}),
     }),
   });
 
@@ -125,7 +128,7 @@ export async function sendNotificationEmail(subject: string, html: string) {
  * sendNotificationEmail que siempre le avisa al dueño del sitio.
  * Si RESEND_API_KEY no está configurada, no hace nada (modo demo/dev).
  */
-export async function sendEmail(to: string, subject: string, html: string) {
+export async function sendEmail(to: string, subject: string, html: string, adjuntos?: AdjuntoEmail[]) {
   if (!RESEND_API_KEY || !to) return { skipped: true as const };
-  return enviar(to, subject, html);
+  return enviar(to, subject, html, adjuntos);
 }

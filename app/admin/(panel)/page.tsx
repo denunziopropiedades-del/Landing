@@ -11,6 +11,7 @@ const ESTADOS_FUNNEL: { estado: EstadoLead; label: string }[] = [
   { estado: "visita_programada", label: "Visita Programada" },
   { estado: "visita_realizada", label: "Visita realizada" },
   { estado: "reservado", label: "Reservado" },
+  { estado: "pago_confirmado", label: "Pago confirmado" },
   { estado: "vendido", label: "Vendido" },
 ];
 

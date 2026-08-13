@@ -35,6 +35,7 @@ const ESTADO_LABEL: Record<EstadoLead, string> = {
   visita_programada: "Visita Programada",
   visita_realizada: "Visita realizada",
   reservado: "Reservado",
+  pago_confirmado: "Pago confirmado",
   pendiente_firma_escribania: "Pend. firma escribanía",
   firmado_escribania: "Firmado escribanía",
   vendido: "Vendido",
@@ -49,6 +50,7 @@ const ESTADO_COLOR: Record<EstadoLead, string> = {
   pendiente_firma_escribania: "#fb923c",
   firmado_escribania: "#14b8a6",
   reservado: "#eab308",
+  pago_confirmado: "#06b6d4",
   vendido: "#16a34a",
   descartado: "#ef4444",
 };

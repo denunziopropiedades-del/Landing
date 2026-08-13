@@ -23,9 +23,10 @@ export async function POST(request: Request) {
   let lotesReservados: { numero: string; manzana: string; superficieM2: number }[] = [];
   let proyectoNombre = "";
   let manzana = "";
+  let leadId: string | null = null;
 
   if (supabase) {
-    const { data: leadId, error: rpcError } = await supabase.rpc("reservar_lotes", {
+    const { data: leadIdCreado, error: rpcError } = await supabase.rpc("reservar_lotes", {
       p_lote_ids: data.loteIds,
       p_proyecto_id: data.proyectoId,
       p_nombre: data.nombre,
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
       p_telefono: data.telefono,
     });
 
-    if (rpcError || !leadId) {
+    if (rpcError || !leadIdCreado) {
       return NextResponse.json(
         { error: rpcError?.message ?? "Uno o más lotes seleccionados ya no están disponibles." },
         { status: 409 }
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
     lotesReservados = (lotes ?? []).map((l) => ({ numero: l.numero, manzana: l.manzana, superficieM2: l.superficie_m2 }));
     proyectoNombre = proyecto?.nombre ?? "";
     manzana = lotesReservados[0]?.manzana ?? "";
+    leadId = leadIdCreado as string;
   }
 
   const listaLotesTexto = lotesReservados.map((l) => `Lote ${l.numero} (${l.superficieM2} m²)`).join(", ");
@@ -87,5 +89,5 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, leadId });
 }

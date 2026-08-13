@@ -23,6 +23,7 @@ const COLUMNAS: { estado: EstadoLead; label: string; color: string }[] = [
   { estado: "visita_programada", label: "Visita Programada", color: "border-t-amber-500" },
   { estado: "visita_realizada", label: "Visita realizada / Seguimiento", color: "border-t-sky-500" },
   { estado: "reservado", label: "Reservado", color: "border-t-yellow-500" },
+  { estado: "pago_confirmado", label: "Pago confirmado", color: "border-t-cyan-500" },
   { estado: "pendiente_firma_escribania", label: "Pendiente firma escribanía", color: "border-t-orange-500" },
   { estado: "firmado_escribania", label: "Firmado escribanía", color: "border-t-teal-500" },
   { estado: "vendido", label: "Vendido", color: "border-t-green-600" },

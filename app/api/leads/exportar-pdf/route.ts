@@ -12,6 +12,7 @@ const ESTADOS: { estado: EstadoLead; label: string; color: string }[] = [
   { estado: "visita_programada", label: "Visita Programada", color: "#f59e0b" },
   { estado: "visita_realizada", label: "Visita realizada", color: "#0ea5e9" },
   { estado: "reservado", label: "Reservado", color: "#eab308" },
+  { estado: "pago_confirmado", label: "Pago confirmado", color: "#06b6d4" },
   { estado: "pendiente_firma_escribania", label: "Pend. firma escribanía", color: "#fb923c" },
   { estado: "firmado_escribania", label: "Firmado escribanía", color: "#14b8a6" },
   { estado: "vendido", label: "Vendido", color: "#16a34a" },

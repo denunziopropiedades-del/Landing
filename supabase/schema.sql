@@ -299,7 +299,7 @@ create table leads (
   observaciones text not null default '',
   estado text not null default 'nuevo'
     check (estado in (
-      'nuevo', 'contactado', 'visita_programada', 'visita_realizada', 'reservado',
+      'nuevo', 'contactado', 'visita_programada', 'visita_realizada', 'reservado', 'pago_confirmado',
       'pendiente_firma_escribania', 'firmado_escribania', 'vendido', 'descartado'
     )),
   asignado_a uuid references perfiles(id) on delete set null,
@@ -310,6 +310,9 @@ create table leads (
   -- Datos de la seña/pago de la reserva, cargados a mano por el equipo.
   numero_transaccion text,
   importe_cobrado numeric,
+  -- Confirmación automática del pago de la seña vía Mercado Pago (webhook).
+  pago_confirmado_en timestamptz,
+  pago_mercadopago_id text,
   -- Sexo del cliente, para segmentar el saludo de día del padre / día de la madre.
   sexo text check (sexo in ('M', 'F')),
   -- Fecha/horario acordado para la firma en escribanía.
