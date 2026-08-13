@@ -61,12 +61,16 @@ export async function POST(request: Request) {
       lote: lotesReservados.map((l) => l.numero).join(", "),
     });
 
-    enviarEventoConversion({
-      nombreEvento: "Lead",
-      email: data.email,
-      telefono: data.telefono,
-      urlOrigen: request.headers.get("referer") ?? undefined,
-    }).catch((err) => console.error("No se pudo enviar el evento de conversión a Meta", err));
+    try {
+      await enviarEventoConversion({
+        nombreEvento: "Lead",
+        email: data.email,
+        telefono: data.telefono,
+        urlOrigen: request.headers.get("referer") ?? undefined,
+      });
+    } catch (err) {
+      console.error("No se pudo enviar el evento de conversión a Meta", err);
+    }
   }
 
   const listaLotesTexto = lotesReservados.map((l) => `Lote ${l.numero} (${l.superficieM2} m²)`).join(", ");

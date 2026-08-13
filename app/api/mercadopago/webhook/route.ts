@@ -127,13 +127,17 @@ export async function POST(request: Request) {
       importe,
     });
 
-    enviarEventoConversion({
-      nombreEvento: "Purchase",
-      email: lead.email,
-      telefono: lead.telefono,
-      valor: importe,
-      moneda: "ARS",
-    }).catch((err) => console.error("No se pudo enviar el evento de conversión a Meta", err));
+    try {
+      await enviarEventoConversion({
+        nombreEvento: "Purchase",
+        email: lead.email,
+        telefono: lead.telefono,
+        valor: importe,
+        moneda: "ARS",
+      });
+    } catch (err) {
+      console.error("No se pudo enviar el evento de conversión a Meta", err);
+    }
 
     try {
       const comprobante = await generarComprobantePdf({
