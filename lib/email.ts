@@ -87,6 +87,58 @@ export function armarMailBienvenidaReserva(datos: {
   `;
 }
 
+/** Arma el HTML del mail que avisa al cliente el día/horario de la firma en escribanía,
+ * con los datos de la escribanía del proyecto y la documentación requerida. */
+export function armarMailFirmaEscribania(datos: {
+  nombre: string;
+  proyectoNombre: string;
+  manzana: string;
+  lotes: { numero: string; superficieM2: number }[];
+  fecha: string;
+  horario: string;
+  escribaniaNombre: string | null;
+  escribaniaDireccion: string | null;
+  escribaniaInstrucciones: string | null;
+  documentosRequeridos: string[];
+}) {
+  const filasLotes = datos.lotes
+    .map((l) => `<li>Lote ${l.numero}${l.superficieM2 ? ` &ndash; ${l.superficieM2} m²` : ""}</li>`)
+    .join("");
+  const fechaFormateada = new Date(`${datos.fecha}T00:00:00`).toLocaleDateString("es-AR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  const filasDocumentos = [...datos.documentosRequeridos, "DNI físico (obligatorio)"]
+    .map((d) => `<li>${d}</li>`)
+    .join("");
+
+  return `
+    <h2>¡Ya tenemos día y horario para tu firma, ${datos.nombre}!</h2>
+    <p style="margin: 16px 0 4px; color: #333;"><b>PROYECTO:</b> ${datos.proyectoNombre}</p>
+    <p style="margin: 0 0 4px; color: #333;"><b>MANZANA:</b> ${datos.manzana}</p>
+    <p style="margin: 0 0 4px; color: #333;"><b>LOTE/S:</b></p>
+    <ul style="color: #333;">${filasLotes}</ul>
+    <p style="margin: 16px 0 4px; color: #333;"><b>FECHA DE FIRMA:</b> ${fechaFormateada}</p>
+    <p style="margin: 0 0 4px; color: #333;"><b>HORARIO:</b> ${datos.horario} hs</p>
+    ${
+      datos.escribaniaNombre || datos.escribaniaDireccion
+        ? `<p style="margin: 16px 0 4px; color: #333;"><b>ESCRIBANÍA:</b> ${datos.escribaniaNombre ?? ""}</p>
+           ${datos.escribaniaDireccion ? `<p style="margin: 0 0 4px; color: #333;"><b>DIRECCIÓN:</b> ${datos.escribaniaDireccion}</p>` : ""}`
+        : ""
+    }
+    <div style="margin-top: 20px; padding: 16px; border: 1px solid #f5c6cb; background: #fff5f5; border-radius: 8px;">
+      <p style="margin: 0 0 8px; font-weight: bold; color: #c0392b;">Documentación a presentar</p>
+      <ul style="margin: 0; color: #333;">${filasDocumentos}</ul>
+      <p style="margin: 8px 0 0; color: #c0392b;"><b>Es imprescindible presentarte con tu DNI físico</b> — no se aceptan copias ni versiones digitales.</p>
+    </div>
+    ${datos.escribaniaInstrucciones ? `<p style="margin: 16px 0 4px; color: #333;">${datos.escribaniaInstrucciones}</p>` : ""}
+    <p style="margin: 16px 0 0; color: #333;">Ante cualquier consulta, respondé este correo o escribinos por WhatsApp.</p>
+  `;
+}
+
 export type AdjuntoEmail = { filename: string; content: string };
 
 async function enviar(to: string, subject: string, html: string, adjuntos?: AdjuntoEmail[]) {

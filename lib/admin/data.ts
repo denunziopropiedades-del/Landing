@@ -54,6 +54,10 @@ export async function getProyectosAdmin(): Promise<Proyecto[]> {
     orden: p.orden,
     celdaAnchoPct: p.celda_ancho_pct ?? null,
     celdaAltoPct: p.celda_alto_pct ?? null,
+    escribaniaNombre: p.escribania_nombre ?? null,
+    escribaniaDireccion: p.escribania_direccion ?? null,
+    escribaniaInstrucciones: p.escribania_instrucciones ?? null,
+    documentosRequeridos: (p.documentos_requeridos as string[] | null) ?? [],
   }));
 }
 
@@ -363,6 +367,7 @@ export async function getLeads(): Promise<Lead[]> {
     gastosArs: numOrNull(l.gastos_ars),
     pagoConfirmadoEn: l.pago_confirmado_en ?? null,
     pagoMercadopagoId: l.pago_mercadopago_id ?? null,
+    documentosEntregados: (l.documentos_entregados as string[] | null) ?? [],
     };
   });
 }

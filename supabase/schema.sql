@@ -95,6 +95,11 @@ create table proyectos (
   -- Ancho/alto de cada celda de lote en el plano interactivo, en % de la imagen del masterplan.
   celda_ancho_pct numeric not null default 1.7,
   celda_alto_pct numeric not null default 12.5,
+  -- Datos de la escribanía y documentación requerida, para el mail de firma al cliente.
+  escribania_nombre text,
+  escribania_direccion text,
+  escribania_instrucciones text,
+  documentos_requeridos jsonb not null default '[]'::jsonb,
   creado_en timestamptz not null default now(),
   actualizado_en timestamptz not null default now()
 );
@@ -313,6 +318,8 @@ create table leads (
   -- Confirmación automática del pago de la seña vía Mercado Pago (webhook).
   pago_confirmado_en timestamptz,
   pago_mercadopago_id text,
+  -- Documentación (del listado requerido del proyecto) que este cliente ya entregó.
+  documentos_entregados jsonb not null default '[]'::jsonb,
   -- Sexo del cliente, para segmentar el saludo de día del padre / día de la madre.
   sexo text check (sexo in ('M', 'F')),
   -- Fecha/horario acordado para la firma en escribanía.

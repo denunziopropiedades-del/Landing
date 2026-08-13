@@ -34,6 +34,12 @@ export type Proyecto = {
   orden: number;
   celdaAnchoPct: number | null;
   celdaAltoPct: number | null;
+  /** Datos de la escribanía asignada a este proyecto, para el mail de firma al cliente. */
+  escribaniaNombre?: string | null;
+  escribaniaDireccion?: string | null;
+  escribaniaInstrucciones?: string | null;
+  /** Documentación que hay que llevar a la firma, específica de este proyecto. */
+  documentosRequeridos?: string[];
 };
 
 export type EstadoLote = "disponible" | "reservado" | "vendido" | "no_disponible";
@@ -209,6 +215,8 @@ export type Lead = {
   gastosArs?: number | null;
   pagoConfirmadoEn?: string | null;
   pagoMercadopagoId?: string | null;
+  /** Documentación (del listado requerido del proyecto) que este cliente ya entregó. */
+  documentosEntregados?: string[];
 };
 
 export type Gasto = {

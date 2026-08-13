@@ -73,6 +73,43 @@ function ProyectoForm({ proyecto, onDone }: { proyecto?: Proyecto; onDone?: () =
           Destacar en la home
         </label>
       </div>
+
+      <div className="sm:col-span-2 mt-2 border-t border-black/10 pt-3">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-black/40">
+          Escribanía y documentación (para el mail de firma al cliente)
+        </p>
+      </div>
+      <div>
+        <label className={labelClass}>Nombre de la escribanía</label>
+        <input name="escribaniaNombre" defaultValue={proyecto?.escribaniaNombre ?? ""} className={inputClass} />
+      </div>
+      <div>
+        <label className={labelClass}>Dirección de la escribanía</label>
+        <input name="escribaniaDireccion" defaultValue={proyecto?.escribaniaDireccion ?? ""} className={inputClass} />
+      </div>
+      <div className="sm:col-span-2">
+        <label className={labelClass}>Instrucciones adicionales para la firma (opcional)</label>
+        <textarea
+          name="escribaniaInstrucciones"
+          defaultValue={proyecto?.escribaniaInstrucciones ?? ""}
+          rows={2}
+          className={inputClass}
+        />
+      </div>
+      <div className="sm:col-span-2">
+        <label className={labelClass}>Documentación requerida (un ítem por línea)</label>
+        <textarea
+          name="documentosRequeridos"
+          defaultValue={(proyecto?.documentosRequeridos ?? []).join("\n")}
+          rows={4}
+          placeholder={"DNI\nRecibo de sueldo\nConstancia de CUIT/CUIL"}
+          className={inputClass}
+        />
+        <p className="mt-1 text-[11px] text-brand-black/40">
+          El DNI físico se recuerda siempre en el mail, no hace falta agregarlo acá.
+        </p>
+      </div>
+
       <div className="flex items-end gap-3">
         <button
           type="submit"

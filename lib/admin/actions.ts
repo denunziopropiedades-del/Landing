@@ -6,7 +6,7 @@ import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/
 import { requireRole, AdminActionError } from "@/lib/admin/auth";
 import { registrarActividad } from "@/lib/admin/activity";
 import { cancelarEventoVisita, crearEventoEscribania } from "@/lib/google-calendar";
-import { NOTA_RESERVA_LOTE_HTML, sendEmail } from "@/lib/email";
+import { NOTA_RESERVA_LOTE_HTML, armarMailFirmaEscribania, sendEmail } from "@/lib/email";
 import type { EstadoLead, EstadoLote, EstadoVisita, Rol } from "@/types/site";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
@@ -105,6 +105,13 @@ export async function upsertProyectoAction(_prev: ActionResult | null, formData:
       imagen_portada: optStr(formData, "imagenPortada"),
       whatsapp_numero: optStr(formData, "whatsappNumero"),
       destacado: formData.get("destacado") === "on",
+      escribania_nombre: optStr(formData, "escribaniaNombre"),
+      escribania_direccion: optStr(formData, "escribaniaDireccion"),
+      escribania_instrucciones: optStr(formData, "escribaniaInstrucciones"),
+      documentos_requeridos: str(formData, "documentosRequeridos")
+        .split("\n")
+        .map((d) => d.trim())
+        .filter(Boolean),
     };
 
     if (id) {
@@ -1362,7 +1369,9 @@ export async function actualizarFirmaEscribaniaLeadAction(
 
     const { data: lead } = await admin
       .from("leads")
-      .select("nombre, apellido, manzana, escribania_calendar_event_id, lotes(manzana, numero), proyectos(nombre)")
+      .select(
+        "nombre, apellido, email, manzana, escribania_calendar_event_id, lotes(manzana, numero), lead_lotes(lotes(manzana, numero, superficie_m2)), proyectos(nombre, escribania_nombre, escribania_direccion, escribania_instrucciones, documentos_requeridos)"
+      )
       .eq("id", id)
       .maybeSingle();
 
@@ -1376,15 +1385,59 @@ export async function actualizarFirmaEscribaniaLeadAction(
     const horarioLimpio = horario.trim();
     let eventId: string | null = null;
     if (fechaLimpia && horarioLimpio && lead) {
-      const lote = lead.lotes as unknown as { manzana: string; numero: string } | null;
+      const loteSingular = lead.lotes as unknown as { manzana: string; numero: string } | null;
+      const lotesOperacion = (
+        (lead.lead_lotes ?? []) as unknown as {
+          lotes: { manzana: string; numero: string; superficie_m2: number } | null;
+        }[]
+      )
+        .map((ll) => ll.lotes)
+        .filter((lo): lo is NonNullable<typeof lo> => lo !== null);
+
+      const proyecto = lead.proyectos as unknown as {
+        nombre: string;
+        escribania_nombre: string | null;
+        escribania_direccion: string | null;
+        escribania_instrucciones: string | null;
+        documentos_requeridos: string[] | null;
+      } | null;
+
       eventId = await crearEventoEscribania({
         nombreCliente: `${lead.nombre} ${lead.apellido ?? ""}`.trim(),
         fecha: fechaLimpia,
         horario: horarioLimpio,
-        manzana: lote?.manzana ?? lead.manzana ?? undefined,
-        lote: lote?.numero ?? undefined,
-        proyectoNombre: (lead.proyectos as unknown as { nombre: string } | null)?.nombre,
+        manzana: loteSingular?.manzana ?? lead.manzana ?? undefined,
+        lote: loteSingular?.numero ?? undefined,
+        proyectoNombre: proyecto?.nombre,
       });
+
+      if (lead.email) {
+        try {
+          await sendEmail(
+            lead.email,
+            `Confirmamos el día y horario de tu firma — ${proyecto?.nombre ?? ""}`,
+            armarMailFirmaEscribania({
+              nombre: lead.nombre,
+              proyectoNombre: proyecto?.nombre ?? "",
+              manzana: loteSingular?.manzana ?? lead.manzana ?? "",
+              lotes:
+                lotesOperacion.length > 0
+                  ? lotesOperacion.map((lo) => ({ numero: lo.numero, superficieM2: lo.superficie_m2 }))
+                  : loteSingular
+                    ? [{ numero: loteSingular.numero, superficieM2: 0 }]
+                    : [],
+              fecha: fechaLimpia,
+              horario: horarioLimpio,
+              escribaniaNombre: proyecto?.escribania_nombre ?? null,
+              escribaniaDireccion: proyecto?.escribania_direccion ?? null,
+              escribaniaInstrucciones: proyecto?.escribania_instrucciones ?? null,
+              documentosRequeridos: proyecto?.documentos_requeridos ?? [],
+            })
+          );
+        } catch (err) {
+          console.error("No se pudo enviar el mail de firma en escribanía", err);
+        }
+      }
     }
 
     const { error } = await admin
@@ -1400,6 +1453,24 @@ export async function actualizarFirmaEscribaniaLeadAction(
     await registrarActividad(actor, "actualizar", "lead", id, { fechaFirmaEscribania: fecha, horarioFirmaEscribania: horario });
     revalidatePath("/admin/crm");
     revalidatePath("/admin/consultas");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function actualizarDocumentosLeadAction(id: string, documentos: string[]): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    await verificarPropiedadLead(actor.id, actor.rol, id);
+    const admin = (await getSupabaseAdminClient())!;
+    const { error } = await admin
+      .from("leads")
+      .update({ documentos_entregados: documentos, actualizado_en: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "actualizar", "lead", id, { documentosEntregados: documentos });
+    revalidatePath("/admin/crm");
     return { ok: true };
   } catch (err) {
     return fail(err);

@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { ChevronDown, ChevronUp, GripVertical, Mail, Phone, Trash2 } from "lucide-react";
 import {
   actualizarComisionHonorariosLeadAction,
+  actualizarDocumentosLeadAction,
   actualizarEstadoLeadAction,
   actualizarFechaNacimientoLeadAction,
   actualizarFirmaEscribaniaLeadAction,
@@ -101,6 +102,17 @@ function LeadCard({
             fechaFirmaEscribania: fechaFirma || null,
             horarioFirmaEscribania: horarioFirma || null,
           });
+      });
+    });
+  };
+
+  const toggleDocumento = (documento: string) => {
+    const actuales = lead.documentosEntregados ?? [];
+    const nuevos = actuales.includes(documento) ? actuales.filter((d) => d !== documento) : [...actuales, documento];
+    startTransition(() => {
+      actualizarDocumentosLeadAction(lead.id, nuevos).then((res) => {
+        if (!res.ok) alert(`No se pudo guardar la documentación: ${res.error}`);
+        else onActualizado(lead.id, { documentosEntregados: nuevos });
       });
     });
   };
@@ -279,6 +291,29 @@ function LeadCard({
               />
             </div>
           </div>
+
+          {(() => {
+            const documentosProyecto = proyectos.find((p) => p.id === lead.proyectoId)?.documentosRequeridos ?? [];
+            if (documentosProyecto.length === 0) return null;
+            return (
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Documentación entregada</label>
+                <div className="space-y-1 rounded-lg border border-black/10 p-2">
+                  {documentosProyecto.map((doc) => (
+                    <label key={doc} className="flex items-center gap-1.5 text-xs text-brand-black/70">
+                      <input
+                        type="checkbox"
+                        checked={(lead.documentosEntregados ?? []).includes(doc)}
+                        onChange={() => toggleDocumento(doc)}
+                        className="h-3.5 w-3.5 accent-brand-green-700"
+                      />
+                      {doc}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="grid grid-cols-2 gap-1.5">
             <div>
