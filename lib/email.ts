@@ -157,6 +157,7 @@ async function enviar(to: string, subject: string, html: string, adjuntos?: Adju
     body: JSON.stringify({
       from: EMAIL_FROM,
       to: [to],
+      reply_to: EMAIL_TO,
       subject,
       html: conFirma(html),
       ...(adjuntos && adjuntos.length > 0 ? { attachments: adjuntos } : {}),
