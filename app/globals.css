@@ -28,6 +28,18 @@
   --color-brand-gold-700: #96741f;
   --color-brand-cream: #f7f5f0;
 
+  /* Paleta del módulo de selección de personal (independiente de la marca inmobiliaria) */
+  --color-obra-slate-950: #0c1116;
+  --color-obra-slate-900: #131a21;
+  --color-obra-slate-800: #1c2731;
+  --color-obra-slate-700: #2b3947;
+  --color-obra-orange-100: #ffe6d1;
+  --color-obra-orange-300: #ffb774;
+  --color-obra-orange-400: #ff9c47;
+  --color-obra-orange-500: #f2790f;
+  --color-obra-orange-600: #d1650a;
+  --color-obra-orange-700: #a8500a;
+
   --animate-fade-up: fade-up 0.7s ease-out both;
   --animate-marquee: marquee 30s linear infinite;
 

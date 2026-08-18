@@ -7,7 +7,11 @@ import AgendaFloatButton from "@/components/AgendaFloatButton";
 
 export default function FloatingWidgets({ mensaje, numero }: { mensaje?: string; numero?: string }) {
   const pathname = usePathname();
-  if (pathname?.startsWith("/admin")) return null;
+  // Estos widgets son de la marca inmobiliaria: no deben aparecer en el panel
+  // admin ni en el módulo de selección de personal (negocio aparte).
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/postulantes") || pathname?.startsWith("/postularme")) {
+    return null;
+  }
 
   return (
     <>

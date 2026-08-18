@@ -180,6 +180,45 @@ Metadata dinámica por proyecto (`generateMetadata`), JSON-LD `RealEstateListing
 2. Cargá las variables de entorno de `.env.example` que vayas a usar en Project Settings → Environment Variables.
 3. Vercel detecta Next.js automáticamente; no hace falta configuración adicional de build.
 
+## Sistema de selección de personal (construcción/albañilería)
+
+Módulo **totalmente independiente** de la plataforma inmobiliaria de arriba (otro negocio, otras tablas, otro login): gestión, registro, filtrado y selección de candidatos para trabajos de albañilería y construcción.
+
+- `/postularme`: formulario público (mobile-first) donde el candidato carga su ficha.
+- `/postulantes/login` y `/postulantes/*`: panel privado (dashboard, listado con filtros combinables, ficha completa, configuración).
+
+### Datos de cada candidato
+
+Nombre, DNI, teléfono/WhatsApp, localidad, edad, cargo (Ayudante / Medio Oficial / Oficial / Oficial Especializado), años de experiencia, especialidad, trabajos que sabe realizar, experiencia comprobable, referencias laborales, disponibilidad para comenzar, disponibilidad horaria, **pretensión salarial diaria** y última remuneración diaria (ambas numéricas, en pesos, para poder ordenar/filtrar), si acepta jornada/obra, herramientas propias, movilidad, observaciones y estado (`Pendiente → Preseleccionado → Entrevista → Aprobado → Contratado`, con `Descartado` como salida).
+
+### Puntaje automático
+
+Cada candidato recibe un puntaje 0-100 y una clasificación (Excelente / Buen candidato / Candidato a evaluar / Baja prioridad), calculado en `lib/candidatos/scoring.ts` a partir de experiencia, cargo, especialidad, disponibilidad, pretensión salarial (comparada contra un "salario de referencia"), referencias, herramientas y movilidad. Los pesos de cada factor y el salario de referencia se configuran desde `/postulantes/configuracion`, con opción de recalcular el puntaje de todos los candidatos ya cargados.
+
+### WhatsApp
+
+Cada candidato tiene un botón que abre `wa.me` con un mensaje predeterminado editable desde `/postulantes/configuracion` (variables `{{nombre}}`, `{{cargo}}`, `{{localidad}}`).
+
+### Excel
+
+- **Exportar**: desde `/postulantes/candidatos`, respeta los filtros aplicados en la URL.
+- **Importar**: acepta el Excel existente de candidatos; las columnas se reconocen por nombre (`Cargo`, `Años de experiencia`, `Localidad`, `Preferencia salarial diaria`, etc. — ver `ALIAS` en `lib/candidatos/importar.ts`). Un candidato con el mismo DNI o teléfono que uno ya cargado se actualiza en vez de duplicarse (mismo criterio que usa el alta pública en `/postularme`).
+
+### Configurar el módulo
+
+1. Corré [`supabase/schema_candidatos.sql`](./supabase/schema_candidatos.sql) en el SQL Editor de Supabase (mismo proyecto que ya tengas configurado, o uno nuevo). Crea sus propias tablas (`candidatos`, `candidatos_administradores`, `candidatos_configuracion`) con su propio RLS, sin tocar el esquema inmobiliario.
+2. Creá el usuario admin en **Authentication > Users** (igual que el panel inmobiliario).
+3. Habilitalo para este módulo corriendo en el SQL Editor:
+   ```sql
+   insert into candidatos_administradores (id, email, nombre)
+   select id, email, 'Tu nombre' from auth.users where email = 'tu@email.com';
+   ```
+4. Entrá a `/postulantes/login`. Sin Supabase configurado, el formulario público y el panel funcionan en modo demo (no persisten datos), igual que el resto del sitio.
+
+### Futuras funciones (arquitectura preparada, no incluidas en este MVP)
+
+Agenda de entrevistas con historial propio, notificaciones/envío automático de WhatsApp, documentación adjunta (fotos, CV, certificados), control de asistencia y registro de obras, calificación posterior del trabajador. El campo `observaciones` y el historial de cambios de `estado` ya cubren el uso básico de seguimiento mientras tanto.
+
 ## Scripts
 
 ```bash

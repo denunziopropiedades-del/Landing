@@ -32,9 +32,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Panel del módulo de selección de personal (independiente del panel inmobiliario).
+  const isPostulantesLoginPage = request.nextUrl.pathname.startsWith("/postulantes/login");
+  const isPostulantesRoute = request.nextUrl.pathname.startsWith("/postulantes");
+
+  if (isPostulantesRoute && !isPostulantesLoginPage && !user) {
+    const loginUrl = new URL("/postulantes/login", request.url);
+    return NextResponse.redirect(loginUrl);
+  }
+
   return response;
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/postulantes/:path*"],
 };
