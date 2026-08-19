@@ -65,10 +65,26 @@ export function armarMailBienvenidaReserva(datos: {
   proyectoNombre: string;
   manzana: string;
   lotes: { numero: string; superficieM2: number }[];
+  linkPago?: string | null;
 }) {
   const filasLotes = datos.lotes
     .map((l) => `<li>Lote ${l.numero} &ndash; ${l.superficieM2} m²</li>`)
     .join("");
+
+  const botonPago = datos.linkPago
+    ? `
+    <div style="margin: 20px 0; padding: 16px; border: 1px solid #b3e0f2; background: #f0faff; border-radius: 8px; text-align: center;">
+      <p style="margin: 0 0 12px; color: #333;">
+        Si te resulta más fácil, podés abonar la seña del terreno directamente desde acá:
+      </p>
+      <a
+        href="${datos.linkPago}"
+        style="display: inline-block; background: #009EE3; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 999px; font-weight: bold; font-family: sans-serif;"
+      >
+        Abona desde acá la seña del terreno
+      </a>
+    </div>`
+    : "";
 
   return `
     <h2>¡Gracias por tu reserva, ${datos.nombre}!</h2>
@@ -79,6 +95,7 @@ export function armarMailBienvenidaReserva(datos: {
     <ul style="color: #333;">${filasLotes}</ul>
     <p style="margin: 4px 0; color: #333;"><b>TOTAL DE LOTES:</b> ${datos.lotes.length}</p>
     <p style="margin: 16px 0 4px; color: #333;"><b>Estado de la operación:</b> Reserva recibida</p>
+    ${botonPago}
     <p style="margin: 16px 0 4px; color: #333;"><b>Próximos pasos:</b></p>
     <p style="margin: 0; color: #333;">
       Nuestro equipo se va a comunicar con vos para coordinar la seña y el resto de la

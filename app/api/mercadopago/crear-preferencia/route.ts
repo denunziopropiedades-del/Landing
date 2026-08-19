@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getPreferenceClient, isMercadoPagoConfigured } from "@/lib/mercadopago";
+import { crearLinkPagoSena, isMercadoPagoConfigured } from "@/lib/mercadopago";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
-
-const SENA_ARS = 200000;
 
 const bodySchema = z.object({
   leadId: z.string().min(1),
@@ -47,33 +45,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Operación inválida" }, { status: 400 });
   }
 
-  const monto = SENA_ARS;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const titulo = lotes.length === 1 ? `Seña reserva ${lotes[0].nombre}` : `Seña reserva de ${lotes.length} lotes`;
-
-  const preference = getPreferenceClient()!;
-  const result = await preference.create({
-    body: {
-      items: [
-        {
-          id: leadId,
-          title: titulo,
-          quantity: 1,
-          unit_price: monto,
-          currency_id: "ARS",
-        },
-      ],
-      payer: { name: nombre, email },
-      back_urls: {
-        success: `${siteUrl}/reserva/exito`,
-        failure: `${siteUrl}/reserva/error`,
-        pending: `${siteUrl}/reserva/pendiente`,
-      },
-      auto_return: "approved",
-      external_reference: leadId,
-      notification_url: `${siteUrl}/api/mercadopago/webhook`,
-    },
+  const initPoint = await crearLinkPagoSena({
+    leadId,
+    nombre,
+    email,
+    lotesNombres: lotes.map((l) => l.nombre),
   });
 
-  return NextResponse.json({ initPoint: result.init_point });
+  if (!initPoint) {
+    return NextResponse.json({ error: "No se pudo generar el link de pago." }, { status: 503 });
+  }
+
+  return NextResponse.json({ initPoint });
 }

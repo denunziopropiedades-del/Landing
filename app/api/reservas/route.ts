@@ -5,6 +5,7 @@ import { armarMailBienvenidaReserva, sendEmail, sendNotificationEmail } from "@/
 import { checkRateLimit } from "@/lib/rate-limit";
 import { registrarActividadSistema } from "@/lib/admin/activity";
 import { enviarEventoConversion } from "@/lib/meta-capi";
+import { crearLinkPagoSena } from "@/lib/mercadopago";
 
 export async function POST(request: Request) {
   const rate = await checkRateLimit(request, "reservas");
@@ -91,7 +92,19 @@ export async function POST(request: Request) {
     console.error("No se pudo enviar el email de notificación", err);
   }
 
-  if (lotesReservados.length > 0) {
+  if (lotesReservados.length > 0 && leadId) {
+    let linkPago: string | null = null;
+    try {
+      linkPago = await crearLinkPagoSena({
+        leadId,
+        nombre: `${data.nombre} ${data.apellido}`,
+        email: data.email,
+        lotesNombres: lotesReservados.map((l) => `Lote ${l.numero}`),
+      });
+    } catch (err) {
+      console.error("No se pudo generar el link de pago de la seña", err);
+    }
+
     try {
       await sendEmail(
         data.email,
@@ -101,6 +114,7 @@ export async function POST(request: Request) {
           proyectoNombre,
           manzana,
           lotes: lotesReservados,
+          linkPago,
         })
       );
     } catch (err) {
