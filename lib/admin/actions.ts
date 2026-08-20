@@ -1330,6 +1330,43 @@ export async function actualizarFechaNacimientoLeadAction(id: string, fecha: str
   }
 }
 
+export async function actualizarDatosContactoLeadAction(
+  id: string,
+  datos: { nombre: string; apellido: string; dni: string; email: string; telefono: string }
+): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    await verificarPropiedadLead(actor.id, actor.rol, id);
+
+    const nombre = datos.nombre.trim();
+    const email = datos.email.trim();
+    const telefono = datos.telefono.trim();
+    if (!nombre) return { ok: false, error: "El nombre no puede quedar vacío." };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: "El email no es válido." };
+    if (!telefono) return { ok: false, error: "El teléfono no puede quedar vacío." };
+
+    const admin = (await getSupabaseAdminClient())!;
+    const { error } = await admin
+      .from("leads")
+      .update({
+        nombre,
+        apellido: datos.apellido.trim() || null,
+        dni: datos.dni.trim() || null,
+        email,
+        telefono,
+        actualizado_en: new Date().toISOString(),
+      })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "actualizar", "lead", id, { ...(await contextoLead(admin, id)), datosContacto: true });
+    revalidatePath("/admin/crm");
+    revalidatePath("/admin/consultas");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function actualizarPagoLeadAction(
   id: string,
   numeroTransaccion: string,

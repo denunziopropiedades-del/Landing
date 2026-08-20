@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { ChevronDown, ChevronUp, GripVertical, Mail, Phone, Trash2 } from "lucide-react";
 import {
   actualizarComisionHonorariosLeadAction,
+  actualizarDatosContactoLeadAction,
   actualizarDocumentosLeadAction,
   actualizarEstadoLeadAction,
   actualizarFechaNacimientoLeadAction,
@@ -49,6 +50,11 @@ function LeadCard({
   onMoved: () => void;
   onActualizado: (id: string, patch: Partial<Lead>) => void;
 }) {
+  const [nombre, setNombre] = useState(lead.nombre);
+  const [apellido, setApellido] = useState(lead.apellido ?? "");
+  const [dni, setDni] = useState(lead.dni ?? "");
+  const [email, setEmail] = useState(lead.email);
+  const [telefono, setTelefono] = useState(lead.telefono);
   const [observaciones, setObservaciones] = useState(lead.observaciones);
   const [numeroTransaccion, setNumeroTransaccion] = useState(lead.numeroTransaccion ?? "");
   const [importeCobrado, setImporteCobrado] = useState(lead.importeCobrado?.toString() ?? "");
@@ -67,6 +73,23 @@ function LeadCard({
   // (onActualizado) para que la tarjeta no "vuelva atrás" al cambiar de columna
   // (antes solo se actualizaba el estado local de este componente, y al mover
   // el lead a otra columna se remonta desde el dato viejo que tenía el tablero).
+  const guardarDatosContacto = () => {
+    if (
+      nombre === lead.nombre &&
+      apellido === (lead.apellido ?? "") &&
+      dni === (lead.dni ?? "") &&
+      email === lead.email &&
+      telefono === lead.telefono
+    )
+      return;
+    startTransition(() => {
+      actualizarDatosContactoLeadAction(lead.id, { nombre, apellido, dni, email, telefono }).then((res) => {
+        if (!res.ok) alert(`No se pudieron guardar los datos de contacto: ${res.error}`);
+        else onActualizado(lead.id, { nombre, apellido: apellido || undefined, dni: dni || undefined, email, telefono });
+      });
+    });
+  };
+
   const guardarObservaciones = () => {
     if (observaciones === lead.observaciones) return;
     startTransition(() => {
@@ -230,20 +253,63 @@ function LeadCard({
             )
           )}
 
-          <div className="space-y-1 text-xs text-brand-black/60">
-            <p className="flex items-center gap-1.5">
-              <Mail className="h-3 w-3" /> {lead.email}
-            </p>
-            <a
-              href={buildWhatsappClienteUrl(lead.telefono)}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 hover:text-brand-green-700 hover:underline"
-              title="Abrir conversación de WhatsApp"
-            >
-              <Phone className="h-3 w-3" /> {lead.telefono}
-            </a>
+          <div className="space-y-1.5">
+            <label className="mb-1 block text-[11px] font-medium text-brand-black/50">
+              Datos del titular (editables por si el cliente los cambia)
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
+              <input
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                onBlur={guardarDatosContacto}
+                placeholder="Nombre"
+                className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+              />
+              <input
+                value={apellido}
+                onChange={(e) => setApellido(e.target.value)}
+                onBlur={guardarDatosContacto}
+                placeholder="Apellido"
+                className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+              />
+            </div>
+            <input
+              value={dni}
+              onChange={(e) => setDni(e.target.value)}
+              onBlur={guardarDatosContacto}
+              placeholder="DNI"
+              className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+            />
+            <div className="flex items-center gap-1.5">
+              <Mail className="h-3 w-3 shrink-0 text-brand-black/40" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onBlur={guardarDatosContacto}
+                placeholder="Email"
+                className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <input
+                value={telefono}
+                onChange={(e) => setTelefono(e.target.value)}
+                onBlur={guardarDatosContacto}
+                placeholder="Teléfono"
+                className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+              />
+              <a
+                href={buildWhatsappClienteUrl(telefono)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="shrink-0 rounded-lg border border-black/10 p-1.5 text-brand-black/50 hover:border-brand-green-700 hover:text-brand-green-700"
+                title="Abrir conversación de WhatsApp"
+              >
+                <Phone className="h-3 w-3" />
+              </a>
+            </div>
           </div>
 
           {puedeAsignar && (
