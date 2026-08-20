@@ -292,12 +292,21 @@ export async function getLeads(): Promise<Lead[]> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
-  const { data, error } = await supabase
+  const baseSelect =
+    "*, proyectos(nombre), lotes(nombre, numero, manzana, superficie_m2), perfiles(nombre, email), lead_lotes(lotes(id, manzana, numero, superficie_m2, nombre))";
+
+  let { data, error } = await supabase
     .from("leads")
-    .select(
-      "*, proyectos(nombre), lotes(nombre, numero, manzana, superficie_m2), perfiles(nombre, email), lead_lotes(lotes(id, manzana, numero, superficie_m2, nombre)), cuotas(pagada, vencimiento)"
-    )
+    .select(`${baseSelect}, cuotas(pagada, vencimiento)`)
     .order("creado_en", { ascending: false });
+
+  if (error) {
+    // La tabla "cuotas" es reciente: si todavía no se corrió su migración en este
+    // entorno, este join rompe la consulta entera y antes hacía desaparecer TODO
+    // el CRM. Reintentamos sin cuotas para que los leads se sigan viendo igual.
+    console.error("Fallo el join con cuotas en getLeads(), reintentando sin él", error);
+    ({ data, error } = await supabase.from("leads").select(baseSelect).order("creado_en", { ascending: false }));
+  }
   if (error || !data) return [];
 
   return data.map((l) => {
