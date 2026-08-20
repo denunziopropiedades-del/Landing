@@ -94,8 +94,12 @@ export async function POST(request: Request) {
   }
 
   const supabase = await getSupabaseAdminClient();
+  if (!supabase) {
+    console.error("zapier-webhook: no se pudo obtener el cliente de Supabase (revisar SUPABASE_SERVICE_ROLE_KEY)");
+    return NextResponse.json({ error: "La base de datos no está disponible en este momento." }, { status: 503 });
+  }
 
-  if (leadId && supabase) {
+  if (leadId) {
     const { data: existente } = await supabase.from("leads").select("id").eq("external_id", leadId).maybeSingle();
     if (existente) return NextResponse.json({ ok: true, duplicado: true });
   }
@@ -107,16 +111,19 @@ export async function POST(request: Request) {
   if (conocidos.ciudad) detalles.push(`Ciudad: ${conocidos.ciudad}`);
   detalles.push(...extra);
 
-  if (supabase) {
-    await supabase.from("leads").insert({
-      tipo: "meta",
-      external_id: leadId ?? null,
-      nombre,
-      email: email || "sin-email@matulotes.app",
-      telefono: telefono || "-",
-      estado: "nuevo",
-      observaciones: ["Lead recibido desde Zapier (formulario de Meta Ads).", ...detalles].join("\n"),
-    });
+  const { error: insertError } = await supabase.from("leads").insert({
+    tipo: "meta",
+    external_id: leadId ?? null,
+    nombre,
+    email: email || "sin-email@matulotes.app",
+    telefono: telefono || "-",
+    estado: "nuevo",
+    observaciones: ["Lead recibido desde Zapier (formulario de Meta Ads).", ...detalles].join("\n"),
+  });
+
+  if (insertError) {
+    console.error("zapier-webhook: no se pudo insertar el lead", insertError);
+    return NextResponse.json({ error: `No se pudo guardar el lead: ${insertError.message}` }, { status: 500 });
   }
 
   try {
