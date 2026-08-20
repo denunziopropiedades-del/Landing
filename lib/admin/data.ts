@@ -151,6 +151,7 @@ export async function getFinanciacionAdmin(proyectoId: string): Promise<ConfigFi
     anticipoMaximoPct: 50,
     cuotasOpciones: [12, 24, 36, 48, 60],
     interesAnualPct: 6,
+    planesFijos: [],
   };
   if (!supabase) return fallback;
 
@@ -166,6 +167,7 @@ export async function getFinanciacionAdmin(proyectoId: string): Promise<ConfigFi
     anticipoMaximoPct: Number(data.anticipo_maximo_pct),
     cuotasOpciones: data.cuotas_opciones,
     interesAnualPct: Number(data.interes_anual_pct),
+    planesFijos: (data.planes_fijos ?? []) as ConfigFinanciacion["planesFijos"],
   };
 }
 

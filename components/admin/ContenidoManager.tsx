@@ -47,6 +47,44 @@ function FinanciacionForm({ proyectoId, config }: { proyectoId: string; config: 
         <label className={labelClass}>Interés anual (%)</label>
         <input type="number" name="interesAnualPct" defaultValue={config.interesAnualPct} className={inputClass} />
       </div>
+
+      <div className="sm:col-span-2 mt-2 border-t border-black/10 pt-4">
+        <p className="text-sm font-semibold text-brand-black">Planes de financiación a monto fijo (USD)</p>
+        <p className="mt-1 text-xs text-brand-black/50">
+          Opcional: hasta 3 planes fijos, independientes de la calculadora de arriba. Por ejemplo &ldquo;anticipo USD
+          500, en 6 cuotas de USD 400 c/u&rdquo;. Dejá una fila vacía si no la vas a usar.
+        </p>
+      </div>
+      {[1, 2, 3].map((i) => {
+        const plan = config.planesFijos[i - 1];
+        return (
+          <div key={i} className="sm:col-span-2 grid gap-3 rounded-lg border border-black/10 p-3 sm:grid-cols-3">
+            <div>
+              <label className={labelClass}>Anticipo (USD)</label>
+              <input
+                type="number"
+                name={`anticipoUsd${i}`}
+                defaultValue={plan?.anticipoUsd ?? ""}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Cantidad de cuotas</label>
+              <input type="number" name={`cuotasPlan${i}`} defaultValue={plan?.cuotas ?? ""} className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Valor de cada cuota (USD)</label>
+              <input
+                type="number"
+                name={`valorCuotaUsd${i}`}
+                defaultValue={plan?.valorCuotaUsd ?? ""}
+                className={inputClass}
+              />
+            </div>
+          </div>
+        );
+      })}
+
       <div className="flex items-end gap-3">
         <SaveButton pending={pending} />
         {state && !state.ok && <span className="text-xs text-red-600">{state.error}</span>}

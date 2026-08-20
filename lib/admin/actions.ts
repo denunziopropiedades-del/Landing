@@ -801,6 +801,24 @@ export async function upsertFinanciacionAction(_prev: ActionResult | null, formD
       if (cuotas.length > 0) payload.cuotas_opciones = cuotas;
     }
 
+    // Hasta 3 planes de financiación a monto fijo en USD. Una fila solo se guarda
+    // si sus 3 campos (anticipo, cuotas, valor de cuota) están completos; si algún
+    // campo queda vacío, esa fila se descarta en vez de guardarse a medias.
+    const planesFijos: { anticipoUsd: number; cuotas: number; valorCuotaUsd: number }[] = [];
+    for (let i = 1; i <= 3; i++) {
+      const anticipoUsd = optStr(formData, `anticipoUsd${i}`);
+      const cuotasPlan = optStr(formData, `cuotasPlan${i}`);
+      const valorCuotaUsd = optStr(formData, `valorCuotaUsd${i}`);
+      if (anticipoUsd && cuotasPlan && valorCuotaUsd) {
+        planesFijos.push({
+          anticipoUsd: Number(anticipoUsd),
+          cuotas: Number(cuotasPlan),
+          valorCuotaUsd: Number(valorCuotaUsd),
+        });
+      }
+    }
+    payload.planes_fijos = planesFijos;
+
     const { error } = await admin.from("financiacion_config").upsert(payload, { onConflict: "proyecto_id" });
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "actualizar", "financiacion", proyectoId);

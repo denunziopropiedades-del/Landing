@@ -35,7 +35,8 @@ export default function Financiacion({
     return { anticipo, saldoRestante, interesTotal, valorCuota, totalAPagar: anticipo + totalFinanciado };
   }, [lote, planFijo, anticipoPct, cuotas, config.interesAnualPct]);
 
-  if (!lote || (!resultado && !planFijo)) return null;
+  const hayCalculadora = Boolean(lote && (resultado || planFijo));
+  if (!hayCalculadora && config.planesFijos.length === 0) return null;
 
   return (
     <section id="financiacion" className="bg-brand-black py-20 sm:py-28">
@@ -45,6 +46,38 @@ export default function Financiacion({
           <p className="mt-3 text-white/70">Simulá tu plan de pagos y encontrá la cuota ideal para vos.</p>
         </div>
 
+        {config.planesFijos.length > 0 && (
+          <div className="mt-14">
+            <p className="text-center text-sm font-semibold uppercase tracking-wide text-brand-gold-400">
+              Planes de financiación
+            </p>
+            <div
+              className={`mt-5 grid gap-4 ${
+                config.planesFijos.length === 1
+                  ? "mx-auto max-w-sm"
+                  : config.planesFijos.length === 2
+                    ? "sm:grid-cols-2"
+                    : "sm:grid-cols-3"
+              }`}
+            >
+              {config.planesFijos.map((plan, i) => (
+                <div key={i} className="rounded-xl border border-white/10 bg-white/[0.04] p-6 text-center">
+                  <p className="text-xs uppercase tracking-wide text-white/50">Anticipo</p>
+                  <p className="font-display text-2xl font-bold text-white">{formatUsd(plan.anticipoUsd)}</p>
+                  <p className="mt-4 text-sm text-white/70">
+                    en <span className="font-semibold text-brand-gold-400">{plan.cuotas} cuotas</span> de
+                  </p>
+                  <p className="font-display text-xl font-bold text-brand-gold-400">
+                    {formatUsd(plan.valorCuotaUsd)}
+                    <span className="ml-1 text-sm font-normal text-white/50">/mes</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {hayCalculadora && lote && (
         <div className="mt-14 grid gap-10 rounded-2xl border border-white/10 bg-white/[0.03] p-8 lg:grid-cols-2 lg:p-12">
           <div className="space-y-7">
             <div>
@@ -179,6 +212,7 @@ export default function Financiacion({
             </p>
           </div>
         </div>
+        )}
       </div>
     </section>
   );

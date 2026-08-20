@@ -83,6 +83,7 @@ export const configFinanciacionSeed: ConfigFinanciacion = {
   anticipoMaximoPct: 50,
   cuotasOpciones: [12, 24, 36, 48, 60],
   interesAnualPct: 6,
+  planesFijos: [],
 };
 
 export const galeriaSeed: ItemGaleria[] = [

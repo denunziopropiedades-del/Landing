@@ -109,11 +109,20 @@ export type Promocion = {
   fechaFin: string;
 };
 
+export type PlanFinanciacionFijo = {
+  anticipoUsd: number;
+  cuotas: number;
+  valorCuotaUsd: number;
+};
+
 export type ConfigFinanciacion = {
   anticipoMinimoPct: number;
   anticipoMaximoPct: number;
   cuotasOpciones: number[];
   interesAnualPct: number;
+  /** Hasta 3 planes de financiación a monto fijo en USD (ej. "anticipo $X, 6 cuotas
+   * de $Y"), independientes del simulador por porcentaje de arriba. */
+  planesFijos: PlanFinanciacionFijo[];
 };
 
 export type ItemGaleria = {

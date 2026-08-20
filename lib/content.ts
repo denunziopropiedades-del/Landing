@@ -189,6 +189,7 @@ export async function getFinanciacionConfig(proyectoId: string): Promise<ConfigF
     anticipoMaximoPct: Number(data.anticipo_maximo_pct),
     cuotasOpciones: data.cuotas_opciones,
     interesAnualPct: Number(data.interes_anual_pct),
+    planesFijos: (data.planes_fijos ?? []) as ConfigFinanciacion["planesFijos"],
   };
 }
 

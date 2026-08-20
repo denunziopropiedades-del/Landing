@@ -175,7 +175,9 @@ create table financiacion_config (
   anticipo_minimo_pct numeric not null default 20,
   anticipo_maximo_pct numeric not null default 50,
   cuotas_opciones integer[] not null default '{12,24,36,48,60}',
-  interes_anual_pct numeric not null default 6
+  interes_anual_pct numeric not null default 6,
+  -- Hasta 3 planes de financiación a monto fijo en USD: [{anticipoUsd, cuotas, valorCuotaUsd}, ...]
+  planes_fijos jsonb not null default '[]'::jsonb
 );
 
 -- Precios para quien quiera combinar 2 o 3 lotes contiguos en una sola operación
