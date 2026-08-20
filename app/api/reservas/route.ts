@@ -56,10 +56,16 @@ export async function POST(request: Request) {
     manzana = lotesReservados[0]?.manzana ?? "";
     leadId = leadIdCreado as string;
 
+    await supabase
+      .from("leads")
+      .update({ forma_pago: data.formaPago, plan_financiacion: data.planFinanciacion })
+      .eq("id", leadId);
+
     await registrarActividadSistema("crear", "lead", leadId, {
       origen: "reserva online",
       ...(manzana ? { manzana } : {}),
       lote: lotesReservados.map((l) => l.numero).join(", "),
+      formaPago: data.formaPago,
     });
 
     try {
@@ -77,6 +83,10 @@ export async function POST(request: Request) {
   const listaLotesTexto = lotesReservados.map((l) => `Lote ${l.numero} (${l.superficieM2} m²)`).join(", ");
 
   try {
+    const formaPagoTexto =
+      data.formaPago === "financiado" && data.planFinanciacion
+        ? `Financiado — anticipo ${data.planFinanciacion.anticipoUsd} USD, ${data.planFinanciacion.cuotas} cuotas de ${data.planFinanciacion.valorCuotaUsd} USD`
+        : "Contado";
     await sendNotificationEmail(
       `Nueva reserva: ${data.nombre} ${data.apellido}${manzana ? ` — Manzana ${manzana}` : ""}`,
       `<h2>Nueva reserva online</h2>
@@ -86,6 +96,7 @@ export async function POST(request: Request) {
          <li><b>Email:</b> ${data.email}</li>
          <li><b>Teléfono:</b> ${data.telefono}</li>
          <li><b>Lotes (${lotesReservados.length}):</b> ${listaLotesTexto || data.loteIds.join(", ")}</li>
+         <li><b>Forma de pago:</b> ${formaPagoTexto}</li>
        </ul>`
     );
   } catch (err) {
@@ -115,6 +126,7 @@ export async function POST(request: Request) {
           manzana,
           lotes: lotesReservados,
           linkPago,
+          planFinanciacion: data.formaPago === "financiado" ? data.planFinanciacion : null,
         })
       );
     } catch (err) {

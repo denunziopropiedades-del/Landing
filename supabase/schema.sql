@@ -335,7 +335,12 @@ create table leads (
   comision_usd numeric,
   honorarios_usd numeric,
   honorarios_ars numeric,
-  gastos_ars numeric
+  gastos_ars numeric,
+  -- Forma de pago elegida al reservar. Si es 'financiado', plan_financiacion guarda una copia
+  -- del plan fijo elegido (anticipoUsd, cuotas, valorCuotaUsd) — no una referencia — para que
+  -- editar los planes del proyecto más adelante no altere lo ya pactado con este cliente.
+  forma_pago text not null default 'contado' check (forma_pago in ('contado', 'financiado')),
+  plan_financiacion jsonb
 );
 
 create index leads_estado_idx on leads (estado);
@@ -432,6 +437,37 @@ begin
   return v_lead_id;
 end;
 $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- Cuotario: cuotas de los clientes que reservaron "financiado" (uno de los
+-- planes fijos de anticipo/cuotas del proyecto). No se generan al reservar:
+-- la fecha de la primera cuota se pacta con el cliente y se carga a mano
+-- desde el CRM (ver generarCuotasLeadAction), recién ahí se crean estas filas.
+-- ═══════════════════════════════════════════════════════════════════════
+
+create table cuotas (
+  id uuid primary key default gen_random_uuid(),
+  lead_id uuid not null references leads(id) on delete cascade,
+  numero int not null,
+  monto_usd numeric not null,
+  vencimiento date not null,
+  pagada boolean not null default false,
+  pagado_en timestamptz,
+  monto_pagado_usd numeric,
+  -- Se completa cuando se manda el mail de recordatorio (7 días antes del vencimiento),
+  -- para que el cron diario no lo mande dos veces.
+  recordatorio_enviado_en timestamptz,
+  creado_en timestamptz not null default now(),
+  unique (lead_id, numero)
+);
+
+create index cuotas_lead_idx on cuotas (lead_id);
+create index cuotas_vencimiento_idx on cuotas (vencimiento) where pagada = false;
+
+alter table cuotas enable row level security;
+
+create policy "Admin/supervisor gestionan cuotas" on cuotas for all
+  using (mi_rol() in ('administrador', 'supervisor'));
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- Gastos generales (planilla manual, en pesos, no atados a un cliente puntual)

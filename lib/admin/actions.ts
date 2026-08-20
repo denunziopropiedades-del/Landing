@@ -7,6 +7,7 @@ import { requireRole, AdminActionError } from "@/lib/admin/auth";
 import { registrarActividad } from "@/lib/admin/activity";
 import { cancelarEventoVisita, crearEventoEscribania } from "@/lib/google-calendar";
 import { NOTA_RESERVA_LOTE_HTML, armarMailFirmaEscribania, sendEmail } from "@/lib/email";
+import { sumarMeses } from "@/lib/fecha";
 import type { EstadoLead, EstadoLote, EstadoVisita, Rol } from "@/types/site";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
@@ -1583,6 +1584,125 @@ export async function actualizarDocumentosLeadAction(id: string, documentos: str
       ...(await contextoLead(admin, id)),
       documentosEntregados: documentos,
     });
+    revalidatePath("/admin/crm");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+// ── Cuotario ───────────────────────────────────────────────────────────
+
+/** Genera las cuotas de un cliente financiado, a partir de la fecha de la primera
+ * cuota pactada con el cliente (no se generan solas al reservar). No hace nada si
+ * el lead ya tiene cuotas generadas, para no duplicarlas. */
+export async function generarCuotasLeadAction(leadId: string, fechaPrimeraCuota: string): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const { data: lead, error: leadError } = await admin
+      .from("leads")
+      .select("forma_pago, plan_financiacion")
+      .eq("id", leadId)
+      .maybeSingle();
+    if (leadError) throw new Error(leadError.message);
+    if (!lead || lead.forma_pago !== "financiado" || !lead.plan_financiacion) {
+      return { ok: false, error: "Este cliente no tiene un plan de financiación elegido." };
+    }
+
+    const { count } = await admin.from("cuotas").select("id", { count: "exact", head: true }).eq("lead_id", leadId);
+    if (count && count > 0) {
+      return { ok: false, error: "Ya se generaron las cuotas de este cliente." };
+    }
+
+    const plan = lead.plan_financiacion as { anticipoUsd: number; cuotas: number; valorCuotaUsd: number };
+    const filas = Array.from({ length: plan.cuotas }, (_, i) => ({
+      lead_id: leadId,
+      numero: i + 1,
+      monto_usd: plan.valorCuotaUsd,
+      vencimiento: sumarMeses(fechaPrimeraCuota, i),
+    }));
+
+    const { error } = await admin.from("cuotas").insert(filas);
+    if (error) throw new Error(error.message);
+
+    await registrarActividad(actor, "actualizar", "lead", leadId, {
+      ...(await contextoLead(admin, leadId)),
+      cuotasGeneradas: plan.cuotas,
+      primeraCuota: fechaPrimeraCuota,
+    });
+    revalidatePath("/admin/crm");
+    revalidatePath("/admin/cobranzas");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function marcarCuotaPagadaAction(
+  cuotaId: string,
+  montoPagadoUsd: string,
+  fechaPago: string
+): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const { data: cuota, error: cuotaError } = await admin
+      .from("cuotas")
+      .select("lead_id, numero")
+      .eq("id", cuotaId)
+      .maybeSingle();
+    if (cuotaError) throw new Error(cuotaError.message);
+    if (!cuota) return { ok: false, error: "La cuota no existe." };
+
+    const { error } = await admin
+      .from("cuotas")
+      .update({
+        pagada: true,
+        pagado_en: new Date(`${fechaPago}T12:00:00`).toISOString(),
+        monto_pagado_usd: montoPagadoUsd.trim() ? Number(montoPagadoUsd) : null,
+      })
+      .eq("id", cuotaId);
+    if (error) throw new Error(error.message);
+
+    await registrarActividad(actor, "actualizar", "lead", cuota.lead_id, {
+      ...(await contextoLead(admin, cuota.lead_id)),
+      cuotaPagada: cuota.numero,
+    });
+    revalidatePath("/admin/cobranzas");
+    revalidatePath("/admin/crm");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function desmarcarCuotaPagadaAction(cuotaId: string): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const { data: cuota, error: cuotaError } = await admin
+      .from("cuotas")
+      .select("lead_id, numero")
+      .eq("id", cuotaId)
+      .maybeSingle();
+    if (cuotaError) throw new Error(cuotaError.message);
+    if (!cuota) return { ok: false, error: "La cuota no existe." };
+
+    const { error } = await admin
+      .from("cuotas")
+      .update({ pagada: false, pagado_en: null, monto_pagado_usd: null })
+      .eq("id", cuotaId);
+    if (error) throw new Error(error.message);
+
+    await registrarActividad(actor, "actualizar", "lead", cuota.lead_id, {
+      ...(await contextoLead(admin, cuota.lead_id)),
+      cuotaDesmarcada: cuota.numero,
+    });
+    revalidatePath("/admin/cobranzas");
     revalidatePath("/admin/crm");
     return { ok: true };
   } catch (err) {

@@ -4,31 +4,37 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, CreditCard, Loader2 } from "lucide-react";
-import { reservaSchema, type ReservaInput } from "@/lib/schemas";
+import { reservaObjectSchema, type ReservaInput } from "@/lib/schemas";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 import { formatUsd } from "@/lib/utils";
 import { useSeleccionLotes } from "@/components/SeleccionLotesContext";
-import type { ComboLotes, Lote } from "@/types/site";
+import type { ComboLotes, Lote, PlanFinanciacionFijo } from "@/types/site";
 
-type DatosFormulario = Omit<ReservaInput, "loteIds">;
+type DatosFormulario = Omit<ReservaInput, "loteIds" | "formaPago" | "planFinanciacion">;
 
 export default function ReservaForm({
   proyectoId,
   lotes,
   numero,
   comboLotes,
+  planesFinanciacion,
 }: {
   proyectoId: string;
   lotes: Lote[];
   numero?: string;
   comboLotes?: ComboLotes | null;
+  planesFinanciacion?: PlanFinanciacionFijo[];
 }) {
   const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
   const [ultimaReserva, setUltimaReserva] = useState<ReservaInput | null>(null);
   const [ultimoLeadId, setUltimoLeadId] = useState<string | null>(null);
   const [pago, setPago] = useState<"idle" | "cargando" | "no-disponible">("idle");
   const [errorSeleccion, setErrorSeleccion] = useState("");
+  const [formaPago, setFormaPago] = useState<"contado" | "financiado">("contado");
+  const [planIndex, setPlanIndex] = useState<number | null>(null);
+  const [errorPlan, setErrorPlan] = useState("");
   const { seleccionados, toggleSeleccion, limiteAlcanzado } = useSeleccionLotes();
+  const planes = planesFinanciacion ?? [];
 
   const lotesDisponibles = useMemo(
     () =>
@@ -61,7 +67,7 @@ export default function ReservaForm({
     reset,
     formState: { errors },
   } = useForm<DatosFormulario>({
-    resolver: zodResolver(reservaSchema.omit({ loteIds: true })),
+    resolver: zodResolver(reservaObjectSchema.omit({ loteIds: true, formaPago: true, planFinanciacion: true })),
     defaultValues: { proyectoId },
   });
 
@@ -71,7 +77,15 @@ export default function ReservaForm({
       return;
     }
     setErrorSeleccion("");
-    const data: ReservaInput = { ...datosFormulario, loteIds: seleccionados };
+
+    if (formaPago === "financiado" && planIndex === null) {
+      setErrorPlan("Elegí uno de los planes de financiación.");
+      return;
+    }
+    setErrorPlan("");
+
+    const planFinanciacion = formaPago === "financiado" && planIndex !== null ? planes[planIndex] : null;
+    const data: ReservaInput = { ...datosFormulario, loteIds: seleccionados, formaPago, planFinanciacion };
 
     setEstado("enviando");
     try {
@@ -245,6 +259,67 @@ export default function ReservaForm({
             <span>Total</span>
             <span>{formatUsd(totalUsd)}</span>
           </p>
+        </div>
+      )}
+
+      {planes.length > 0 && (
+        <div className="sm:col-span-2">
+          <label className="mb-1.5 block text-sm font-medium text-brand-black/80">Forma de pago</label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setFormaPago("contado");
+                setPlanIndex(null);
+                setErrorPlan("");
+              }}
+              className={`flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium transition ${
+                formaPago === "contado"
+                  ? "border-brand-green-600 bg-brand-green-700/10 text-brand-green-700"
+                  : "border-black/10 text-brand-black/60 hover:border-black/20"
+              }`}
+            >
+              Contado
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormaPago("financiado")}
+              className={`flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium transition ${
+                formaPago === "financiado"
+                  ? "border-brand-green-600 bg-brand-green-700/10 text-brand-green-700"
+                  : "border-black/10 text-brand-black/60 hover:border-black/20"
+              }`}
+            >
+              Financiado
+            </button>
+          </div>
+
+          {formaPago === "financiado" && (
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              {planes.map((plan, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    setPlanIndex(i);
+                    setErrorPlan("");
+                  }}
+                  className={`rounded-lg border p-3 text-left text-sm transition ${
+                    planIndex === i
+                      ? "border-brand-green-600 bg-brand-green-700/10"
+                      : "border-black/10 hover:border-black/20"
+                  }`}
+                >
+                  <p className="text-xs text-brand-black/50">Anticipo</p>
+                  <p className="font-semibold text-brand-black">{formatUsd(plan.anticipoUsd)}</p>
+                  <p className="mt-1.5 text-xs text-brand-black/50">
+                    {plan.cuotas} cuotas de {formatUsd(plan.valorCuotaUsd)}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+          {errorPlan && <p className="mt-1 text-xs text-red-600">{errorPlan}</p>}
         </div>
       )}
 

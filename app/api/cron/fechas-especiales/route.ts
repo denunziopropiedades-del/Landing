@@ -1,21 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email";
+import { hoyEnArgentina } from "@/lib/fecha";
 
 export const runtime = "nodejs";
-
-const ZONA = "America/Argentina/Buenos_Aires";
-
-function hoyEnArgentina(): { anio: number; mes: number; dia: number } {
-  const partes = new Intl.DateTimeFormat("en-CA", {
-    timeZone: ZONA,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
-  const obtener = (tipo: string) => Number(partes.find((p) => p.type === tipo)?.value);
-  return { anio: obtener("year"), mes: obtener("month") - 1, dia: obtener("day") };
-}
 
 /** Devuelve el mes (0-indexado) y día del tercer domingo de un mes/año dado. */
 function tercerDomingo(mes: number, anio: number): { mes: number; dia: number } {

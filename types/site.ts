@@ -227,6 +227,37 @@ export type Lead = {
   pagoMercadopagoId?: string | null;
   /** Documentación (del listado requerido del proyecto) que este cliente ya entregó. */
   documentosEntregados?: string[];
+  formaPago?: "contado" | "financiado";
+  /** Copia del plan fijo elegido al reservar (no cambia si el plan del proyecto se edita después). */
+  planFinanciacion?: PlanFinanciacionFijo | null;
+  /** Resumen del cuotario de este lead, para mostrar en la tarjeta del CRM sin ir a Cobranzas. */
+  cantidadCuotas?: number;
+  cuotasPagadas?: number;
+  cuotasEnMora?: number;
+  proximoVencimientoCuota?: string | null;
+};
+
+/** Una cuota del cuotario de un cliente financiado. */
+export type Cuota = {
+  id: string;
+  leadId: string;
+  numero: number;
+  montoUsd: number;
+  vencimiento: string;
+  pagada: boolean;
+  pagadoEn?: string | null;
+  montoPagadoUsd?: number | null;
+  /** Días de atraso respecto de hoy; 0 si está pagada o todavía no venció. */
+  diasMora: number;
+  lead: {
+    nombre: string;
+    apellido?: string;
+    email: string;
+    telefono: string;
+    proyectoNombre?: string;
+    manzana?: string;
+    lotes: LoteDeLead[];
+  };
 };
 
 export type Gasto = {

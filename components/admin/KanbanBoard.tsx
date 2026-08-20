@@ -15,8 +15,10 @@ import {
   asignarLeadAction,
   cambiarProyectoLeadAction,
   deleteLeadAction,
+  generarCuotasLeadAction,
 } from "@/lib/admin/actions";
 import { buildWhatsappClienteUrl } from "@/lib/whatsapp";
+import { formatUsd } from "@/lib/utils";
 import type { EstadoLead, Lead, Perfil, Proyecto, Rol } from "@/types/site";
 
 const COLUMNAS: { estado: EstadoLead; label: string; color: string }[] = [
@@ -64,6 +66,8 @@ function LeadCard({
   const [honorariosUsd, setHonorariosUsd] = useState(lead.honorariosUsd?.toString() ?? "");
   const [honorariosArs, setHonorariosArs] = useState(lead.honorariosArs?.toString() ?? "");
   const [gastosArs, setGastosArs] = useState(lead.gastosArs?.toString() ?? "");
+  const [fechaPrimeraCuota, setFechaPrimeraCuota] = useState("");
+  const [generandoCuotas, setGenerandoCuotas] = useState(false);
   const [expandido, setExpandido] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -111,6 +115,18 @@ function LeadCard({
             numeroTransaccion: numeroTransaccion || null,
             importeCobrado: importeCobrado ? Number(importeCobrado) : null,
           });
+      });
+    });
+  };
+
+  const generarCuotas = () => {
+    if (!fechaPrimeraCuota) return;
+    setGenerandoCuotas(true);
+    startTransition(() => {
+      generarCuotasLeadAction(lead.id, fechaPrimeraCuota).then((res) => {
+        setGenerandoCuotas(false);
+        if (!res.ok) alert(`No se pudieron generar las cuotas: ${res.error}`);
+        else onActualizado(lead.id, { cantidadCuotas: lead.planFinanciacion?.cuotas ?? 0, cuotasPagadas: 0 });
       });
     });
   };
@@ -357,6 +373,52 @@ function LeadCard({
               />
             </div>
           </div>
+
+          {lead.formaPago === "financiado" && lead.planFinanciacion && (
+            <div>
+              <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Plan de pago</label>
+              <div className="rounded-lg border border-black/10 p-2 text-xs text-brand-black/70">
+                <p>
+                  Financiado — anticipo {formatUsd(lead.planFinanciacion.anticipoUsd)}, {lead.planFinanciacion.cuotas} cuotas
+                  de {formatUsd(lead.planFinanciacion.valorCuotaUsd)}
+                </p>
+                {!lead.cantidadCuotas ? (
+                  <div className="mt-2 flex items-center gap-1.5">
+                    <input
+                      type="date"
+                      value={fechaPrimeraCuota}
+                      onChange={(e) => setFechaPrimeraCuota(e.target.value)}
+                      className="rounded-lg border border-black/10 px-2 py-1 text-xs"
+                    />
+                    <button
+                      type="button"
+                      disabled={!fechaPrimeraCuota || generandoCuotas}
+                      onClick={generarCuotas}
+                      className="rounded-full bg-brand-green-700 px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                    >
+                      {generandoCuotas ? "Generando..." : "Generar cuotas"}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="mt-1.5 text-brand-black/60">
+                    {lead.cuotasPagadas ?? 0}/{lead.cantidadCuotas} cuotas pagadas
+                    {lead.proximoVencimientoCuota
+                      ? ` · próximo vencimiento ${new Date(`${lead.proximoVencimientoCuota}T12:00:00`).toLocaleDateString("es-AR")}`
+                      : ""}
+                    {lead.cuotasEnMora ? (
+                      <span className="ml-1 font-semibold text-red-600">
+                        · {lead.cuotasEnMora} en mora
+                      </span>
+                    ) : null}
+                    {" — "}
+                    <a href="/admin/cobranzas" className="text-brand-green-700 underline">
+                      ver detalle en Cobranzas
+                    </a>
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           {(() => {
             const documentosProyecto = proyectos.find((p) => p.id === lead.proyectoId)?.documentosRequeridos ?? [];

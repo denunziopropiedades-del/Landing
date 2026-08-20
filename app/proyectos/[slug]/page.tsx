@@ -159,7 +159,13 @@ export default async function ProyectoPage({ params }: { params: Promise<Params>
                 </p>
               </div>
               <div className="mt-12">
-                <ReservaForm proyectoId={proyecto.id} lotes={lotes} numero={numero} comboLotes={combo} />
+                <ReservaForm
+                  proyectoId={proyecto.id}
+                  lotes={lotes}
+                  numero={numero}
+                  comboLotes={combo}
+                  planesFinanciacion={financiacion.planesFijos}
+                />
               </div>
             </div>
           </section>

@@ -15,6 +15,7 @@ import {
   LogOut,
   MessageSquareText,
   Newspaper,
+  Receipt,
   Star,
   Users,
 } from "lucide-react";
@@ -41,6 +42,7 @@ const nav: { href: string; label: string; icon: typeof LayoutDashboard; roles?: 
     icon: Calculator,
     roles: ["administrador", "supervisor"],
   },
+  { href: "/admin/cobranzas", label: "Cobranzas", icon: Receipt, roles: ["administrador", "supervisor"] },
   { href: "/admin/lotes", label: "Lotes y precios", icon: BarChart3, roles: ["administrador", "supervisor"] },
   { href: "/admin/contenido", label: "Contenido del sitio", icon: FileSliders, roles: ["administrador", "supervisor"] },
   { href: "/admin/galeria", label: "Galería", icon: ImageIcon, roles: ["administrador", "supervisor"] },

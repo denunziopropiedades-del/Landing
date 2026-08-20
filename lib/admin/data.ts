@@ -4,6 +4,7 @@ import type {
   Banner,
   ComboLotes,
   ConfigFinanciacion,
+  Cuota,
   FaqItem,
   Gasto,
   ItemGaleria,
@@ -294,7 +295,7 @@ export async function getLeads(): Promise<Lead[]> {
   const { data, error } = await supabase
     .from("leads")
     .select(
-      "*, proyectos(nombre), lotes(nombre, numero, manzana, superficie_m2), perfiles(nombre, email), lead_lotes(lotes(id, manzana, numero, superficie_m2, nombre))"
+      "*, proyectos(nombre), lotes(nombre, numero, manzana, superficie_m2), perfiles(nombre, email), lead_lotes(lotes(id, manzana, numero, superficie_m2, nombre)), cuotas(pagada, vencimiento)"
     )
     .order("creado_en", { ascending: false });
   if (error || !data) return [];
@@ -371,6 +372,79 @@ export async function getLeads(): Promise<Lead[]> {
     pagoConfirmadoEn: l.pago_confirmado_en ?? null,
     pagoMercadopagoId: l.pago_mercadopago_id ?? null,
     documentosEntregados: (l.documentos_entregados as string[] | null) ?? [],
+    formaPago: (l.forma_pago as "contado" | "financiado" | null) ?? "contado",
+    planFinanciacion: (l.plan_financiacion as Lead["planFinanciacion"]) ?? null,
+    ...(() => {
+      const cs = (l.cuotas ?? []) as { pagada: boolean; vencimiento: string }[];
+      const hoyIso = new Date().toISOString().slice(0, 10);
+      const pendientes = cs.filter((c) => !c.pagada);
+      return {
+        cantidadCuotas: cs.length,
+        cuotasPagadas: cs.length - pendientes.length,
+        cuotasEnMora: pendientes.filter((c) => c.vencimiento < hoyIso).length,
+        proximoVencimientoCuota: pendientes.sort((a, b) => a.vencimiento.localeCompare(b.vencimiento))[0]?.vencimiento ?? null,
+      };
+    })(),
+    };
+  });
+}
+
+/** Todas las cuotas de clientes financiados, con los datos del cliente embebidos
+ * y los días de atraso ya calculados, para el panel de Cobranzas. */
+export async function getCuotasAdmin(): Promise<Cuota[]> {
+  const supabase = await getSupabaseServerClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("cuotas")
+    .select(
+      "*, leads(nombre, apellido, email, telefono, manzana, proyectos(nombre), lead_lotes(lotes(id, manzana, numero, superficie_m2, nombre)))"
+    )
+    .order("vencimiento", { ascending: true });
+  if (error || !data) return [];
+
+  const hoyIso = new Date().toISOString().slice(0, 10);
+
+  return data.map((c) => {
+    const lead = c.leads as unknown as {
+      nombre: string;
+      apellido: string | null;
+      email: string;
+      telefono: string;
+      manzana: string | null;
+      proyectos: { nombre: string } | null;
+      lead_lotes: { lotes: { id: string; manzana: string; numero: string; superficie_m2: number; nombre: string } | null }[];
+    } | null;
+
+    const lotes: LoteDeLead[] = (lead?.lead_lotes ?? [])
+      .map((ll) => ll.lotes)
+      .filter((lo): lo is NonNullable<typeof lo> => lo !== null)
+      .map((lo) => ({ id: lo.id, manzana: lo.manzana, numero: lo.numero, superficieM2: lo.superficie_m2, nombre: lo.nombre }));
+
+    const diasMora =
+      !c.pagada && c.vencimiento < hoyIso
+        ? Math.floor((Date.now() - new Date(`${c.vencimiento}T00:00:00`).getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+
+    return {
+      id: c.id,
+      leadId: c.lead_id,
+      numero: c.numero,
+      montoUsd: Number(c.monto_usd),
+      vencimiento: c.vencimiento,
+      pagada: c.pagada,
+      pagadoEn: c.pagado_en ?? null,
+      montoPagadoUsd: numOrNull(c.monto_pagado_usd),
+      diasMora,
+      lead: {
+        nombre: lead?.nombre ?? "",
+        apellido: lead?.apellido ?? undefined,
+        email: lead?.email ?? "",
+        telefono: lead?.telefono ?? "",
+        proyectoNombre: lead?.proyectos?.nombre,
+        manzana: lead?.manzana ?? undefined,
+        lotes,
+      },
     };
   });
 }

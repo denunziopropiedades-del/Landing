@@ -66,10 +66,15 @@ export function armarMailBienvenidaReserva(datos: {
   manzana: string;
   lotes: { numero: string; superficieM2: number }[];
   linkPago?: string | null;
+  planFinanciacion?: { anticipoUsd: number; cuotas: number; valorCuotaUsd: number } | null;
 }) {
   const filasLotes = datos.lotes
     .map((l) => `<li>Lote ${l.numero} &ndash; ${l.superficieM2} m²</li>`)
     .join("");
+
+  const formaPagoHtml = datos.planFinanciacion
+    ? `<p style="margin: 0 0 4px; color: #333;"><b>FORMA DE PAGO:</b> Financiado — anticipo USD ${datos.planFinanciacion.anticipoUsd}, en ${datos.planFinanciacion.cuotas} cuotas de USD ${datos.planFinanciacion.valorCuotaUsd} c/u. Nuestro equipo se va a comunicar para acordar la fecha de la primera cuota.</p>`
+    : `<p style="margin: 0 0 4px; color: #333;"><b>FORMA DE PAGO:</b> Contado</p>`;
 
   const botonPago = datos.linkPago
     ? `
@@ -95,11 +100,41 @@ export function armarMailBienvenidaReserva(datos: {
     <ul style="color: #333;">${filasLotes}</ul>
     <p style="margin: 4px 0; color: #333;"><b>TOTAL DE LOTES:</b> ${datos.lotes.length}</p>
     <p style="margin: 16px 0 4px; color: #333;"><b>Estado de la operación:</b> Reserva recibida</p>
+    ${formaPagoHtml}
     ${botonPago}
     <p style="margin: 16px 0 4px; color: #333;"><b>Próximos pasos:</b></p>
     <p style="margin: 0; color: #333;">
       Nuestro equipo se va a comunicar con vos para coordinar la seña y el resto de la
       documentación. Ante cualquier consulta, respondé este correo o escribinos por WhatsApp.
+    </p>
+  `;
+}
+
+/** Arma el HTML del recordatorio que se manda 7 días antes de que venza una cuota. */
+export function armarMailRecordatorioCuota(datos: {
+  nombre: string;
+  proyectoNombre: string;
+  numeroCuota: number;
+  totalCuotas: number;
+  montoUsd: number;
+  vencimiento: string;
+}) {
+  const fecha = new Date(`${datos.vencimiento}T12:00:00`).toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+
+  return `
+    <h2>Tu cuota está por vencer</h2>
+    <p style="color: #333;">Hola ${datos.nombre}, te recordamos que en una semana vence tu próxima cuota de ${datos.proyectoNombre}:</p>
+    <div style="margin: 20px 0; padding: 16px; border: 1px solid #f0d999; background: #fffbeb; border-radius: 8px;">
+      <p style="margin: 0 0 4px; color: #333;"><b>Cuota:</b> ${datos.numeroCuota} de ${datos.totalCuotas}</p>
+      <p style="margin: 0 0 4px; color: #333;"><b>Monto:</b> USD ${datos.montoUsd}</p>
+      <p style="margin: 0; color: #333;"><b>Vencimiento:</b> ${fecha}</p>
+    </div>
+    <p style="margin: 0; color: #333;">
+      Ante cualquier consulta sobre cómo abonarla, respondé este correo o escribinos por WhatsApp.
     </p>
   `;
 }
