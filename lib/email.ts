@@ -139,6 +139,45 @@ export function armarMailRecordatorioCuota(datos: {
   `;
 }
 
+/** Arma el HTML del mail que confirma al cliente que le registramos el pago de una cuota. */
+export function armarMailConfirmacionCuotaPagada(datos: {
+  nombre: string;
+  proyectoNombre: string;
+  numeroCuota: number;
+  totalCuotas: number;
+  montoPagadoUsd: number;
+  cuotasRestantes: number;
+  proximoVencimiento: string | null;
+}) {
+  const proximo = datos.proximoVencimiento
+    ? new Date(`${datos.proximoVencimiento}T12:00:00`).toLocaleDateString("es-AR", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
+    : null;
+
+  return `
+    <h2>¡Recibimos tu pago, ${datos.nombre}!</h2>
+    <p style="color: #333;">Te confirmamos que registramos el pago de tu cuota de ${datos.proyectoNombre}:</p>
+    <div style="margin: 20px 0; padding: 16px; border: 1px solid #b3e0c6; background: #f0faf3; border-radius: 8px;">
+      <p style="margin: 0 0 4px; color: #333;"><b>Cuota:</b> ${datos.numeroCuota} de ${datos.totalCuotas}</p>
+      <p style="margin: 0; color: #333;"><b>Monto pagado:</b> USD ${datos.montoPagadoUsd}</p>
+    </div>
+    ${
+      datos.cuotasRestantes > 0
+        ? `<p style="margin: 0; color: #333;">
+             Te quedan <b>${datos.cuotasRestantes}</b> cuota${datos.cuotasRestantes === 1 ? "" : "s"} más.
+             ${proximo ? `La próxima vence el <b>${proximo}</b>.` : ""}
+           </p>`
+        : `<p style="margin: 0; color: #333;"><b>¡Esta era tu última cuota! Terminaste de abonar tu plan de financiación.</b></p>`
+    }
+    <p style="margin: 16px 0 0; color: #333;">
+      Ante cualquier consulta, respondé este correo o escribinos por WhatsApp.
+    </p>
+  `;
+}
+
 /** Arma el HTML del mail que avisa al cliente el día/horario de la firma en escribanía,
  * con los datos de la escribanía del proyecto y la documentación requerida. */
 export function armarMailFirmaEscribania(datos: {

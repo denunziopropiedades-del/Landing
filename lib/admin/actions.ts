@@ -6,7 +6,7 @@ import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/
 import { requireRole, AdminActionError } from "@/lib/admin/auth";
 import { registrarActividad } from "@/lib/admin/activity";
 import { cancelarEventoVisita, crearEventoEscribania } from "@/lib/google-calendar";
-import { NOTA_RESERVA_LOTE_HTML, armarMailFirmaEscribania, sendEmail } from "@/lib/email";
+import { NOTA_RESERVA_LOTE_HTML, armarMailConfirmacionCuotaPagada, armarMailFirmaEscribania, sendEmail } from "@/lib/email";
 import { sumarMeses } from "@/lib/fecha";
 import type { EstadoLead, EstadoLote, EstadoVisita, Rol } from "@/types/site";
 
@@ -1651,18 +1651,20 @@ export async function marcarCuotaPagadaAction(
 
     const { data: cuota, error: cuotaError } = await admin
       .from("cuotas")
-      .select("lead_id, numero")
+      .select("lead_id, numero, monto_usd")
       .eq("id", cuotaId)
       .maybeSingle();
     if (cuotaError) throw new Error(cuotaError.message);
     if (!cuota) return { ok: false, error: "La cuota no existe." };
+
+    const montoPagado = montoPagadoUsd.trim() ? Number(montoPagadoUsd) : Number(cuota.monto_usd);
 
     const { error } = await admin
       .from("cuotas")
       .update({
         pagada: true,
         pagado_en: new Date(`${fechaPago}T12:00:00`).toISOString(),
-        monto_pagado_usd: montoPagadoUsd.trim() ? Number(montoPagadoUsd) : null,
+        monto_pagado_usd: montoPagado,
       })
       .eq("id", cuotaId);
     if (error) throw new Error(error.message);
@@ -1673,6 +1675,40 @@ export async function marcarCuotaPagadaAction(
     });
     revalidatePath("/admin/cobranzas");
     revalidatePath("/admin/crm");
+
+    try {
+      const [{ data: lead }, { data: cuotasLead }] = await Promise.all([
+        admin
+          .from("leads")
+          .select("nombre, email, plan_financiacion, proyectos(nombre)")
+          .eq("id", cuota.lead_id)
+          .maybeSingle(),
+        admin.from("cuotas").select("pagada, vencimiento").eq("lead_id", cuota.lead_id),
+      ]);
+
+      if (lead?.email) {
+        const plan = lead.plan_financiacion as { cuotas: number } | null;
+        const proyectoNombre = (lead.proyectos as unknown as { nombre: string } | null)?.nombre ?? "";
+        const pendientes = (cuotasLead ?? []).filter((c) => !c.pagada).sort((a, b) => a.vencimiento.localeCompare(b.vencimiento));
+
+        await sendEmail(
+          lead.email,
+          `Confirmamos tu pago — ${proyectoNombre}`,
+          armarMailConfirmacionCuotaPagada({
+            nombre: lead.nombre,
+            proyectoNombre,
+            numeroCuota: cuota.numero,
+            totalCuotas: plan?.cuotas ?? cuota.numero,
+            montoPagadoUsd: montoPagado,
+            cuotasRestantes: pendientes.length,
+            proximoVencimiento: pendientes[0]?.vencimiento ?? null,
+          })
+        );
+      }
+    } catch (err) {
+      console.error("No se pudo enviar el mail de confirmación de cuota pagada", err);
+    }
+
     return { ok: true };
   } catch (err) {
     return fail(err);
