@@ -132,19 +132,30 @@ export default function Contacto({ textos }: { textos: SiteTextos }) {
                   <Phone className="h-4 w-4" /> Oficina: {textos.telefonoOficina}
                 </a>
               )}
-              {social.map(({ href, label, Icon }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={label}
-                  className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white/80 hover:text-white"
-                >
-                  <Icon className="h-4 w-4" /> {label}
-                </a>
-              ))}
             </div>
+
+            {social.some(({ href }) => href) && (
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-white/60">Seguime:</span>
+                <div className="flex items-center gap-2.5">
+                  {social
+                    .filter(({ href }) => href)
+                    .map(({ href, label, Icon }) => (
+                      <a
+                        key={label}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={label}
+                        title={label}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-full transition hover:scale-110 hover:opacity-90"
+                      >
+                        <Icon className="h-10 w-10" />
+                      </a>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
