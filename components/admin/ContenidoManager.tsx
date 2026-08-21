@@ -116,7 +116,7 @@ function TextosForm({ textos }: { textos: SiteTextos }) {
       </div>
       <div>
         <label className={labelClass}>Email de contacto</label>
-        <input type="email" name="email" defaultValue={textos.email} required className={inputClass} />
+        <input type="email" name="email" defaultValue={textos.email} className={inputClass} />
       </div>
       <div className="sm:col-span-2">
         <label className={labelClass}>Mensaje por defecto de WhatsApp</label>
