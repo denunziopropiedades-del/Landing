@@ -23,8 +23,8 @@ export default async function PoliticaDePrivacidadPage() {
         <section>
           <h2 className="font-display text-xl font-bold text-brand-black">Responsable</h2>
           <p className="mt-2">
-            Este sitio es operado por <strong>De Nunzio Negocios Inmobiliarios</strong> (Matías De Nunzio, Martillero
-            Público), en adelante &ldquo;Matu Lotes&rdquo;. Ante cualquier consulta sobre esta política o tus datos personales,
+            Este sitio es operado por <strong>De Nunzio Negocios Inmobiliarios</strong> (Matías De Nunzio,
+            Desarrollos Urbanos), en adelante &ldquo;Matu Lotes&rdquo;. Ante cualquier consulta sobre esta política o tus datos personales,
             podés escribirnos a <strong>{textos.email}</strong>.
           </p>
         </section>

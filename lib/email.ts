@@ -6,7 +6,7 @@ const FIRMA_HTML = `
   <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e5e5; font-family: sans-serif; color: #333;">
     <p style="margin: 0; font-weight: bold;">DE NUNZIO NEGOCIOS INMOBILIARIOS</p>
     <p style="margin: 4px 0 0 10px;">Matías De Nunzio</p>
-    <p style="margin: 0 0 0 10px; color: #666;">Martillero Público</p>
+    <p style="margin: 0 0 0 10px; color: #666;">Desarrollos Urbanos</p>
     <p style="margin: 2px 0 0 10px; color: #666;">Tel: 11-2742-4512</p>
     <p style="margin: 2px 0 0 10px; color: #666;">Oficina: 11-6136-5523</p>
   </div>
@@ -17,8 +17,8 @@ export const NOTA_COORDINACION_VISITA_HTML = `
     <p style="margin: 0 0 8px; font-weight: bold; color: #c0392b;">Importante &ndash; Coordinación de visitas</p>
     <p style="margin: 0 0 8px; color: #333;">
       Las visitas se coordinan exclusivamente con cita previa y
-      <b style="color: #c0392b;">deben ser tomadas con responsabilidad</b>, ya que serán realizadas por un
-      Martillero y Corredor Público o por un integrante de su equipo, quienes destinan tiempo y recursos para
+      <b style="color: #c0392b;">deben ser tomadas con responsabilidad</b>, ya que serán realizadas por
+      Desarrollos Urbanos o por un integrante de su equipo, quienes destinan tiempo y recursos para
       brindar un asesoramiento personalizado.
     </p>
     <p style="margin: 0 0 8px; color: #333;">
