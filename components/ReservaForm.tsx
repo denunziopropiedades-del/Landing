@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, CreditCard, Loader2 } from "lucide-react";
 import { reservaObjectSchema, type ReservaInput } from "@/lib/schemas";
+import { PAGO_ONLINE_RESERVA_HABILITADO } from "@/lib/feature-flags";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 import { formatUsd } from "@/lib/utils";
 import { useSeleccionLotes } from "@/components/SeleccionLotesContext";
@@ -144,19 +145,23 @@ export default function ReservaForm({
           confirmación.
         </p>
 
-        <button
-          type="button"
-          onClick={pagarSena}
-          disabled={pago === "cargando" || !ultimoLeadId}
-          className="mt-3 inline-flex items-center justify-center gap-2 rounded-full bg-[#009EE3] px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
-        >
-          {pago === "cargando" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
-          Pagar seña con Mercado Pago
-        </button>
-        {pago === "no-disponible" && (
-          <p className="max-w-xs text-xs text-brand-black/50">
-            El pago online todavía no está habilitado. Coordinamos el pago de la seña por WhatsApp.
-          </p>
+        {PAGO_ONLINE_RESERVA_HABILITADO && (
+          <>
+            <button
+              type="button"
+              onClick={pagarSena}
+              disabled={pago === "cargando" || !ultimoLeadId}
+              className="mt-3 inline-flex items-center justify-center gap-2 rounded-full bg-[#009EE3] px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+            >
+              {pago === "cargando" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+              Pagar seña con Mercado Pago
+            </button>
+            {pago === "no-disponible" && (
+              <p className="max-w-xs text-xs text-brand-black/50">
+                El pago online todavía no está habilitado. Coordinamos el pago de la seña por WhatsApp.
+              </p>
+            )}
+          </>
         )}
 
         <button

@@ -6,6 +6,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { registrarActividadSistema } from "@/lib/admin/activity";
 import { enviarEventoConversion } from "@/lib/meta-capi";
 import { crearLinkPagoSena } from "@/lib/mercadopago";
+import { PAGO_ONLINE_RESERVA_HABILITADO } from "@/lib/feature-flags";
 
 export async function POST(request: Request) {
   const rate = await checkRateLimit(request, "reservas");
@@ -105,15 +106,17 @@ export async function POST(request: Request) {
 
   if (lotesReservados.length > 0 && leadId) {
     let linkPago: string | null = null;
-    try {
-      linkPago = await crearLinkPagoSena({
-        leadId,
-        nombre: `${data.nombre} ${data.apellido}`,
-        email: data.email,
-        lotesNombres: lotesReservados.map((l) => `Lote ${l.numero}`),
-      });
-    } catch (err) {
-      console.error("No se pudo generar el link de pago de la seña", err);
+    if (PAGO_ONLINE_RESERVA_HABILITADO) {
+      try {
+        linkPago = await crearLinkPagoSena({
+          leadId,
+          nombre: `${data.nombre} ${data.apellido}`,
+          email: data.email,
+          lotesNombres: lotesReservados.map((l) => `Lote ${l.numero}`),
+        });
+      } catch (err) {
+        console.error("No se pudo generar el link de pago de la seña", err);
+      }
     }
 
     try {

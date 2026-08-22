@@ -4,6 +4,8 @@ const ACCESS_TOKEN = process.env.MERCADOPAGO_ACCESS_TOKEN;
 
 export const SENA_ARS = 200000;
 
+export { PAGO_ONLINE_RESERVA_HABILITADO } from "@/lib/feature-flags";
+
 export function isMercadoPagoConfigured() {
   return Boolean(ACCESS_TOKEN);
 }
