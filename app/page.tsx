@@ -29,7 +29,7 @@ export default async function PortalHome() {
       <Navbar numero={textos.whatsappNumero} />
       <main>
         <Hero
-          eyebrow="Plataforma inmobiliaria"
+          eyebrow="Plataforma Desarrollos"
           titulo={textos.heroTitulo}
           subtitulo={textos.heroSubtitulo}
           imagenFondo="https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2400&auto=format&fit=crop"
