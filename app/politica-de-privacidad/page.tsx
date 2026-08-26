@@ -23,9 +23,15 @@ export default async function PoliticaDePrivacidadPage() {
         <section>
           <h2 className="font-display text-xl font-bold text-brand-black">Responsable</h2>
           <p className="mt-2">
-            Este sitio es operado por <strong>De Nunzio Negocios Inmobiliarios</strong> (Matías De Nunzio,
+            Este sitio es operado por <strong>De Nunzio Desarrollos</strong> (Matías De Nunzio,
             Desarrollos Urbanos), en adelante &ldquo;Matu Lotes&rdquo;. Ante cualquier consulta sobre esta política o tus datos personales,
-            podés escribirnos a <strong>{textos.email}</strong>.
+            podés escribirnos{textos.email ? (
+              <>
+                {" "}a <strong>{textos.email}</strong>
+              </>
+            ) : (
+              " por WhatsApp"
+            )}.
           </p>
         </section>
 
@@ -63,7 +69,13 @@ export default async function PoliticaDePrivacidadPage() {
           <h2 className="font-display text-xl font-bold text-brand-black">Tus derechos</h2>
           <p className="mt-2">
             Podés solicitarnos en cualquier momento el acceso, la corrección o la eliminación de tus datos personales,
-            escribiéndonos a <strong>{textos.email}</strong>.
+            escribiéndonos{textos.email ? (
+              <>
+                {" "}a <strong>{textos.email}</strong>
+              </>
+            ) : (
+              " por WhatsApp"
+            )}.
           </p>
         </section>
 

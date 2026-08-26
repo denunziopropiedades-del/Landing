@@ -4,7 +4,7 @@ const EMAIL_TO = process.env.EMAIL_TO ?? "denunziopropiedades@gmail.com";
 
 const FIRMA_HTML = `
   <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e5e5; font-family: sans-serif; color: #333;">
-    <p style="margin: 0; font-weight: bold;">DE NUNZIO NEGOCIOS INMOBILIARIOS</p>
+    <p style="margin: 0; font-weight: bold;">DE NUNZIO DESARROLLOS</p>
     <p style="margin: 4px 0 0 10px;">Matías De Nunzio</p>
     <p style="margin: 0 0 0 10px; color: #666;">Desarrollos Urbanos</p>
     <p style="margin: 2px 0 0 10px; color: #666;">Tel: 11-2742-4512</p>
