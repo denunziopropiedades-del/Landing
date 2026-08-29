@@ -4,6 +4,7 @@ import PreciosPorMedidaForm from "@/components/admin/PreciosPorMedidaForm";
 import ComboLotesForm from "@/components/admin/ComboLotesForm";
 import ActualizarEstadosLotesForm from "@/components/admin/ActualizarEstadosLotesForm";
 import CalibrarPlanoForm from "@/components/admin/CalibrarPlanoForm";
+import CalibrarPlanoBloquesForm from "@/components/admin/CalibrarPlanoBloquesForm";
 import ProgresoManager from "@/components/admin/ProgresoManager";
 import ProyectoSwitcher from "@/components/admin/ProyectoSwitcher";
 import { getComboLotesAdmin, getLotesAdmin, getProgresoAdmin, getProyectosAdmin } from "@/lib/admin/data";
@@ -52,6 +53,13 @@ export default async function AdminLotesPage({
         <ComboLotesForm proyectoId={proyecto.id} combo={combo} />
         <ActualizarEstadosLotesForm proyectoId={proyecto.id} />
         <CalibrarPlanoForm
+          proyectoId={proyecto.id}
+          imagenMasterplan={masterplan}
+          lotes={lotes}
+          celdaAnchoPctInicial={proyecto.celdaAnchoPct ?? 1.7}
+          celdaAltoPctInicial={proyecto.celdaAltoPct ?? 12.5}
+        />
+        <CalibrarPlanoBloquesForm
           proyectoId={proyecto.id}
           imagenMasterplan={masterplan}
           lotes={lotes}

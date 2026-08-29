@@ -8,6 +8,7 @@ import { registrarActividad } from "@/lib/admin/activity";
 import { cancelarEventoVisita, crearEventoEscribania } from "@/lib/google-calendar";
 import { NOTA_RESERVA_LOTE_HTML, armarMailConfirmacionCuotaPagada, armarMailFirmaEscribania, sendEmail } from "@/lib/email";
 import { sumarMeses } from "@/lib/fecha";
+import { posicionEnBloque, type BloqueManzana } from "@/lib/masterplan";
 import type { EstadoLead, EstadoLote, EstadoVisita, Rol } from "@/types/site";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
@@ -567,6 +568,60 @@ export async function recalcularPosicionesLotesAction(
         const posY = esFilaSuperior ? banda.yTop : banda.yBottom;
 
         return { id: lote.id, pos_x: posX, pos_y: posY };
+      })
+      .filter((v): v is { id: string; pos_x: number; pos_y: number } => v !== null);
+
+    for (const act of actualizaciones) {
+      const { error } = await admin.from("lotes").update({ pos_x: act.pos_x, pos_y: act.pos_y }).eq("id", act.id);
+      if (error) throw new Error(error.message);
+    }
+
+    const { error: errProyecto } = await admin
+      .from("proyectos")
+      .update({ celda_ancho_pct: celdaAnchoPct, celda_alto_pct: celdaAltoPct })
+      .eq("id", proyectoId);
+    if (errProyecto) throw new Error(errProyecto.message);
+
+    await registrarActividad(actor, "calibrar-plano", "proyecto", proyectoId, { cantidad: actualizaciones.length });
+    revalidatePath("/admin/lotes");
+    revalidatePath("/proyectos/[slug]", "page");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export type CalibracionBloques = {
+  bloques: BloqueManzana[];
+  celdaAnchoPct: number;
+  celdaAltoPct: number;
+};
+
+export async function recalcularPosicionesBloquesAction(
+  proyectoId: string,
+  calibracion: CalibracionBloques
+): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const { data: lotes, error: errLotes } = await admin
+      .from("lotes")
+      .select("id, manzana, numero")
+      .eq("proyecto_id", proyectoId);
+    if (errLotes) throw new Error(errLotes.message);
+    if (!lotes || lotes.length === 0) return { ok: false, error: "Este proyecto no tiene lotes cargados." };
+
+    const { bloques, celdaAnchoPct, celdaAltoPct } = calibracion;
+    const bloquesPorManzana = new Map(bloques.map((b) => [b.manzana, b]));
+
+    const actualizaciones = lotes
+      .map((lote) => {
+        const bloque = bloquesPorManzana.get(lote.manzana);
+        if (!bloque) return null;
+        const pos = posicionEnBloque(bloque, lote.numero);
+        if (!pos) return null;
+        return { id: lote.id, pos_x: pos.posX, pos_y: pos.posY };
       })
       .filter((v): v is { id: string; pos_x: number; pos_y: number } => v !== null);
 
