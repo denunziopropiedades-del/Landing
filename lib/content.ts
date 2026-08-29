@@ -297,7 +297,16 @@ export async function getFaqs(proyectoId?: string): Promise<FaqItem[]> {
     : await query.is("proyecto_id", null);
   if (error || !data || data.length === 0) return faqsSeed;
 
-  return data.map((f) => ({ id: f.id, proyectoId: f.proyecto_id, pregunta: f.pregunta, respuesta: f.respuesta }));
+  const items = data.map((f) => ({ id: f.id, proyectoId: f.proyecto_id, pregunta: f.pregunta, respuesta: f.respuesta }));
+
+  // Si el proyecto cargó su propia respuesta para una pregunta (mismo texto que una
+  // global), esa respuesta específica reemplaza a la global en vez de mostrarse las dos.
+  const preguntasDelProyecto = new Set(
+    items.filter((f) => f.proyectoId === proyectoId).map((f) => f.pregunta.trim().toLowerCase())
+  );
+  return items.filter(
+    (f) => f.proyectoId === proyectoId || !preguntasDelProyecto.has(f.pregunta.trim().toLowerCase())
+  );
 }
 
 export async function getBanners(proyectoId?: string): Promise<Banner[]> {
