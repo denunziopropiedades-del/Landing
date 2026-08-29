@@ -3,7 +3,12 @@
 import { useActionState, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Trash2, UploadCloud, X } from "lucide-react";
-import { addGaleriaItemAction, addGaleriaItemsMasivoAction, deleteGaleriaItemAction } from "@/lib/admin/actions";
+import {
+  actualizarGaleriaItemAction,
+  addGaleriaItemAction,
+  addGaleriaItemsMasivoAction,
+  deleteGaleriaItemAction,
+} from "@/lib/admin/actions";
 import { isCloudinaryConfigured, uploadToCloudinary } from "@/lib/cloudinary-client";
 import type { ItemGaleria } from "@/types/site";
 
@@ -32,6 +37,59 @@ type ItemCola = {
   url: string;
   error?: string;
 };
+
+function TarjetaGaleria({
+  item,
+  deletePending,
+  onEliminar,
+}: {
+  item: ItemGaleria;
+  deletePending: boolean;
+  onEliminar: (id: string) => void;
+}) {
+  const [titulo, setTitulo] = useState(item.titulo);
+  const [, startTransition] = useTransition();
+
+  const guardarTitulo = () => {
+    if (titulo.trim() === item.titulo) return;
+    startTransition(() => {
+      actualizarGaleriaItemAction(item.id, titulo).then((res) => {
+        if (!res.ok) alert(`No se pudo guardar el título: ${res.error}`);
+      });
+    });
+  };
+
+  return (
+    <div className="group relative overflow-hidden rounded-xl border border-black/5 bg-white">
+      <div className="relative aspect-video bg-black/5">
+        {item.categoria === "videos" ? (
+          <div className="flex h-full items-center justify-center text-xs text-brand-black/50">Video</div>
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.url} alt={item.titulo} className="h-full w-full object-cover" />
+        )}
+      </div>
+      <div className="p-2">
+        <input
+          value={titulo}
+          onChange={(e) => setTitulo(e.target.value)}
+          onBlur={guardarTitulo}
+          className="w-full truncate rounded border border-transparent bg-transparent px-1 py-0.5 text-xs font-medium text-brand-black hover:border-black/10 focus:border-brand-green-600 focus:outline-none"
+        />
+        <p className="px-1 text-[10px] uppercase text-brand-black/40">{item.categoria}</p>
+      </div>
+      <button
+        type="button"
+        disabled={deletePending}
+        onClick={() => onEliminar(item.id)}
+        className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white opacity-0 transition group-hover:opacity-100 disabled:opacity-50"
+        aria-label="Eliminar"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
 
 export default function GaleriaManager({ proyectoId, items }: { proyectoId: string; items: ItemGaleria[] }) {
   const router = useRouter();
@@ -240,29 +298,7 @@ export default function GaleriaManager({ proyectoId, items }: { proyectoId: stri
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {items.map((item) => (
-          <div key={item.id} className="group relative overflow-hidden rounded-xl border border-black/5 bg-white">
-            <div className="relative aspect-video bg-black/5">
-              {item.categoria === "videos" ? (
-                <div className="flex h-full items-center justify-center text-xs text-brand-black/50">Video</div>
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={item.url} alt={item.titulo} className="h-full w-full object-cover" />
-              )}
-            </div>
-            <div className="p-2">
-              <p className="truncate text-xs font-medium text-brand-black">{item.titulo}</p>
-              <p className="text-[10px] uppercase text-brand-black/40">{item.categoria}</p>
-            </div>
-            <button
-              type="button"
-              disabled={deletePending}
-              onClick={() => eliminar(item.id)}
-              className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white opacity-0 transition group-hover:opacity-100 disabled:opacity-50"
-              aria-label="Eliminar"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
+          <TarjetaGaleria key={item.id} item={item} deletePending={deletePending} onEliminar={eliminar} />
         ))}
         {items.length === 0 && (
           <p className="col-span-full py-8 text-center text-sm text-brand-black/50">Todavía no hay contenido en la galería.</p>

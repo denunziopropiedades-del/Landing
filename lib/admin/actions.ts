@@ -1025,6 +1025,22 @@ export async function addGaleriaItemsMasivoAction(
   }
 }
 
+export async function actualizarGaleriaItemAction(id: string, titulo: string): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    if (!titulo.trim()) return { ok: false, error: "El título no puede quedar vacío." };
+    const admin = (await getSupabaseAdminClient())!;
+    const { error } = await admin.from("galeria").update({ titulo: titulo.trim() }).eq("id", id);
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "actualizar", "galeria", id, { titulo: titulo.trim() });
+    revalidatePath("/admin/galeria");
+    revalidatePath("/proyectos/[slug]", "page");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function deleteGaleriaItemAction(id: string): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor");
