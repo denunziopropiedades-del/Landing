@@ -6,4 +6,4 @@
  * Vive en su propio archivo (sin más imports) para poder usarse tanto desde
  * componentes de cliente como desde el servidor sin arrastrar el SDK de
  * Mercado Pago al bundle del navegador. */
-export const PAGO_ONLINE_RESERVA_HABILITADO = false;
+export const PAGO_ONLINE_RESERVA_HABILITADO = true;

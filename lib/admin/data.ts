@@ -383,6 +383,7 @@ export async function getLeads(): Promise<Lead[]> {
     documentosEntregados: (l.documentos_entregados as string[] | null) ?? [],
     formaPago: (l.forma_pago as "contado" | "financiado" | null) ?? "contado",
     planFinanciacion: (l.plan_financiacion as Lead["planFinanciacion"]) ?? null,
+    linkPagoSena: l.link_pago_sena ?? null,
     ...(() => {
       const cs = (l.cuotas ?? []) as { pagada: boolean; vencimiento: string }[];
       const hoyIso = new Date().toISOString().slice(0, 10);

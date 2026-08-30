@@ -340,7 +340,10 @@ create table leads (
   -- del plan fijo elegido (anticipoUsd, cuotas, valorCuotaUsd) — no una referencia — para que
   -- editar los planes del proyecto más adelante no altere lo ya pactado con este cliente.
   forma_pago text not null default 'contado' check (forma_pago in ('contado', 'financiado')),
-  plan_financiacion jsonb
+  plan_financiacion jsonb,
+  -- Link de pago de la seña (Mercado Pago) generado al reservar, para poder
+  -- reenviarlo por WhatsApp desde el CRM sin tener que generarlo de nuevo.
+  link_pago_sena text
 );
 
 create index leads_estado_idx on leads (estado);

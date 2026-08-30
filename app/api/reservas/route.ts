@@ -114,6 +114,9 @@ export async function POST(request: Request) {
           email: data.email,
           lotesNombres: lotesReservados.map((l) => `Lote ${l.numero}`),
         });
+        if (linkPago && supabase) {
+          await supabase.from("leads").update({ link_pago_sena: linkPago }).eq("id", leadId);
+        }
       } catch (err) {
         console.error("No se pudo generar el link de pago de la seña", err);
       }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { ChevronDown, ChevronUp, GripVertical, Mail, Phone, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, CreditCard, GripVertical, Mail, Phone, Trash2 } from "lucide-react";
 import {
   actualizarComisionHonorariosLeadAction,
   actualizarDatosContactoLeadAction,
@@ -327,6 +327,22 @@ function LeadCard({
               </a>
             </div>
           </div>
+
+          {lead.linkPagoSena && (
+            <a
+              href={buildWhatsappClienteUrl(
+                telefono,
+                `Hola ${lead.nombre}! Te paso el link para abonar la seña de tu reserva: ${lead.linkPagoSena}`
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center justify-center gap-1.5 rounded-lg border border-brand-green-700/30 bg-brand-green-700/10 px-2 py-1.5 text-xs font-medium text-brand-green-700 hover:bg-brand-green-700/20"
+            >
+              <CreditCard className="h-3.5 w-3.5" />
+              Enviar link de pago por WhatsApp
+            </a>
+          )}
 
           {puedeAsignar && (
             <select

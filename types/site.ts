@@ -235,6 +235,8 @@ export type Lead = {
   cuotasPagadas?: number;
   cuotasEnMora?: number;
   proximoVencimientoCuota?: string | null;
+  /** Link de pago de la seña (Mercado Pago) generado al reservar, para reenviarlo por WhatsApp. */
+  linkPagoSena?: string | null;
 };
 
 /** Una cuota del cuotario de un cliente financiado. */
