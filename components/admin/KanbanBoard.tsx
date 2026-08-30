@@ -13,13 +13,14 @@ import {
   actualizarPagoLeadAction,
   actualizarSexoLeadAction,
   asignarLeadAction,
+  asignarLoteLeadAction,
   cambiarProyectoLeadAction,
   deleteLeadAction,
   generarCuotasLeadAction,
 } from "@/lib/admin/actions";
 import { buildWhatsappClienteUrl } from "@/lib/whatsapp";
 import { formatUsd } from "@/lib/utils";
-import type { EstadoLead, Lead, Perfil, Proyecto, Rol } from "@/types/site";
+import type { EstadoLead, Lead, Lote, Perfil, Proyecto, Rol } from "@/types/site";
 
 const COLUMNAS: { estado: EstadoLead; label: string; color: string }[] = [
   { estado: "nuevo", label: "Nuevo", color: "border-t-blue-500" },
@@ -39,6 +40,7 @@ function LeadCard({
   lead,
   vendedores,
   proyectos,
+  lotes,
   puedeAsignar,
   puedeBorrar,
   onMoved,
@@ -47,6 +49,7 @@ function LeadCard({
   lead: Lead;
   vendedores: Perfil[];
   proyectos: Proyecto[];
+  lotes: Lote[];
   puedeAsignar: boolean;
   puedeBorrar: boolean;
   onMoved: () => void;
@@ -127,6 +130,27 @@ function LeadCard({
         setGenerandoCuotas(false);
         if (!res.ok) alert(`No se pudieron generar las cuotas: ${res.error}`);
         else onActualizado(lead.id, { cantidadCuotas: lead.planFinanciacion?.cuotas ?? 0, cuotasPagadas: 0 });
+      });
+    });
+  };
+
+  const lotesDelProyecto = useMemo(
+    () => lotes.filter((l) => l.proyectoId === lead.proyectoId),
+    [lotes, lead.proyectoId]
+  );
+
+  const asignarLote = (loteId: string) => {
+    const lote = lotesDelProyecto.find((l) => l.id === loteId);
+    startTransition(() => {
+      asignarLoteLeadAction(lead.id, loteId || null).then((res) => {
+        if (!res.ok) alert(`No se pudo asignar el lote: ${res.error}`);
+        else
+          onActualizado(lead.id, {
+            loteId: loteId || null,
+            manzana: lote?.manzana,
+            loteNumero: lote?.numero,
+            loteNombre: lote?.nombre,
+          });
       });
     });
   };
@@ -254,19 +278,40 @@ function LeadCard({
                 </option>
               ))}
             </select>
-          ) : (
-            lead.lotes.length > 0 && (
-              <div className="text-xs text-brand-black/50">
-                {lead.lotes.length > 1 && (
-                  <p className="font-medium text-brand-black/70">{lead.lotes.length} lotes en esta operación</p>
-                )}
-                {lead.lotes.map((l) => (
-                  <p key={l.id}>
-                    Manzana {l.manzana} — Lote {l.numero} ({l.superficieM2} m²)
-                  </p>
+          ) : null}
+
+          {puedeAsignar && lead.lotes.length === 0 && (
+            <div>
+              <select
+                defaultValue={lead.loteId ?? ""}
+                disabled={!lead.proyectoId}
+                onChange={(e) => asignarLote(e.target.value)}
+                className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs text-brand-black/70 disabled:opacity-50"
+              >
+                <option value="">Sin lote puntual asignado</option>
+                {lotesDelProyecto.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    Manzana {l.manzana} — Lote {l.numero}
+                  </option>
                 ))}
-              </div>
-            )
+              </select>
+              {lead.proyectoId && lotesDelProyecto.length === 0 && (
+                <p className="mt-1 text-[11px] text-brand-black/40">Este desarrollo todavía no tiene lotes cargados.</p>
+              )}
+            </div>
+          )}
+
+          {!puedeAsignar && lead.lotes.length > 0 && (
+            <div className="text-xs text-brand-black/50">
+              {lead.lotes.length > 1 && (
+                <p className="font-medium text-brand-black/70">{lead.lotes.length} lotes en esta operación</p>
+              )}
+              {lead.lotes.map((l) => (
+                <p key={l.id}>
+                  Manzana {l.manzana} — Lote {l.numero} ({l.superficieM2} m²)
+                </p>
+              ))}
+            </div>
           )}
 
           <div className="space-y-1.5">
@@ -588,11 +633,13 @@ export default function KanbanBoard({
   leads: leadsIniciales,
   vendedores,
   proyectos,
+  lotes,
   rolActual,
 }: {
   leads: Lead[];
   vendedores: Perfil[];
   proyectos: Proyecto[];
+  lotes: Lote[];
   rolActual: Rol;
 }) {
   const [leads, setLeads] = useState(leadsIniciales);
@@ -655,6 +702,7 @@ export default function KanbanBoard({
                 lead={lead}
                 vendedores={vendedores}
                 proyectos={proyectos}
+                lotes={lotes}
                 puedeAsignar={puedeAsignar}
                 puedeBorrar={puedeBorrar}
                 onMoved={() => setDragOver(null)}

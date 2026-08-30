@@ -1382,6 +1382,69 @@ export async function actualizarEstadoLeadAction(id: string, estado: EstadoLead)
   }
 }
 
+/** Estados del lead a partir de los cuales el lote asociado ya no está libre. */
+const ESTADOS_LEAD_LOTE_RESERVADO: EstadoLead[] = [
+  "reservado",
+  "pago_confirmado",
+  "pendiente_firma_escribania",
+  "firmado_escribania",
+];
+
+/**
+ * Ata (o cambia) el lote puntual de un lead que se cargó sin elegirlo al crearlo
+ * (ej. un lead manual donde la manzana/lote se anotó como texto libre). Además de
+ * guardar el vínculo, sincroniza el estado del lote con el estado actual del lead
+ * (si el lead ya está en "Reservado" o más adelante, el lote pasa a reservado/vendido),
+ * para que no quede figurando como disponible en el listado público.
+ */
+export async function asignarLoteLeadAction(leadId: string, loteId: string | null): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const { data: lead, error: errLead } = await admin
+      .from("leads")
+      .select("lote_id, estado")
+      .eq("id", leadId)
+      .maybeSingle();
+    if (errLead) throw new Error(errLead.message);
+    const loteAnteriorId = lead?.lote_id ?? null;
+
+    let manzana: string | null = null;
+    if (loteId) {
+      const { data: lote } = await admin.from("lotes").select("manzana").eq("id", loteId).maybeSingle();
+      manzana = lote?.manzana ?? null;
+    }
+
+    const { error } = await admin
+      .from("leads")
+      .update({ lote_id: loteId, manzana, actualizado_en: new Date().toISOString() })
+      .eq("id", leadId);
+    if (error) {
+      if (error.code === "23505") throw new Error("Ese lote ya está asignado a otro cliente.");
+      throw new Error(error.message);
+    }
+
+    if (loteAnteriorId && loteAnteriorId !== loteId) {
+      await admin.from("lotes").update({ estado: "disponible" }).eq("id", loteAnteriorId).eq("estado", "reservado");
+    }
+
+    if (loteId && lead) {
+      const estadoLead = lead.estado as EstadoLead;
+      const estadoLote = estadoLead === "vendido" ? "vendido" : ESTADOS_LEAD_LOTE_RESERVADO.includes(estadoLead) ? "reservado" : null;
+      if (estadoLote) await admin.from("lotes").update({ estado: estadoLote }).eq("id", loteId);
+    }
+
+    await registrarActividad(actor, "asignar-lote", "lead", leadId, await contextoLead(admin, leadId));
+    revalidatePath("/admin/crm");
+    revalidatePath("/admin/lotes");
+    revalidatePath("/proyectos/[slug]", "page");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function actualizarObservacionesLeadAction(id: string, observaciones: string): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor", "vendedor");

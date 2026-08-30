@@ -34,7 +34,7 @@ export default async function AdminCrmPage() {
       )}
 
       <div className="mt-8">
-        <KanbanBoard leads={leads} vendedores={vendedores} proyectos={proyectos} rolActual={actual?.rol ?? "vendedor"} />
+        <KanbanBoard leads={leads} vendedores={vendedores} proyectos={proyectos} lotes={lotes} rolActual={actual?.rol ?? "vendedor"} />
       </div>
 
       {leads.length === 0 && (
