@@ -1523,7 +1523,8 @@ export async function actualizarDatosContactoLeadAction(
 export async function actualizarPagoLeadAction(
   id: string,
   numeroTransaccion: string,
-  importeCobrado: string
+  importeCobrado: string,
+  medioPago?: string
 ): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor", "vendedor");
@@ -1535,6 +1536,7 @@ export async function actualizarPagoLeadAction(
       .update({
         numero_transaccion: numeroTransaccion.trim() || null,
         importe_cobrado: importe,
+        medio_pago_sena: medioPago || null,
         actualizado_en: new Date().toISOString(),
       })
       .eq("id", id);
@@ -1543,9 +1545,11 @@ export async function actualizarPagoLeadAction(
       ...(await contextoLead(admin, id)),
       numeroTransaccion,
       importeCobrado: importe,
+      medioPago,
     });
     revalidatePath("/admin/crm");
     revalidatePath("/admin/consultas");
+    revalidatePath("/admin/cobranzas");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -1777,7 +1781,8 @@ export async function generarCuotasLeadAction(leadId: string, fechaPrimeraCuota:
 export async function marcarCuotaPagadaAction(
   cuotaId: string,
   montoPagadoUsd: string,
-  fechaPago: string
+  fechaPago: string,
+  medioPago?: string
 ): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor");
@@ -1799,6 +1804,7 @@ export async function marcarCuotaPagadaAction(
         pagada: true,
         pagado_en: new Date(`${fechaPago}T12:00:00`).toISOString(),
         monto_pagado_usd: montoPagado,
+        medio_pago: medioPago || null,
       })
       .eq("id", cuotaId);
     if (error) throw new Error(error.message);
@@ -1806,6 +1812,7 @@ export async function marcarCuotaPagadaAction(
     await registrarActividad(actor, "actualizar", "lead", cuota.lead_id, {
       ...(await contextoLead(admin, cuota.lead_id)),
       cuotaPagada: cuota.numero,
+      medioPago,
     });
     revalidatePath("/admin/cobranzas");
     revalidatePath("/admin/crm");
@@ -1864,7 +1871,7 @@ export async function desmarcarCuotaPagadaAction(cuotaId: string): Promise<Actio
 
     const { error } = await admin
       .from("cuotas")
-      .update({ pagada: false, pagado_en: null, monto_pagado_usd: null })
+      .update({ pagada: false, pagado_en: null, monto_pagado_usd: null, medio_pago: null })
       .eq("id", cuotaId);
     if (error) throw new Error(error.message);
 

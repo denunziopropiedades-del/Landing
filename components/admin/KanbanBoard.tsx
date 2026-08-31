@@ -63,6 +63,7 @@ function LeadCard({
   const [observaciones, setObservaciones] = useState(lead.observaciones);
   const [numeroTransaccion, setNumeroTransaccion] = useState(lead.numeroTransaccion ?? "");
   const [importeCobrado, setImporteCobrado] = useState(lead.importeCobrado?.toString() ?? "");
+  const [medioPagoSena, setMedioPagoSena] = useState<"transferencia" | "efectivo" | "">(lead.medioPagoSena ?? "");
   const [fechaFirma, setFechaFirma] = useState(lead.fechaFirmaEscribania ?? "");
   const [horarioFirma, setHorarioFirma] = useState(lead.horarioFirmaEscribania ?? "");
   const [comisionUsd, setComisionUsd] = useState(lead.comisionUsd?.toString() ?? "");
@@ -108,15 +109,20 @@ function LeadCard({
   };
 
   const guardarPago = () => {
-    if (numeroTransaccion === (lead.numeroTransaccion ?? "") && importeCobrado === (lead.importeCobrado?.toString() ?? ""))
+    if (
+      numeroTransaccion === (lead.numeroTransaccion ?? "") &&
+      importeCobrado === (lead.importeCobrado?.toString() ?? "") &&
+      medioPagoSena === (lead.medioPagoSena ?? "")
+    )
       return;
     startTransition(() => {
-      actualizarPagoLeadAction(lead.id, numeroTransaccion, importeCobrado).then((res) => {
+      actualizarPagoLeadAction(lead.id, numeroTransaccion, importeCobrado, medioPagoSena).then((res) => {
         if (!res.ok) alert(`No se pudo guardar el pago: ${res.error}`);
         else
           onActualizado(lead.id, {
             numeroTransaccion: numeroTransaccion || null,
             importeCobrado: importeCobrado ? Number(importeCobrado) : null,
+            medioPagoSena: medioPagoSena || null,
           });
       });
     });
@@ -523,6 +529,25 @@ function LeadCard({
                 onBlur={guardarPago}
                 className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
               />
+            </div>
+            <div className="col-span-2">
+              <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Medio de pago de la seña</label>
+              <select
+                value={medioPagoSena}
+                onChange={(e) => {
+                  setMedioPagoSena(e.target.value as "transferencia" | "efectivo" | "");
+                  startTransition(() => {
+                    actualizarPagoLeadAction(lead.id, numeroTransaccion, importeCobrado, e.target.value).then((res) => {
+                      if (res.ok) onActualizado(lead.id, { medioPagoSena: (e.target.value || null) as Lead["medioPagoSena"] });
+                    });
+                  });
+                }}
+                className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs"
+              >
+                <option value="">Sin especificar</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="efectivo">Efectivo</option>
+              </select>
             </div>
           </div>
 

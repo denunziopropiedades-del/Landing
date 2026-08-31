@@ -318,6 +318,7 @@ create table leads (
   -- Datos de la seña/pago de la reserva, cargados a mano por el equipo.
   numero_transaccion text,
   importe_cobrado numeric,
+  medio_pago_sena text check (medio_pago_sena in ('transferencia', 'efectivo')),
   -- Confirmación automática del pago de la seña vía Mercado Pago (webhook).
   pago_confirmado_en timestamptz,
   pago_mercadopago_id text,
@@ -457,6 +458,7 @@ create table cuotas (
   pagada boolean not null default false,
   pagado_en timestamptz,
   monto_pagado_usd numeric,
+  medio_pago text check (medio_pago in ('transferencia', 'efectivo')),
   -- Se completa cuando se manda el mail de recordatorio (7 días antes del vencimiento),
   -- para que el cron diario no lo mande dos veces.
   recordatorio_enviado_en timestamptz,

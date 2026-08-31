@@ -216,6 +216,7 @@ export type Lead = {
   fechaNacimiento?: string | null;
   numeroTransaccion?: string | null;
   importeCobrado?: number | null;
+  medioPagoSena?: MedioPago | null;
   sexo?: "M" | "F" | null;
   fechaFirmaEscribania?: string | null;
   horarioFirmaEscribania?: string | null;
@@ -240,6 +241,8 @@ export type Lead = {
 };
 
 /** Una cuota del cuotario de un cliente financiado. */
+export type MedioPago = "transferencia" | "efectivo";
+
 export type Cuota = {
   id: string;
   leadId: string;
@@ -249,9 +252,10 @@ export type Cuota = {
   pagada: boolean;
   pagadoEn?: string | null;
   montoPagadoUsd?: number | null;
+  medioPago?: MedioPago | null;
   /** Días de atraso respecto de hoy; 0 si está pagada o todavía no venció. */
   diasMora: number;
-  lead: {
+  lead?: {
     nombre: string;
     apellido?: string;
     email: string;
@@ -260,6 +264,29 @@ export type Cuota = {
     manzana?: string;
     lotes: LoteDeLead[];
   };
+};
+
+/**
+ * Un cliente financiado para el panel de Cobranzas: agrupa sus datos (barrio,
+ * manzana/lote, titular, plan elegido, seña abonada) junto con sus cuotas —
+ * incluso si todavía no se generaron (para que ya aparezca apenas paga la seña,
+ * en vez de recién cuando se cargan las cuotas).
+ */
+export type ClienteCobranzas = {
+  leadId: string;
+  nombre: string;
+  apellido?: string;
+  email: string;
+  telefono: string;
+  proyectoNombre?: string;
+  manzana?: string;
+  lotes: LoteDeLead[];
+  planFinanciacion: PlanFinanciacionFijo | null;
+  senaImporteArs: number | null;
+  senaMedioPago: MedioPago | null;
+  senaNumeroTransaccion: string | null;
+  senaPagoConfirmadoEn: string | null;
+  cuotas: Cuota[];
 };
 
 export type Gasto = {

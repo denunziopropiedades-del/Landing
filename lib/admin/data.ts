@@ -2,6 +2,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type {
   ActividadLog,
   Banner,
+  ClienteCobranzas,
   ComboLotes,
   ConfigFinanciacion,
   Cuota,
@@ -11,7 +12,9 @@ import type {
   Lead,
   Lote,
   LoteDeLead,
+  MedioPago,
   Perfil,
+  PlanFinanciacionFijo,
   ProgresoItem,
   Promocion,
   Proyecto,
@@ -380,6 +383,7 @@ export async function getLeads(): Promise<Lead[]> {
     gastosArs: numOrNull(l.gastos_ars),
     pagoConfirmadoEn: l.pago_confirmado_en ?? null,
     pagoMercadopagoId: l.pago_mercadopago_id ?? null,
+    medioPagoSena: (l.medio_pago_sena as MedioPago | null) ?? null,
     documentosEntregados: (l.documentos_entregados as string[] | null) ?? [],
     formaPago: (l.forma_pago as "contado" | "financiado" | null) ?? "contado",
     planFinanciacion: (l.plan_financiacion as Lead["planFinanciacion"]) ?? null,
@@ -401,62 +405,97 @@ export async function getLeads(): Promise<Lead[]> {
 
 /** Todas las cuotas de clientes financiados, con los datos del cliente embebidos
  * y los días de atraso ya calculados, para el panel de Cobranzas. */
-export async function getCuotasAdmin(): Promise<Cuota[]> {
+/**
+ * Clientes financiados para el panel de Cobranzas. A diferencia de la versión
+ * anterior (que solo miraba la tabla `cuotas`), esto arranca de los leads
+ * financiados: así un cliente aparece apenas paga la seña, aunque todavía no se
+ * hayan generado sus cuotas (eso pasa recién cuando se pacta la fecha de la
+ * primera cuota en el CRM) — antes quedaba invisible en Cobranzas hasta ese paso.
+ */
+export async function getClientesCobranzasAdmin(): Promise<ClienteCobranzas[]> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
   const { data, error } = await supabase
-    .from("cuotas")
+    .from("leads")
     .select(
-      "*, leads(nombre, apellido, email, telefono, manzana, proyectos(nombre), lead_lotes(lotes(id, manzana, numero, superficie_m2, nombre)))"
+      `id, nombre, apellido, email, telefono, manzana, plan_financiacion,
+       importe_cobrado, numero_transaccion, medio_pago_sena, pago_confirmado_en,
+       proyectos(nombre),
+       lead_lotes(lotes(id, manzana, numero, superficie_m2, nombre)),
+       cuotas(id, numero, monto_usd, vencimiento, pagada, pagado_en, monto_pagado_usd, medio_pago)`
     )
-    .order("vencimiento", { ascending: true });
+    .eq("forma_pago", "financiado");
   if (error || !data) return [];
 
   const hoyIso = new Date().toISOString().slice(0, 10);
 
-  return data.map((c) => {
-    const lead = c.leads as unknown as {
-      nombre: string;
-      apellido: string | null;
-      email: string;
-      telefono: string;
-      manzana: string | null;
-      proyectos: { nombre: string } | null;
-      lead_lotes: { lotes: { id: string; manzana: string; numero: string; superficie_m2: number; nombre: string } | null }[];
-    } | null;
+  return data
+    .map((l) => {
+      const lotes: LoteDeLead[] = (
+        (l.lead_lotes ?? []) as unknown as {
+          lotes: { id: string; manzana: string; numero: string; superficie_m2: number; nombre: string } | null;
+        }[]
+      )
+        .map((ll) => ll.lotes)
+        .filter((lo): lo is NonNullable<typeof lo> => lo !== null)
+        .map((lo) => ({ id: lo.id, manzana: lo.manzana, numero: lo.numero, superficieM2: lo.superficie_m2, nombre: lo.nombre }));
 
-    const lotes: LoteDeLead[] = (lead?.lead_lotes ?? [])
-      .map((ll) => ll.lotes)
-      .filter((lo): lo is NonNullable<typeof lo> => lo !== null)
-      .map((lo) => ({ id: lo.id, manzana: lo.manzana, numero: lo.numero, superficieM2: lo.superficie_m2, nombre: lo.nombre }));
+      const cuotas: Cuota[] = (
+        (l.cuotas ?? []) as unknown as {
+          id: string;
+          numero: number;
+          monto_usd: number;
+          vencimiento: string;
+          pagada: boolean;
+          pagado_en: string | null;
+          monto_pagado_usd: number | null;
+          medio_pago: string | null;
+        }[]
+      )
+        .map((c) => ({
+          id: c.id,
+          leadId: l.id,
+          numero: c.numero,
+          montoUsd: Number(c.monto_usd),
+          vencimiento: c.vencimiento,
+          pagada: c.pagada,
+          pagadoEn: c.pagado_en ?? null,
+          montoPagadoUsd: numOrNull(c.monto_pagado_usd),
+          medioPago: (c.medio_pago as MedioPago | null) ?? null,
+          diasMora:
+            !c.pagada && c.vencimiento < hoyIso
+              ? Math.floor((Date.now() - new Date(`${c.vencimiento}T00:00:00`).getTime()) / (1000 * 60 * 60 * 24))
+              : 0,
+        }))
+        .sort((a, b) => a.numero - b.numero);
 
-    const diasMora =
-      !c.pagada && c.vencimiento < hoyIso
-        ? Math.floor((Date.now() - new Date(`${c.vencimiento}T00:00:00`).getTime()) / (1000 * 60 * 60 * 24))
-        : 0;
-
-    return {
-      id: c.id,
-      leadId: c.lead_id,
-      numero: c.numero,
-      montoUsd: Number(c.monto_usd),
-      vencimiento: c.vencimiento,
-      pagada: c.pagada,
-      pagadoEn: c.pagado_en ?? null,
-      montoPagadoUsd: numOrNull(c.monto_pagado_usd),
-      diasMora,
-      lead: {
-        nombre: lead?.nombre ?? "",
-        apellido: lead?.apellido ?? undefined,
-        email: lead?.email ?? "",
-        telefono: lead?.telefono ?? "",
-        proyectoNombre: lead?.proyectos?.nombre,
-        manzana: lead?.manzana ?? undefined,
+      const cliente: ClienteCobranzas = {
+        leadId: l.id,
+        nombre: l.nombre,
+        apellido: l.apellido ?? undefined,
+        email: l.email,
+        telefono: l.telefono,
+        proyectoNombre: (l.proyectos as unknown as { nombre: string } | null)?.nombre,
+        manzana: l.manzana ?? undefined,
         lotes,
-      },
-    };
-  });
+        planFinanciacion: (l.plan_financiacion as PlanFinanciacionFijo | null) ?? null,
+        senaImporteArs: numOrNull(l.importe_cobrado),
+        senaMedioPago: (l.medio_pago_sena as MedioPago | null) ?? null,
+        senaNumeroTransaccion: l.numero_transaccion ?? null,
+        senaPagoConfirmadoEn: l.pago_confirmado_en ?? null,
+        cuotas,
+      };
+      return cliente;
+    })
+    .filter(
+      (c) =>
+        c.cuotas.length > 0 ||
+        c.senaImporteArs !== null ||
+        c.senaNumeroTransaccion !== null ||
+        c.senaPagoConfirmadoEn !== null
+    )
+    .sort((a, b) => (a.cuotas[0]?.vencimiento ?? "9999-99").localeCompare(b.cuotas[0]?.vencimiento ?? "9999-99"));
 }
 
 export async function getVisitas(): Promise<Visita[]> {
