@@ -1288,7 +1288,7 @@ export async function crearLeadManualAction(_prev: ActionResult | null, formData
     const admin = (await getSupabaseAdminClient())!;
 
     const nombre = str(formData, "nombre");
-    if (!nombre) throw new Error("El nombre es obligatorio.");
+    if (!nombre) throw new AdminActionError("El nombre es obligatorio.");
 
     const loteId = optStr(formData, "loteId");
     let manzana: string | null = null;
@@ -1349,7 +1349,9 @@ export async function actualizarEstadoLeadAction(id: string, estado: EstadoLead)
       .eq("id", id);
     if (error) {
       if (error.code === "23505") {
-        throw new Error("Ese lote ya está reservado o vendido por otro cliente. No se puede duplicar.");
+        throw new AdminActionError(
+          "Ese lote ya está reservado, vendido o en trámite de escribanía con otro cliente. Revisá el otro lead que tiene el mismo lote asignado antes de continuar."
+        );
       }
       throw new Error(error.message);
     }
@@ -1421,7 +1423,7 @@ export async function asignarLoteLeadAction(leadId: string, loteId: string | nul
       .update({ lote_id: loteId, manzana, actualizado_en: new Date().toISOString() })
       .eq("id", leadId);
     if (error) {
-      if (error.code === "23505") throw new Error("Ese lote ya está asignado a otro cliente.");
+      if (error.code === "23505") throw new AdminActionError("Ese lote ya está asignado a otro cliente.");
       throw new Error(error.message);
     }
 
