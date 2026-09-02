@@ -44,6 +44,7 @@ function LeadCard({
   puedeAsignar,
   puedeBorrar,
   onMoved,
+  onMover,
   onActualizado,
 }: {
   lead: Lead;
@@ -53,6 +54,7 @@ function LeadCard({
   puedeAsignar: boolean;
   puedeBorrar: boolean;
   onMoved: () => void;
+  onMover: (id: string, estado: EstadoLead) => void;
   onActualizado: (id: string, patch: Partial<Lead>) => void;
 }) {
   const [nombre, setNombre] = useState(lead.nombre);
@@ -244,6 +246,22 @@ function LeadCard({
         {lead.manzana && <p>Manzana: {lead.manzana}</p>}
         {lead.loteNumero && <p>Lote: {lead.loteNumero}</p>}
       </div>
+
+      {/* Alternativa a arrastrar la tarjeta: en el celular no se puede arrastrar
+          (el drag-and-drop nativo no funciona por touch), así que este selector
+          mueve el lead de columna igual de bien tocando con el dedo. */}
+      <select
+        value={lead.estado}
+        onChange={(e) => onMover(lead.id, e.target.value as EstadoLead)}
+        onClick={(e) => e.stopPropagation()}
+        className="mt-1.5 w-full rounded-lg border border-black/10 bg-brand-cream/60 px-2 py-1 text-xs font-medium text-brand-black/70"
+      >
+        {COLUMNAS.map((c) => (
+          <option key={c.estado} value={c.estado}>
+            {c.label}
+          </option>
+        ))}
+      </select>
 
       <button
         type="button"
@@ -731,6 +749,7 @@ export default function KanbanBoard({
                 puedeAsignar={puedeAsignar}
                 puedeBorrar={puedeBorrar}
                 onMoved={() => setDragOver(null)}
+                onMover={mover}
                 onActualizado={actualizarLeadLocal}
               />
             ))}
