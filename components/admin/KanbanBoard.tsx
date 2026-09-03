@@ -304,10 +304,15 @@ function LeadCard({
             </select>
           ) : null}
 
-          {puedeAsignar && lead.lotes.length === 0 && (
+          {/* Leads de un solo lote (lead.lotes.length <= 1, ya sea porque no tiene
+              ninguno o porque tiene el clásico lote_id puntual): el admin/supervisor
+              puede corregir a qué lote apunta, sin crear una venta nueva. Para
+              operaciones de 2-3 lotes juntos (reservar_lotes) se muestra solo lectura
+              más abajo, porque reasignar ahí requiere elegir el combo completo. */}
+          {puedeAsignar && lead.lotes.length <= 1 && (
             <div>
               <select
-                defaultValue={lead.loteId ?? ""}
+                defaultValue={lead.lotes[0]?.id ?? lead.loteId ?? ""}
                 disabled={!lead.proyectoId}
                 onChange={(e) => asignarLote(e.target.value)}
                 className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs text-brand-black/70 disabled:opacity-50"
@@ -325,7 +330,7 @@ function LeadCard({
             </div>
           )}
 
-          {!puedeAsignar && lead.lotes.length > 0 && (
+          {(!puedeAsignar || lead.lotes.length > 1) && lead.lotes.length > 0 && (
             <div className="text-xs text-brand-black/50">
               {lead.lotes.length > 1 && (
                 <p className="font-medium text-brand-black/70">{lead.lotes.length} lotes en esta operación</p>
