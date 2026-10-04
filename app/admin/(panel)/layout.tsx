@@ -66,7 +66,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="flex min-h-screen bg-brand-cream">
       <aside className="hidden w-64 shrink-0 flex-col bg-brand-black text-white lg:flex">
         <div className="border-b border-white/10 px-6 py-5">
-          <p className="font-display text-lg font-bold">Panel Inmobiliario</p>
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/logo.png" alt="" width={40} height={40} className="h-10 w-10" />
+            <p className="font-display text-lg font-bold">Panel Inmobiliario</p>
+          </div>
           <p className="text-xs text-white/50">{perfil?.email ?? "Modo demo"}</p>
           {perfil && (
             <span className="mt-1 inline-block rounded-full bg-brand-gold-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-brand-gold-400">

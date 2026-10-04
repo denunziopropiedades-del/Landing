@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import { Lock } from "lucide-react";
 import { loginAction } from "@/lib/admin/actions";
 
 const initialState = { ok: false as const, error: "" };
@@ -13,9 +12,8 @@ export default function AdminLoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-brand-black px-4">
       <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-8">
         <div className="mb-6 flex flex-col items-center text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-gold-500/15">
-            <Lock className="h-6 w-6 text-brand-gold-400" />
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/logo.png" alt="Desarrollos Inmobiliarios" width={96} height={96} className="h-24 w-24" />
           <h1 className="mt-4 font-display text-xl font-bold text-white">Panel Administrador</h1>
           <p className="mt-1 text-sm text-white/60">Matu Lotes</p>
         </div>

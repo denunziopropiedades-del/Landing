@@ -9,8 +9,8 @@ export const metadata: Metadata = {
     title: "Matu Lotes Admin",
   },
   icons: {
-    icon: [{ url: "/api/pwa-icon?size=192", sizes: "192x192", type: "image/png" }],
-    apple: [{ url: "/api/pwa-icon?size=180", sizes: "180x180", type: "image/png" }],
+    icon: [{ url: "/brand/pwa-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
 

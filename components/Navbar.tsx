@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Menu, X, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
@@ -54,8 +55,11 @@ export default function Navbar({
       )}
     >
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href={logoHref} className="font-display text-lg font-bold tracking-wide text-white sm:text-xl">
-          {primero} <span className="text-brand-gold-400">{resto.join(" ")}</span>
+        <Link href={logoHref} className="flex items-center gap-2.5 font-display text-lg font-bold tracking-wide text-white sm:text-xl">
+          <Image src="/brand/logo.png" alt="Desarrollos Inmobiliarios" width={44} height={44} priority className="h-11 w-11" />
+          <span>
+            {primero} <span className="text-brand-gold-400">{resto.join(" ")}</span>
+          </span>
         </Link>
 
         <ul className="hidden items-center gap-8 lg:flex">
