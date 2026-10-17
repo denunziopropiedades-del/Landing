@@ -76,6 +76,16 @@ export default function LandingContactForm() {
         {errors.mensaje && <p className={errorClass}>{errors.mensaje.message}</p>}
       </div>
 
+      <label htmlFor="lc-visita" className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-xl border border-[#DCD8CC] px-4 py-3">
+        <input
+          id="lc-visita"
+          type="checkbox"
+          {...register("quiereVisita")}
+          className="h-5 w-5 shrink-0 accent-[#0F5C38]"
+        />
+        <span className="text-base font-medium text-[#1B2A22]">Quiero agendar una visita</span>
+      </label>
+
       {estado === "error" && <p className="text-sm text-red-700">Ocurrió un error. Probá nuevamente.</p>}
 
       <button

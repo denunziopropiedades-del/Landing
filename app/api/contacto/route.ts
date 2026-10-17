@@ -28,7 +28,9 @@ export async function POST(request: Request) {
       telefono: data.telefono,
       mensaje: data.mensaje,
       // El tablero de leads muestra "observaciones", así que el mensaje va ahí también.
-      observaciones: `Mensaje: ${data.mensaje}`,
+      observaciones: [data.quiereVisita ? "✅ Quiere agendar una visita." : null, `Mensaje: ${data.mensaje}`]
+        .filter(Boolean)
+        .join("\n"),
       estado: "nuevo",
     });
     if (error) {
@@ -44,6 +46,7 @@ export async function POST(request: Request) {
          <li><b>Nombre:</b> ${data.nombre}</li>
          <li><b>Email:</b> ${data.email}</li>
          <li><b>Teléfono:</b> ${data.telefono}</li>
+         ${data.quiereVisita ? "<li><b>Quiere agendar una visita</b></li>" : ""}
        </ul>
        <p><b>Mensaje:</b> ${data.mensaje}</p>`
     );

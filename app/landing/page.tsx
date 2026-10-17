@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import LandingContactForm from "@/components/LandingContactForm";
-import AgendaVisita from "@/components/AgendaVisita";
-import { getProyectos } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "Hablá con nosotros",
@@ -16,11 +14,7 @@ const ASESORES = [
   { nombre: "Asesor 2", telefono: "+54 9 11 6136-5523", numero: "5491161365523" },
 ];
 
-export default async function LandingPage() {
-  const proyectos = await getProyectos();
-  const destacado = proyectos.find((p) => p.destacado) ?? proyectos[0] ?? null;
-  const varios = proyectos.length > 1;
-
+export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#F4F2EC] text-[#1B2A22]">
       <header className="mx-auto flex w-full max-w-[1080px] flex-wrap items-center justify-between gap-4 px-5 py-6">
@@ -68,11 +62,7 @@ export default async function LandingPage() {
 
         <p className="mt-2 text-sm text-[#5E6B63]">Lunes a sábado · Respuesta en el día</p>
 
-        <div id="agendar" className="mt-4 w-full text-left">
-          <AgendaVisita proyectoId={destacado?.id} proyectos={varios ? proyectos : undefined} />
-        </div>
-
-        <section id="contacto" className="mt-4 w-full max-w-[720px]">
+        <section id="contacto" className="mt-12 w-full max-w-[720px]">
           <h2 className="font-display text-2xl font-bold sm:text-3xl">¿Preferís que te contactemos?</h2>
           <p className="mb-6 mt-2 text-[#4A5A50]">Dejanos tus datos y un asesor te escribe.</p>
           <LandingContactForm />

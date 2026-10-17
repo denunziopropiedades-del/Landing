@@ -38,6 +38,7 @@ export const contactoSchema = z.object({
   email: z.string().trim().email("Email inválido"),
   telefono: z.string().trim().min(6, "Teléfono inválido"),
   mensaje: z.string().trim().min(5, "Contanos brevemente tu consulta"),
+  quiereVisita: z.boolean().optional(),
 });
 
 export type ContactoInput = z.infer<typeof contactoSchema>;
