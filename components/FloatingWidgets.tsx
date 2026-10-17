@@ -7,7 +7,7 @@ import AgendaFloatButton from "@/components/AgendaFloatButton";
 
 export default function FloatingWidgets({ mensaje, numero }: { mensaje?: string; numero?: string }) {
   const pathname = usePathname();
-  if (pathname?.startsWith("/admin")) return null;
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/landing")) return null;
 
   return (
     <>

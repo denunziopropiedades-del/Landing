@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import LandingContactForm from "@/components/LandingContactForm";
 
 export const metadata: Metadata = {
   title: "Hablá con nosotros",
@@ -60,6 +61,12 @@ export default function LandingPage() {
         </div>
 
         <p className="mt-2 text-sm text-[#5E6B63]">Lunes a sábado · Respuesta en el día</p>
+
+        <section id="contacto" className="mt-12 w-full max-w-[720px]">
+          <h2 className="font-display text-2xl font-bold sm:text-3xl">¿Preferís que te contactemos?</h2>
+          <p className="mb-6 mt-2 text-[#4A5A50]">Dejanos tus datos y un asesor te escribe.</p>
+          <LandingContactForm />
+        </section>
       </main>
 
       <footer className="border-t border-[#DCD8CC] p-5 text-center text-[13px] text-[#5E6B63]">
