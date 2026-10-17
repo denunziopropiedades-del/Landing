@@ -93,9 +93,17 @@ export default async function AdminReportesPage() {
             <Users className="h-4 w-4" />
             Exportar visitas para Meta (CSV)
           </button>
+          <button
+            type="submit"
+            formAction="/api/leads/exportar-meta"
+            className="inline-flex items-center gap-2 rounded-full border border-brand-green-700 px-6 py-3 text-sm font-semibold text-brand-green-700 hover:bg-brand-green-50"
+          >
+            <Users className="h-4 w-4" />
+            Exportar contactos para Meta (CSV)
+          </button>
         </div>
         <p className="text-xs text-brand-black/50 sm:col-span-2 lg:col-span-4">
-          El CSV de Meta tiene email, teléfono y nombre de cada visita agendada, listo para crear un público
+          Los CSV de Meta tienen email, teléfono (con 549) y nombre de cada visita o contacto, sin duplicados, listo para crear un público
           personalizado en Meta Ads Manager (Públicos → Crear público → Público personalizado → Lista de clientes).
         </p>
       </form>

@@ -139,6 +139,13 @@ export default function ConsultasManager({
           <Download className="h-4 w-4" />
           Exportar a Excel
         </a>
+        <a
+          href="/api/leads/exportar-meta?tipo=contacto"
+          className="inline-flex shrink-0 items-center gap-2 rounded-full border border-brand-green-700 px-5 py-2 text-sm font-semibold text-brand-green-700 hover:bg-brand-green-50"
+        >
+          <Download className="h-4 w-4" />
+          Exportar para Meta (CSV)
+        </a>
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-black/5 bg-white shadow-sm">
