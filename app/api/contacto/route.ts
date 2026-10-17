@@ -27,6 +27,8 @@ export async function POST(request: Request) {
       email: data.email,
       telefono: data.telefono,
       mensaje: data.mensaje,
+      // El tablero de leads muestra "observaciones", así que el mensaje va ahí también.
+      observaciones: `Mensaje: ${data.mensaje}`,
       estado: "nuevo",
     });
     if (error) {
