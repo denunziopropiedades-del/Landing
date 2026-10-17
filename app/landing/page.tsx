@@ -25,7 +25,7 @@ const ASESORES = [
 const PASOS = [
   { titulo: "Escribinos", texto: "Te pasamos precios y planos." },
   { titulo: "Visitá el lote", texto: "Coordinamos visitas todos los días." },
-  { titulo: "Reservá con escritura", texto: "Realizá la seña y firmá durante la semana en la inmobiliaria o escribanía." },
+  { titulo: "Reservá", texto: "Realizá la seña y firmá durante la semana en la inmobiliaria o escribanía." },
 ];
 
 export default function LandingPage() {
