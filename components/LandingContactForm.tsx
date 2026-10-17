@@ -7,8 +7,8 @@ import { Loader2 } from "lucide-react";
 import { contactoSchema, type ContactoInput } from "@/lib/schemas";
 
 const inputClass =
-  "w-full rounded-xl border border-[#DCD8CC] bg-white px-4 py-3 text-base text-[#1B2A22] focus:border-[#0F5C38] focus:outline-none focus:ring-2 focus:ring-[#0F5C38]/20";
-const labelClass = "mb-1.5 block text-sm font-medium text-[#1B2A22]";
+  "w-full rounded-[14px] border-none bg-[#F2F5F3] px-3.5 py-3 text-base text-[#0F1F17] focus:outline-none focus:ring-2 focus:ring-[#08743E]/40";
+const labelClass = "mb-1.5 block text-[13px] font-bold text-[#3D4F45]";
 const errorClass = "mt-1 text-xs text-red-700";
 
 export default function LandingContactForm() {
@@ -42,9 +42,9 @@ export default function LandingContactForm() {
 
   if (estado === "ok") {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-2xl border border-[#DCD8CC] bg-white p-10 text-center">
-        <p className="font-display text-xl font-bold">¡Gracias por escribirnos!</p>
-        <p className="text-sm text-[#4A5A50]">En breve nos ponemos en contacto con vos.</p>
+      <div className="flex flex-col items-center gap-2 rounded-[20px] bg-[#E8F5EC] p-10 text-center">
+        <p className="text-xl font-extrabold">¡Gracias por escribirnos!</p>
+        <p className="text-sm text-[#3D4F45]">En breve nos ponemos en contacto con vos.</p>
       </div>
     );
   }
@@ -53,7 +53,7 @@ export default function LandingContactForm() {
     <form
       onSubmit={handleSubmit(onSubmit)}
       noValidate
-      className="flex flex-col gap-4 rounded-2xl border border-[#DCD8CC] bg-white p-6 text-left sm:p-8"
+      className="flex flex-col gap-3 text-left"
     >
       <div>
         <label htmlFor="lc-nombre" className={labelClass}>Nombre y apellido</label>
@@ -76,14 +76,14 @@ export default function LandingContactForm() {
         {errors.mensaje && <p className={errorClass}>{errors.mensaje.message}</p>}
       </div>
 
-      <label htmlFor="lc-visita" className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-xl border border-[#DCD8CC] px-4 py-3">
+      <label htmlFor="lc-visita" className="flex min-h-[44px] cursor-pointer items-center gap-3 py-1">
         <input
           id="lc-visita"
           type="checkbox"
           {...register("quiereVisita")}
-          className="h-5 w-5 shrink-0 accent-[#0F5C38]"
+          className="h-5 w-5 shrink-0 accent-[#08743E]"
         />
-        <span className="text-base font-medium text-[#1B2A22]">Quiero agendar una visita</span>
+        <span className="text-[15px] font-bold text-[#0F1F17]">Quiero agendar una visita</span>
       </label>
 
       {estado === "error" && <p className="text-sm text-red-700">Ocurrió un error. Probá nuevamente.</p>}
@@ -91,7 +91,7 @@ export default function LandingContactForm() {
       <button
         type="submit"
         disabled={estado === "enviando"}
-        className="flex min-h-[52px] items-center justify-center gap-2 rounded-xl bg-[#0F5C38] px-5 py-3.5 text-base font-semibold text-white transition-colors hover:bg-[#0B4A2D] disabled:opacity-60"
+        className="flex min-h-[54px] items-center justify-center gap-2 rounded-full bg-[#08743E] px-5 py-3.5 text-base font-extrabold text-white transition-colors hover:bg-[#065A30] disabled:opacity-60"
       >
         {estado === "enviando" && <Loader2 className="h-4 w-4 animate-spin" />}
         Enviar
