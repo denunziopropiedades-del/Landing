@@ -186,7 +186,7 @@ export default async function ListadoPropiedades({
           </p>
           <div className="mt-5 flex flex-col gap-2 sm:flex-row">
             <a
-              href={buildWhatsappUrl(`Hola! Estoy buscando ${titulo.toLowerCase()}. ¿Me avisan si tienen algo?`, numeroWhatsapp)}
+              href={buildWhatsappUrl(`Hola! Estoy buscando ${titulo.charAt(0).toLowerCase()}${titulo.slice(1)}. ¿Me avisan si tienen algo?`, numeroWhatsapp)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 py-3 text-sm font-bold text-white"

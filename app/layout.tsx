@@ -31,17 +31,21 @@ const META_PIXEL_IDS = (process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "")
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Matu Lotes | Lotes con escritura garantizada",
+    default: "Matu Lotes | Inmobiliaria: casas, alquileres, campos y lotes",
     template: "%s | Matu Lotes",
   },
   description:
-    "Matu Lotes, De Nunzio Negocios Inmobiliarios: encontrá tu lote ideal con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.",
+    "Matu Lotes, De Nunzio Negocios Inmobiliarios: casas, departamentos y campos en venta y alquiler, y lotes con escritura en La Plata, Corredor Sur, Ruta 3 y 205 y la Ribera.",
   keywords: [
     "lotes en venta Buenos Aires",
     "Matu Lotes",
     "terrenos en venta Buenos Aires",
     "lotes con escritura",
     "inversión inmobiliaria Gran Buenos Aires",
+    "casas en venta La Plata",
+    "alquileres La Plata",
+    "campos en venta Lobos Saladillo Monte",
+    "inmobiliaria Guernica",
   ],
   authors: [{ name: "Matu Lotes" }],
   openGraph: {
@@ -49,15 +53,15 @@ export const metadata: Metadata = {
     locale: "es_AR",
     url: SITE_URL,
     siteName: "Matu Lotes",
-    title: "Matu Lotes | Lotes con escritura garantizada",
+    title: "Matu Lotes | Inmobiliaria: casas, alquileres, campos y lotes",
     description:
-      "Inmobiliaria De Nunzio Negocios Inmobiliarios: encontrá tu lote ideal con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.",
+      "Inmobiliaria De Nunzio Negocios Inmobiliarios: casas, departamentos y campos en venta y alquiler, y lotes con escritura en el Departamento Judicial La Plata.",
   },
   twitter: {
     card: "summary_large_image",
     title: "Matu Lotes",
     description:
-      "Inmobiliaria De Nunzio Negocios Inmobiliarios: encontrá tu lote ideal con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.",
+      "Inmobiliaria De Nunzio Negocios Inmobiliarios: casas, departamentos y campos en venta y alquiler, y lotes con escritura en el Departamento Judicial La Plata.",
   },
   robots: {
     index: true,
@@ -70,7 +74,7 @@ const realEstateSchema = {
   "@type": "RealEstateAgent",
   name: "Matu Lotes",
   description:
-    "De Nunzio Negocios Inmobiliarios — inmobiliaria especializada en venta de lotes con escritura garantizada en el Gran Buenos Aires.",
+    "De Nunzio Negocios Inmobiliarios — casas, departamentos y campos en venta y alquiler, y lotes con escritura, en los partidos del Departamento Judicial La Plata.",
   url: SITE_URL,
   email: "denunziopropiedades@gmail.com",
   address: {
