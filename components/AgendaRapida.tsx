@@ -90,7 +90,8 @@ export default function AgendaRapida({
 
   const proyecto = proyectos.find((p) => p.id === proyectoId);
   const dia = dias.find((d) => d.iso === fecha);
-  const datosOk = nombre.trim().length >= 2 && telefono.replace(/\D/g, "").length >= 8;
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
+  const datosOk = nombre.trim().length >= 2 && telefono.replace(/\D/g, "").length >= 8 && emailOk;
   const listo = Boolean(fecha && horario && datosOk);
 
   const confirmar = async () => {
@@ -266,12 +267,13 @@ export default function AgendaRapida({
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Mail (opcional, para recibir la confirmación)"
+              placeholder="Mail (te mandamos la confirmación)"
               type="email"
               inputMode="email"
               autoComplete="email"
               className="h-[52px] w-full rounded-2xl border-2 border-black/10 bg-white px-4 text-base focus:border-brand-green-600 focus:outline-none"
             />
+            {email.trim().length > 3 && !emailOk && <p className="px-1 text-xs text-red-600">Revisá el mail, parece incompleto.</p>}
           </div>
         </Paso>
       )}
@@ -287,7 +289,7 @@ export default function AgendaRapida({
             className="flex min-h-[58px] w-full items-center justify-center gap-2 rounded-full bg-brand-green-700 px-6 text-base font-bold text-white shadow-[0_10px_30px_rgba(0,0,0,0.25)] transition hover:bg-brand-green-600 disabled:bg-brand-black/30 disabled:shadow-none"
           >
             {estado === "enviando" && <Loader2 className="h-5 w-5 animate-spin" />}
-            {listo && dia ? `Confirmar visita · ${dia.etiqueta} ${horario} hs` : "Completá nombre y WhatsApp"}
+            {listo && dia ? `Confirmar visita · ${dia.etiqueta} ${horario} hs` : "Completá nombre, WhatsApp y mail"}
           </button>
         </div>
       )}

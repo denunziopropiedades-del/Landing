@@ -46,8 +46,8 @@ export type ContactoInput = z.infer<typeof contactoSchema>;
 export const visitaSchema = z.object({
   proyectoId: z.string().optional(),
   nombre: z.string().trim().min(2, "Ingresá tu nombre"),
-  // Opcional: si lo deja, recibe la confirmación por mail con el link para reprogramar.
-  email: z.union([z.literal(""), z.string().trim().email("Email inválido")]).optional(),
+  // Obligatorio: se usa para la confirmación y para armar públicos en Meta Ads.
+  email: z.string().trim().email("Ingresá un mail válido"),
   telefono: z.string().trim().min(6, "Teléfono inválido"),
   fecha: z.string().min(1, "Elegí una fecha"),
   horario: z.string().min(1, "Elegí un horario"),

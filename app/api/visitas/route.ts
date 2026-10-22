@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const data = { ...parsed.data, email: parsed.data.email?.trim() ?? "" };
+  const data = parsed.data;
   const supabase = await getSupabaseAdminClient();
 
   let proyectoNombre: string | undefined;
