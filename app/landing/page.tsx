@@ -34,7 +34,7 @@ export default function LandingPage() {
       <header className="mx-auto flex w-full max-w-[1080px] items-center justify-between gap-4 px-5 py-5">
         <div className="text-lg font-extrabold">
           matulotes<span className="text-[#08743E]">.</span>{" "}
-          <span className="text-sm font-medium text-[#5B6B62]">desarrollos</span>
+          <span className="text-sm font-medium text-[#5B6B62]">inmobiliaria</span>
         </div>
         <a href="#contacto" className="py-2.5 text-sm font-bold text-[#08743E] hover:text-[#065A30]">
           Contacto
@@ -114,7 +114,12 @@ export default function LandingPage() {
         </div>
       </main>
 
-      <footer className="p-6 text-center text-xs text-[#5B6B62]">© MATULOTES - DESARROLLOS</footer>
+      <footer className="p-6 text-center text-xs text-[#5B6B62]">
+        <p className="font-bold uppercase tracking-wide text-[#0F1F17]">Inmobiliaria</p>
+        <p className="font-bold uppercase tracking-wide text-[#0F1F17]">De Nunzio Negocios Inmobiliarios</p>
+        <p className="mt-1 uppercase tracking-wide">Matías De Nunzio · Martillero Público</p>
+        <p className="mt-3">© MATULOTES - INMOBILIARIA</p>
+      </footer>
     </div>
   );
 }

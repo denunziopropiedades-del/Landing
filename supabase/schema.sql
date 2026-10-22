@@ -646,7 +646,7 @@ insert into site_textos (id, hero_titulo, hero_subtitulo, whatsapp_numero, whats
 values (
   1,
   'Encontrá el lote ideal para tu inversión',
-  'Desarrollos inmobiliarios con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.',
+  'Inmobiliaria especializada en lotes con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.',
   '5491127424512',
   'Hola, me interesa recibir información.',
   '11-6136-5523',

@@ -26,7 +26,7 @@ export const PROYECTO_DEMO_ID = "demo-ayres-de-guernica";
 export const siteTextosSeed: SiteTextos = {
   heroTitulo: "Encontrá el lote ideal para tu inversión",
   heroSubtitulo:
-    "Desarrollos inmobiliarios con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.",
+    "Inmobiliaria especializada en lotes con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.",
   whatsappNumero: "5491127424512",
   whatsappMensajeDefault: "Hola, me interesa recibir información.",
   telefonoOficina: "11-6136-5523",

@@ -8,7 +8,7 @@ export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Proyectos",
-  description: "Descubrí todos nuestros desarrollos inmobiliarios disponibles.",
+  description: "Descubrí todos los lotes disponibles de nuestra inmobiliaria.",
 };
 
 export default async function ProyectosPage() {
@@ -22,7 +22,7 @@ export default async function ProyectosPage() {
           <div className="mx-auto max-w-2xl text-center">
             <h1 className="font-display text-4xl font-bold text-brand-black">Nuestros proyectos</h1>
             <p className="mt-3 text-brand-black/70">
-              Desarrollos con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.
+              Lotes con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.
             </p>
           </div>
 

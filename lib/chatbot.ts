@@ -29,7 +29,7 @@ const temasExtra: TemaChat[] = [
   {
     keywords: ["ubicacion", "donde", "direccion", "zona"],
     respuesta:
-      "Tenemos desarrollos en distintas zonas del Gran Buenos Aires. Contanos qué zona te interesa y te compartimos las opciones disponibles.",
+      "Somos una inmobiliaria con lotes en distintas zonas del Gran Buenos Aires. Contanos qué zona te interesa y te compartimos las opciones disponibles.",
   },
   {
     keywords: ["contacto", "telefono", "whatsapp", "hablar", "asesor", "vendedor"],

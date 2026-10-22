@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     template: "%s | Matu Lotes",
   },
   description:
-    "Matu Lotes: encontrá tu lote ideal en los desarrollos inmobiliarios con escritura garantizada de mayor crecimiento del Gran Buenos Aires.",
+    "Matu Lotes, De Nunzio Negocios Inmobiliarios: encontrá tu lote ideal con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.",
   keywords: [
     "lotes en venta Buenos Aires",
     "Matu Lotes",
@@ -51,13 +51,13 @@ export const metadata: Metadata = {
     siteName: "Matu Lotes",
     title: "Matu Lotes | Lotes con escritura garantizada",
     description:
-      "Encontrá tu lote ideal en los desarrollos inmobiliarios con escritura garantizada de mayor crecimiento del Gran Buenos Aires.",
+      "Inmobiliaria De Nunzio Negocios Inmobiliarios: encontrá tu lote ideal con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.",
   },
   twitter: {
     card: "summary_large_image",
     title: "Matu Lotes",
     description:
-      "Encontrá tu lote ideal en los desarrollos inmobiliarios con escritura garantizada de mayor crecimiento del Gran Buenos Aires.",
+      "Inmobiliaria De Nunzio Negocios Inmobiliarios: encontrá tu lote ideal con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.",
   },
   robots: {
     index: true,
@@ -70,7 +70,7 @@ const realEstateSchema = {
   "@type": "RealEstateAgent",
   name: "Matu Lotes",
   description:
-    "Plataforma inmobiliaria especializada en venta de lotes con escritura garantizada en el Gran Buenos Aires.",
+    "De Nunzio Negocios Inmobiliarios — inmobiliaria especializada en venta de lotes con escritura garantizada en el Gran Buenos Aires.",
   url: SITE_URL,
   email: "denunziopropiedades@gmail.com",
   address: {
