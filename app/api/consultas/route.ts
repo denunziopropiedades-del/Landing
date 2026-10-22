@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   }
 
   if (supabase) {
-    const fila = {
+    const fila: Record<string, string> = {
       tipo: "contacto",
       nombre: data.nombre,
       email: data.email,
