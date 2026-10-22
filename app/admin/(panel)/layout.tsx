@@ -3,6 +3,7 @@ import {
   Activity,
   BarChart3,
   Building2,
+  House as HomeIcon,
   Calculator,
   DollarSign,
   FileSliders,
@@ -50,7 +51,8 @@ const nav: { href: string; label: string; icon: typeof LayoutDashboard; roles?: 
   { href: "/admin/testimonios", label: "Testimonios", icon: Star, roles: ["administrador", "supervisor"] },
   { href: "/admin/faqs", label: "Preguntas frecuentes", icon: HelpCircle, roles: ["administrador", "supervisor"] },
   { href: "/admin/novedades", label: "Novedades", icon: Newspaper, roles: ["administrador", "supervisor"] },
-  { href: "/admin/proyectos", label: "Proyectos", icon: Building2, roles: ["administrador", "supervisor"] },
+  { href: "/admin/propiedades", label: "Propiedades y campos", icon: HomeIcon },
+  { href: "/admin/proyectos", label: "Desarrollos", icon: Building2, roles: ["administrador", "supervisor"] },
   { href: "/admin/usuarios", label: "Usuarios y roles", icon: Users, roles: ["administrador"] },
   { href: "/admin/actividad", label: "Registro de actividad", icon: Activity, roles: ["administrador", "supervisor"] },
 ];

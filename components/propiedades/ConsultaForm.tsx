@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { ZONAS } from "@/lib/zonas";
-import { TIPOS } from "@/lib/propiedades";
+import { TIPOS } from "@/lib/propiedades-base";
 
 const input =
   "h-12 w-full rounded-xl border border-black/10 bg-white px-4 text-[15px] focus:border-brand-green-600 focus:outline-none";

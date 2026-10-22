@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Bath, BedDouble, Droplets, House, MapPin, Maximize2, Wheat, Zap } from "lucide-react";
-import { esRural, formatearPrecio, labelTipo, ubicacionTexto, type Propiedad } from "@/lib/propiedades";
+import { esRural, formatearPrecio, labelTipo, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
 
 export default function PropiedadCard({ propiedad: p }: { propiedad: Propiedad }) {
   const rural = esRural(p.tipo);
