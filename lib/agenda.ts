@@ -2,7 +2,7 @@
  * Reglas de la agenda de visitas (compartidas por el formulario web, la API
  * de disponibilidad y la página de reprogramación).
  *
- * - Turnos de visita cada 40 minutos, de 8:00 a 17:00.
+ * - Turnos de visita cada 40 minutos, de 8:00 a 18:00, todos los días (lunes a lunes).
  * - La escribanía tiene prioridad: no se pueden agendar visitas desde 2 horas
  *   antes del inicio de una firma hasta 2 horas después de que termina.
  * - Solo las firmas de escribanía pueden quedar correlativas (una atrás de la
@@ -14,7 +14,7 @@ export const DURACION_FIRMA_ESCRIBANIA_MINUTOS = 60;
 export const MARGEN_ESCRIBANIA_MINUTOS = 120;
 
 const PRIMER_TURNO_MINUTOS = 8 * 60;
-const ULTIMO_TURNO_MINUTOS = 17 * 60;
+const ULTIMO_TURNO_MINUTOS = 18 * 60;
 const INTERVALO_TURNOS_MINUTOS = 40;
 
 function aMinutos(horario: string): number | null {

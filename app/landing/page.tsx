@@ -83,7 +83,7 @@ export default function LandingPage() {
                 </span>
               </a>
             ))}
-            <p className="mt-1 text-center text-[13px] text-[#3D4F45]">Lunes a sábado · Respuesta en el día</p>
+            <p className="mt-1 text-center text-[13px] text-[#3D4F45]">Todos los días · Respuesta en el día</p>
 
             <LandingCallButtons asesores={ASESORES} />
           </div>
