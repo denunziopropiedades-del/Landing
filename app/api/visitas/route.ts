@@ -4,7 +4,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { NOTA_COORDINACION_VISITA_HTML, NOTA_RESERVA_LOTE_HTML, sendEmail, sendNotificationEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { crearEventoVisita } from "@/lib/google-calendar";
-import { bloqueReprogramarHtml, motivoHorarioNoDisponible } from "@/lib/visitas";
+import { bloqueReprogramarHtml, linkReprogramacion, motivoHorarioNoDisponible } from "@/lib/visitas";
 
 export async function POST(request: Request) {
   const rate = await checkRateLimit(request, "visitas");
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const data = parsed.data;
+  const data = { ...parsed.data, email: parsed.data.email?.trim() ?? "" };
   const supabase = await getSupabaseAdminClient();
 
   let proyectoNombre: string | undefined;
@@ -107,7 +107,7 @@ export async function POST(request: Request) {
       `<h2>Nueva visita coordinada desde la web</h2>
        <ul>
          <li><b>Nombre:</b> ${data.nombre}</li>
-         <li><b>Email:</b> ${data.email}</li>
+         <li><b>Email:</b> ${data.email || "—"}</li>
          <li><b>Teléfono:</b> ${data.telefono}</li>
          <li><b>Fecha:</b> ${data.fecha}</li>
          <li><b>Horario:</b> ${data.horario}</li>
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
         ? `https://maps.google.com/maps?q=${encodeURIComponent(proyectoUbicacion)}`
         : undefined);
 
-    await sendEmail(
+    if (data.email) await sendEmail(
       data.email,
       `Confirmación de tu visita — ${data.fecha} ${data.horario}`,
       `<h2>¡Tu visita quedó confirmada!</h2>
@@ -151,5 +151,5 @@ export async function POST(request: Request) {
     console.error("No se pudo enviar el email de confirmación al cliente", err);
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, reprogramarUrl: visitaId ? linkReprogramacion(visitaId) : null });
 }

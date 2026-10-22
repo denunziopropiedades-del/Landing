@@ -131,7 +131,7 @@ export default function AgendaVisita({
                 {errors.telefono && <p className="mt-1 text-xs text-red-600">{errors.telefono.message}</p>}
               </div>
               <div className="sm:col-span-2">
-                <label className="mb-1.5 block text-sm font-medium text-brand-black/80">Email</label>
+                <label className="mb-1.5 block text-sm font-medium text-brand-black/80">Email (opcional)</label>
                 <input type="email" {...register("email")} className="w-full rounded-lg border border-black/10 px-4 py-2.5 focus:border-brand-green-600 focus:outline-none" />
                 {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
               </div>
