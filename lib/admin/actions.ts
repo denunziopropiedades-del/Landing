@@ -6,12 +6,14 @@ import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/
 import { requireRole, AdminActionError } from "@/lib/admin/auth";
 import { registrarActividad } from "@/lib/admin/activity";
 import { cancelarEventoVisita, crearEventoEscribania } from "@/lib/google-calendar";
+import { bloqueadoPorEscribania } from "@/lib/agenda";
+import { bloqueReprogramarHtml } from "@/lib/visitas";
 import { NOTA_RESERVA_LOTE_HTML, armarMailConfirmacionCuotaPagada, armarMailFirmaEscribania, sendEmail } from "@/lib/email";
 import { sumarMeses } from "@/lib/fecha";
 import { posicionEnBloque, type BloqueManzana } from "@/lib/masterplan";
 import type { EstadoLead, EstadoLote, EstadoVisita, Rol } from "@/types/site";
 
-type ActionResult = { ok: true } | { ok: false; error: string };
+type ActionResult = { ok: true; aviso?: string } | { ok: false; error: string };
 
 function fail(err: unknown): ActionResult {
   if (err instanceof AdminActionError) return { ok: false, error: err.message };
@@ -1702,9 +1704,32 @@ export async function actualizarFirmaEscribaniaLeadAction(
       fechaFirmaEscribania: fecha,
       horarioFirmaEscribania: horario,
     });
+
+    // La escribanía tiene prioridad: la firma se guarda igual, pero se avisa qué visitas
+    // del mismo día quedaron dentro del margen de 2 hs antes / 2 hs después.
+    let aviso: string | undefined;
+    if (fechaLimpia && horarioLimpio) {
+      const { data: visitasDelDia } = await admin
+        .from("visitas")
+        .select("nombre, telefono, horario")
+        .eq("fecha", fechaLimpia)
+        .neq("estado", "cancelada");
+      const enConflicto = (visitasDelDia ?? []).filter((v) => bloqueadoPorEscribania(v.horario as string, [horarioLimpio]));
+      if (enConflicto.length > 0) {
+        aviso =
+          `La firma quedó guardada (la escribanía tiene prioridad), pero estas visitas del ${fechaLimpia} ` +
+          `caen dentro de las 2 hs antes/después y hay que reprogramarlas:\n` +
+          enConflicto
+            .sort((a, b) => String(a.horario).localeCompare(String(b.horario)))
+            .map((v) => `• ${v.horario} hs — ${v.nombre} (${v.telefono})`)
+            .join("\n") +
+          `\n\nCada cliente tiene en su mail de confirmación el link para elegir otro horario.`;
+      }
+    }
+
     revalidatePath("/admin/crm");
     revalidatePath("/admin/consultas");
-    return { ok: true };
+    return { ok: true, aviso };
   } catch (err) {
     return fail(err);
   }
@@ -2058,6 +2083,7 @@ export async function actualizarEstadoVisitaAction(id: string, estado: EstadoVis
                   </div>`
                : ""
            }
+           ${estado === "confirmada" ? bloqueReprogramarHtml(id) : ""}
            ${estado === "realizada" ? NOTA_RESERVA_LOTE_HTML : ""}`
         );
       } catch (err) {

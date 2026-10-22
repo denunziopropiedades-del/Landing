@@ -6,19 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { CalendarCheck, Loader2 } from "lucide-react";
 import { visitaSchema, type VisitaInput } from "@/lib/schemas";
 import type { Proyecto } from "@/types/site";
+import { HORARIOS_VISITA } from "@/lib/agenda";
 
-/** Turnos cada 40 minutos, de 8:00 a 17:00. */
-function generarHorarios() {
-  const horarios: string[] = [];
-  for (let minutos = 8 * 60; minutos <= 17 * 60; minutos += 40) {
-    const h = String(Math.floor(minutos / 60)).padStart(2, "0");
-    const m = String(minutos % 60).padStart(2, "0");
-    horarios.push(`${h}:${m}`);
-  }
-  return horarios;
-}
-
-const HORARIOS = generarHorarios();
+const HORARIOS = HORARIOS_VISITA;
 
 export default function AgendaVisita({
   proyectoId,

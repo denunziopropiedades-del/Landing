@@ -168,11 +168,13 @@ function LeadCard({
     startTransition(() => {
       actualizarFirmaEscribaniaLeadAction(lead.id, fechaFirma, horarioFirma).then((res) => {
         if (!res.ok) alert(`No se pudo guardar la fecha/horario de firma: ${res.error}`);
-        else
+        else {
+          if (res.aviso) alert(res.aviso);
           onActualizado(lead.id, {
             fechaFirmaEscribania: fechaFirma || null,
             horarioFirmaEscribania: horarioFirma || null,
           });
+        }
       });
     });
   };

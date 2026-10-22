@@ -4,6 +4,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { NOTA_COORDINACION_VISITA_HTML, NOTA_RESERVA_LOTE_HTML, sendEmail, sendNotificationEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { crearEventoVisita } from "@/lib/google-calendar";
+import { bloqueReprogramarHtml, motivoHorarioNoDisponible } from "@/lib/visitas";
 
 export async function POST(request: Request) {
   const rate = await checkRateLimit(request, "visitas");
@@ -27,19 +28,9 @@ export async function POST(request: Request) {
   let visitaId: string | null = null;
 
   if (supabase) {
-    const { data: ocupado } = await supabase
-      .from("visitas")
-      .select("id")
-      .eq("fecha", data.fecha)
-      .eq("horario", data.horario)
-      .neq("estado", "cancelada")
-      .maybeSingle();
-
-    if (ocupado) {
-      return NextResponse.json(
-        { error: "Ese horario ya fue reservado por otra persona. Elegí otro horario." },
-        { status: 409 }
-      );
+    const motivo = await motivoHorarioNoDisponible(supabase, data.fecha, data.horario);
+    if (motivo) {
+      return NextResponse.json({ error: motivo }, { status: 409 });
     }
 
     if (data.proyectoId) {
@@ -152,6 +143,7 @@ export async function POST(request: Request) {
        <p>Al llegar, preguntá por <b>Matías De Nunzio</b>.</p>
        <p>Cualquier consulta antes de la visita, escribinos por WhatsApp al <a href="https://wa.me/5491127424512">11-2742-4512</a> o comunicate a la oficina.</p>
        <p>¡Te esperamos!</p>
+       ${visitaId ? bloqueReprogramarHtml(visitaId) : ""}
        ${NOTA_COORDINACION_VISITA_HTML}
        ${NOTA_RESERVA_LOTE_HTML}`
     );
