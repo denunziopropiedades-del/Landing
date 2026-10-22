@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   return {
     title: titulo,
     description: descripcion,
-    alternates: { canonical: `/proyectos/${proyecto.slug}` },
+    alternates: { canonical: `/desarrollos/${proyecto.slug}` },
     openGraph: {
       title: titulo,
       description: descripcion,
@@ -111,7 +111,7 @@ export default async function ProyectoPage({ params }: { params: Promise<Params>
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
-      <Navbar numero={numero} marca={proyecto.nombre} links={NAV_LINKS_PROYECTO} logoHref={`/proyectos/${proyecto.slug}`} />
+      <Navbar numero={numero} marca={proyecto.nombre} links={NAV_LINKS_PROYECTO} logoHref={`/desarrollos/${proyecto.slug}`} />
       <main>
         <Hero
           eyebrow={proyecto.ubicacion}

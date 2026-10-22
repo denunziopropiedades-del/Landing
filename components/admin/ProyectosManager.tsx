@@ -182,7 +182,7 @@ export default function ProyectosManager({ proyectos }: { proyectos: Proyecto[] 
                   )}
                 </p>
                 <p className="text-xs text-brand-black/50">
-                  /proyectos/{p.slug} · {p.ubicacion}
+                  /desarrollos/{p.slug} · {p.ubicacion}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-4 text-sm">

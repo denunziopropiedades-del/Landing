@@ -161,7 +161,7 @@ export async function upsertProyectoAction(_prev: ActionResult | null, formData:
     }
 
     revalidatePath("/admin/proyectos");
-    revalidatePath("/proyectos");
+    revalidatePath("/desarrollos");
     revalidatePath("/");
     return { ok: true };
   } catch (err) {
@@ -177,7 +177,7 @@ export async function publicarProyectoAction(id: string, publicado: boolean): Pr
     if (error) throw new Error(error.message);
     await registrarActividad(actor, publicado ? "publicar" : "despublicar", "proyecto", id);
     revalidatePath("/admin/proyectos");
-    revalidatePath("/proyectos");
+    revalidatePath("/desarrollos");
     revalidatePath("/");
     return { ok: true };
   } catch (err) {
@@ -193,7 +193,7 @@ export async function eliminarProyectoAction(id: string): Promise<ActionResult> 
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "eliminar", "proyecto", id);
     revalidatePath("/admin/proyectos");
-    revalidatePath("/proyectos");
+    revalidatePath("/desarrollos");
     revalidatePath("/");
     return { ok: true };
   } catch (err) {
@@ -277,7 +277,7 @@ export async function importarLotesExcelAction(_prev: ImportResult | null, formD
     }
 
     revalidatePath("/admin/lotes");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true, creadosOActualizados: filas.length, filasConError };
   } catch (err) {
     return fail(err) as ImportResult;
@@ -357,7 +357,7 @@ export async function actualizarEstadosLotesAction(_prev: ImportResult | null, f
 
     await registrarActividad(actor, "actualizar-estados", "lote", proyectoId, { cantidad: actualizados });
     revalidatePath("/admin/lotes");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true, creadosOActualizados: actualizados, filasConError };
   } catch (err) {
     return fail(err) as ImportResult;
@@ -586,7 +586,7 @@ export async function recalcularPosicionesLotesAction(
 
     await registrarActividad(actor, "calibrar-plano", "proyecto", proyectoId, { cantidad: actualizaciones.length });
     revalidatePath("/admin/lotes");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -640,7 +640,7 @@ export async function recalcularPosicionesBloquesAction(
 
     await registrarActividad(actor, "calibrar-plano", "proyecto", proyectoId, { cantidad: actualizaciones.length });
     revalidatePath("/admin/lotes");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -684,7 +684,7 @@ export async function upsertLoteAction(_prev: ActionResult | null, formData: For
     }
 
     revalidatePath("/admin/lotes");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -730,7 +730,7 @@ export async function actualizarPrecioPorMedidaAction(
 
     await registrarActividad(actor, "actualizar-precio-medida", "lote", proyectoId, { dimensiones, ...payload, cantidad: count });
     revalidatePath("/admin/lotes");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -746,7 +746,7 @@ export async function eliminarLoteAction(id: string): Promise<ActionResult> {
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "eliminar", "lote", id, ctx);
     revalidatePath("/admin/lotes");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -761,7 +761,7 @@ export async function eliminarLotesAction(ids: string[]): Promise<ActionResult> 
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "eliminar-masivo", "lote", null, { cantidad: ids.length });
     revalidatePath("/admin/lotes");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -796,7 +796,7 @@ export async function actualizarPreciosMasivoAction(
 
     await registrarActividad(actor, "actualizar-precio-masivo", "lote", null, { cantidad: ids.length, modo, valor });
     revalidatePath("/admin/lotes");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -811,7 +811,7 @@ export async function actualizarEstadoLotesMasivoAction(ids: string[], estado: E
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "actualizar-estado-masivo", "lote", null, { cantidad: ids.length, estado });
     revalidatePath("/admin/lotes");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -827,7 +827,7 @@ export async function actualizarEstadoLoteAction(id: string, estado: EstadoLote)
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "cambiar-estado", "lote", id, { ...ctx, estado });
     revalidatePath("/admin/lotes");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -881,7 +881,7 @@ export async function upsertFinanciacionAction(_prev: ActionResult | null, formD
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "actualizar", "financiacion", proyectoId);
     revalidatePath("/admin/contenido");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -912,7 +912,7 @@ export async function upsertComboLotesAction(_prev: ActionResult | null, formDat
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "actualizar", "combos-lotes", proyectoId);
     revalidatePath("/admin/lotes");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -941,7 +941,7 @@ export async function upsertPromocionAction(_prev: ActionResult | null, formData
     await registrarActividad(actor, id ? "actualizar" : "crear", "promocion", id || null, payload);
 
     revalidatePath("/admin/contenido");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -1049,7 +1049,7 @@ export async function addGaleriaItemAction(_prev: ActionResult | null, formData:
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "crear", "galeria", data.id);
     revalidatePath("/admin/galeria");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -1075,7 +1075,7 @@ export async function addGaleriaItemsMasivoAction(
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "crear-masivo", "galeria", proyectoId, { cantidad: items.length });
     revalidatePath("/admin/galeria");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -1091,7 +1091,7 @@ export async function actualizarGaleriaItemAction(id: string, titulo: string): P
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "actualizar", "galeria", id, { titulo: titulo.trim() });
     revalidatePath("/admin/galeria");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -1106,7 +1106,7 @@ export async function deleteGaleriaItemAction(id: string): Promise<ActionResult>
     if (error) throw new Error(error.message);
     await registrarActividad(actor, "eliminar", "galeria", id);
     revalidatePath("/admin/galeria");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -1131,7 +1131,7 @@ export async function upsertProgresoAction(_prev: ActionResult | null, formData:
     if (error) throw new Error(error.message);
     await registrarActividad(actor, id ? "actualizar" : "crear", "progreso", id || null);
     revalidatePath("/admin/lotes");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);
@@ -1442,7 +1442,7 @@ export async function asignarLoteLeadAction(leadId: string, loteId: string | nul
     await registrarActividad(actor, "asignar-lote", "lead", leadId, await contextoLead(admin, leadId));
     revalidatePath("/admin/crm");
     revalidatePath("/admin/lotes");
-    revalidatePath("/proyectos/[slug]", "page");
+    revalidatePath("/desarrollos/[slug]", "page");
     return { ok: true };
   } catch (err) {
     return fail(err);

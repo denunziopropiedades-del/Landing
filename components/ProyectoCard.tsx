@@ -6,7 +6,7 @@ import type { Proyecto } from "@/types/site";
 export default function ProyectoCard({ proyecto }: { proyecto: Proyecto }) {
   return (
     <Link
-      href={`/proyectos/${proyecto.slug}`}
+      href={`/desarrollos/${proyecto.slug}`}
       className="group flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-brand-black">

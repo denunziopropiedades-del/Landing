@@ -9,6 +9,13 @@ const nextConfig: NextConfig = {
   // pdfkit necesita sus archivos de métricas de fuentes (.afm) en tiempo de
   // ejecución; sin esto, Vercel no los incluye en el paquete de la función
   // serverless y la generación de PDF falla en silencio en producción.
+  // "Proyectos" pasó a llamarse "Desarrollos": los links viejos (anuncios, WhatsApp) siguen funcionando.
+  async redirects() {
+    return [
+      { source: "/proyectos", destination: "/desarrollos", permanent: true },
+      { source: "/proyectos/:slug", destination: "/desarrollos/:slug", permanent: true },
+    ];
+  },
   outputFileTracingIncludes: {
     "/api/mercadopago/webhook": ["./node_modules/pdfkit/js/data/**/*"],
     "/api/leads/exportar-pdf": ["./node_modules/pdfkit/js/data/**/*"],

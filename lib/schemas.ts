@@ -43,6 +43,25 @@ export const contactoSchema = z.object({
 
 export type ContactoInput = z.infer<typeof contactoSchema>;
 
+/** Consulta por una propiedad publicada o pedido de tasación. */
+export const consultaPropiedadSchema = z.object({
+  nombre: z.string().trim().min(2, "Ingresá tu nombre"),
+  email: z.string().trim().email("Ingresá un mail válido"),
+  telefono: z.string().trim().min(6, "Teléfono inválido"),
+  mensaje: z.string().trim().max(2000).optional(),
+  propiedadId: z.string().uuid().optional(),
+  tasacion: z
+    .object({
+      operacion: z.enum(["venta", "alquiler", "ambas"]),
+      tipo: z.string().trim().min(1, "Elegí el tipo"),
+      partido: z.string().trim().min(1, "Elegí el partido"),
+      direccion: z.string().trim().max(200).optional(),
+    })
+    .optional(),
+});
+
+export type ConsultaPropiedadInput = z.infer<typeof consultaPropiedadSchema>;
+
 export const visitaSchema = z.object({
   proyectoId: z.string().optional(),
   nombre: z.string().trim().min(2, "Ingresá tu nombre"),

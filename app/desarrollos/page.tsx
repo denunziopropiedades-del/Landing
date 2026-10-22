@@ -7,11 +7,11 @@ import { getProyectos, getSiteTextos } from "@/lib/content";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Proyectos",
-  description: "Descubrí todos los lotes disponibles de nuestra inmobiliaria.",
+  title: "Desarrollos",
+  description: "Desarrollos y loteos con escritura garantizada: lotes en venta con financiación propia.",
 };
 
-export default async function ProyectosPage() {
+export default async function DesarrollosPage() {
   const [proyectos, textos] = await Promise.all([getProyectos(), getSiteTextos()]);
 
   return (
@@ -20,9 +20,9 @@ export default async function ProyectosPage() {
       <main className="bg-brand-cream pb-20 pt-32 sm:pb-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
-            <h1 className="font-display text-4xl font-bold text-brand-black">Nuestros proyectos</h1>
+            <h1 className="font-display text-4xl font-bold text-brand-black">Desarrollos</h1>
             <p className="mt-3 text-brand-black/70">
-              Lotes con escritura garantizada en las zonas de mayor crecimiento del Gran Buenos Aires.
+              Loteos con escritura garantizada y financiación propia en las zonas de mayor crecimiento.
             </p>
           </div>
 
