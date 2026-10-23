@@ -6,6 +6,7 @@ import { requireRole, AdminActionError } from "@/lib/admin/auth";
 import { registrarActividad } from "@/lib/admin/activity";
 import { mapPropiedad, slugify, type Propiedad } from "@/lib/propiedades-base";
 import { getPartido } from "@/lib/zonas";
+import { sanitizarHtml } from "@/lib/texto-enriquecido";
 
 type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
@@ -83,7 +84,7 @@ export async function upsertPropiedadAction(_prev: ActionResult | null, fd: Form
 
     const payload = {
       titulo,
-      descripcion: str(fd, "descripcion"),
+      descripcion: sanitizarHtml(str(fd, "descripcion")),
       operacion: str(fd, "operacion"),
       tipo,
       partido,

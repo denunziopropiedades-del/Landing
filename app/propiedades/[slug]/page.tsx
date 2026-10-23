@@ -8,6 +8,7 @@ import ConsultaForm from "@/components/propiedades/ConsultaForm";
 import { getSiteTextos } from "@/lib/content";
 import { esRural, formatearPrecio, getPropiedadBySlug, labelSituacion, labelTipo, SITUACIONES, ubicacionTexto } from "@/lib/propiedades";
 import { getPartido } from "@/lib/zonas";
+import { esHtml, sanitizarHtml } from "@/lib/texto-enriquecido";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
 export const revalidate = 60;
@@ -146,7 +147,14 @@ export default async function PropiedadPage({ params }: { params: Promise<Params
           {p.descripcion && (
             <div className="mt-8">
               <h2 className="font-display text-xl font-bold text-brand-black">Descripción</h2>
-              <p className="mt-2 whitespace-pre-line leading-relaxed text-brand-black/75">{p.descripcion}</p>
+              {esHtml(p.descripcion) ? (
+                <div
+                  className="mt-2 leading-relaxed text-brand-black/80 [&_b]:font-bold [&_h3]:mt-4 [&_h3]:text-lg [&_h3]:font-bold [&_i]:italic [&_li]:ml-5 [&_ol]:list-decimal [&_p]:mb-3 [&_span]:rounded-sm [&_u]:underline [&_ul]:list-disc"
+                  dangerouslySetInnerHTML={{ __html: sanitizarHtml(p.descripcion) }}
+                />
+              ) : (
+                <p className="mt-2 whitespace-pre-line leading-relaxed text-brand-black/75">{p.descripcion}</p>
+              )}
             </div>
           )}
 

@@ -11,6 +11,7 @@ import {
 import { isCloudinaryConfigured, uploadToCloudinary } from "@/lib/cloudinary-client";
 import { esRural, formatearPrecio, labelTipo, SITUACIONES, TIPOS, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
 import { ZONAS } from "@/lib/zonas";
+import EditorTexto from "@/components/admin/EditorTexto";
 
 const inputClass = "w-full rounded-lg border border-black/10 px-3 py-2 text-sm focus:border-brand-green-600 focus:outline-none";
 const labelClass = "mb-1 block text-xs font-medium text-brand-black/70";
@@ -226,7 +227,11 @@ function PropiedadForm({ propiedad, onDone }: { propiedad?: Propiedad; onDone: (
 
       <div className="sm:col-span-6">
         <label className={labelClass}>Descripción</label>
-        <textarea name="descripcion" rows={4} defaultValue={propiedad?.descripcion} className={inputClass} />
+        <EditorTexto
+          name="descripcion"
+          valorInicial={propiedad?.descripcion ?? ""}
+          placeholder="Contá lo mejor de la propiedad. Podés usar negrita, cursiva, resaltar y elegir el tipo de letra."
+        />
       </div>
       <div className="sm:col-span-6">
         <label className={labelClass}>Etiquetas (separadas por coma, se muestran sobre la foto)</label>
