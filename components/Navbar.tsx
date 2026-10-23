@@ -10,6 +10,7 @@ import {
   House,
   KeyRound,
   LayoutGrid,
+  Map as MapIcon,
   MapPin,
   Menu,
   MessageCircle,
@@ -30,6 +31,7 @@ export const NAV_LINKS_PORTAL: NavLink[] = [
   { href: "/alquilar", label: "Alquilar", icon: KeyRound, descripcion: "Casas y departamentos en alquiler" },
   { href: "/campos", label: "Campos", icon: Wheat, descripcion: "Venta y arrendamiento por hectárea" },
   { href: "/desarrollos", label: "DESARROLLOS", icon: LayoutGrid, descripcion: "Lotes en Ayres de Guernica y más", destacado: true },
+  { href: "/mapa", label: "Mapa", icon: MapIcon, descripcion: "Todas las ubicaciones en el mapa" },
   { href: "/zonas", label: "Zonas", icon: MapPin, descripcion: "Gran La Plata · Corredor Sur · Ruta 3 y 205 · Ribera" },
   { href: "/tasaciones", label: "Tasaciones", icon: ClipboardCheck, descripcion: "Vendé o alquilá con nosotros" },
 ];

@@ -12,27 +12,28 @@ import BuscadorPropiedades from "@/components/propiedades/BuscadorPropiedades";
 import ZonasGrid from "@/components/propiedades/ZonasGrid";
 import PropiedadCard from "@/components/propiedades/PropiedadCard";
 import { getBanners, getFaqs, getProyectos, getSiteTextos, getTestimonios } from "@/lib/content";
-import { getConteoPorPartido, getPropiedades, TIPOS_RURALES, TIPOS } from "@/lib/propiedades";
+import { getConteoPorPartido, getPropiedades } from "@/lib/propiedades";
+import { getPuntosMapa } from "@/lib/mapa";
+import MapaPuntos from "@/components/mapa/MapaPuntos";
 
 export const revalidate = 60;
 
 const IMAGEN_HERO = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2400&auto=format&fit=crop";
-const TIPOS_URBANOS = TIPOS.filter((t) => !TIPOS_RURALES.includes(t.value)).map((t) => t.value);
 
 export default async function PortalHome() {
-  const [proyectos, testimonios, faqs, banners, textos, destacadas, campos, conteo] = await Promise.all([
+  // Portada limpia: solo lo marcado como destacado. El resto está en Comprar, Alquilar, Campos y Desarrollos.
+  const [proyectos, testimonios, faqs, banners, textos, destacadas, conteo, puntos] = await Promise.all([
     getProyectos(),
     getTestimonios(),
     getFaqs(),
     getBanners(),
     getSiteTextos(),
-    getPropiedades({ tipos: TIPOS_URBANOS, limite: 8 }),
-    getPropiedades({ tipos: TIPOS_RURALES, limite: 4 }),
+    getPropiedades({ destacadas: true, limite: 8 }),
     getConteoPorPartido(),
+    getPuntosMapa(),
   ]);
 
-  const proyectosDestacados = proyectos.filter((p) => p.destacado);
-  const desarrollos = (proyectosDestacados.length > 0 ? proyectosDestacados : proyectos).slice(0, 3);
+  const desarrollos = proyectos.filter((p) => p.destacado).slice(0, 3);
 
   return (
     <>
@@ -106,6 +107,24 @@ export default async function PortalHome() {
           </section>
         )}
 
+        {/* Mapa */}
+        {puntos.length > 0 && (
+          <section className="bg-brand-cream pb-16 sm:pb-20">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-green-700">Mapa</p>
+                  <h2 className="mt-1.5 font-display text-3xl font-bold text-brand-black">Dónde están nuestras propiedades</h2>
+                </div>
+                <Link href="/mapa" className="font-semibold text-brand-green-700 hover:underline">
+                  Ver mapa completo →
+                </Link>
+              </div>
+              <MapaPuntos puntos={puntos} alto={460} compacto />
+            </div>
+          </section>
+        )}
+
         {/* Campos */}
         <section className="bg-brand-cream pb-16 sm:pb-20">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -129,22 +148,14 @@ export default async function PortalHome() {
                   </Link>
                 </div>
               </div>
-              {campos.length > 0 ? (
-                <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                  {campos.map((p) => (
-                    <PropiedadCard key={p.id} propiedad={p} />
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-6 flex flex-col items-start gap-3 rounded-2xl bg-white/70 p-5 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-brand-black/75">
-                    ¿Tenés un campo para vender o arrendar en Lobos, Monte, Saladillo, Roque Pérez, Cañuelas o la Ribera?
-                  </p>
-                  <Link href="/tasaciones" className="shrink-0 rounded-full bg-brand-black px-5 py-2.5 text-sm font-bold text-white">
-                    Pedí tu tasación
-                  </Link>
-                </div>
-              )}
+              <div className="mt-6 flex flex-col items-start gap-3 rounded-2xl bg-white/70 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-brand-black/75">
+                  ¿Tenés un campo para vender o arrendar en Lobos, Monte, Saladillo, Roque Pérez, Cañuelas o la Ribera?
+                </p>
+                <Link href="/tasaciones" className="shrink-0 rounded-full bg-brand-black px-5 py-2.5 text-sm font-bold text-white">
+                  Pedí tu tasación
+                </Link>
+              </div>
             </div>
           </div>
         </section>
@@ -168,11 +179,13 @@ export default async function PortalHome() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
-            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {desarrollos.map((p) => (
-                <ProyectoCard key={p.id} proyecto={p} />
-              ))}
-            </div>
+            {desarrollos.length > 0 && (
+              <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {desarrollos.map((p) => (
+                  <ProyectoCard key={p.id} proyecto={p} />
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
