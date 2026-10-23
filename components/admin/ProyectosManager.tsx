@@ -34,13 +34,14 @@ function ProyectoForm({ proyecto, onDone }: { proyecto?: Proyecto; onDone?: () =
         <input name="ubicacion" defaultValue={proyecto?.ubicacion} required className={inputClass} />
       </div>
       <div>
-        <label className={labelClass}>Link de Google Maps (opcional, para el mail de confirmación de visita)</label>
+        <label className={labelClass}>Ubicación en el mapa: coordenadas o link de Google Maps</label>
         <input
           name="ubicacionMapsUrl"
           defaultValue={proyecto?.ubicacionMapsUrl ?? ""}
-          placeholder="https://maps.app.goo.gl/..."
+          placeholder="-34.8955, -58.3324  o  https://maps.app.goo.gl/..."
           className={inputClass}
         />
+        <p className="mt-1 text-[11px] text-brand-black/50">Para que el punto del mapa quede exacto: en Google Maps hacé clic derecho sobre el lugar, tocá las coordenadas (ej. -34.9135, -58.3843) y pegalas acá. También sirve el link de “Compartir”.</p>
       </div>
       <div>
         <label className={labelClass}>WhatsApp (opcional, sino usa el general)</label>

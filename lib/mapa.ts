@@ -36,11 +36,8 @@ async function resolverLink(url: string): Promise<Coordenadas | null> {
         signal: AbortSignal.timeout(4000),
       });
       const destino = r.headers.get("location");
-      if (!destino) {
-        // Sin redirección: a veces las coordenadas vienen en el HTML.
-        if (r.ok) return coordsDesdeTexto((await r.text()).match(/@-?\d{1,2}\.\d+,-?\d{1,3}\.\d+/)?.[0] ?? null);
-        return null;
-      }
+      // Sin redirección no hay coordenadas confiables: mejor ubicación aproximada que un punto equivocado.
+      if (!destino) return null;
       actual = new URL(destino, actual).toString();
     } catch {
       return null;

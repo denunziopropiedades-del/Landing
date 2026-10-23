@@ -1,5 +1,6 @@
 "use server";
 
+import { normalizarLinkMaps } from "@/lib/geo";
 import { revalidatePath } from "next/cache";
 import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/server";
 import { requireRole, AdminActionError } from "@/lib/admin/auth";
@@ -90,7 +91,7 @@ export async function upsertPropiedadAction(_prev: ActionResult | null, fd: Form
       partido,
       localidad: optStr(fd, "localidad"),
       direccion: optStr(fd, "direccion"),
-      maps_url: optStr(fd, "mapsUrl"),
+      maps_url: normalizarLinkMaps(optStr(fd, "mapsUrl")),
       precio: optNum(fd, "precio"),
       moneda: str(fd, "moneda") === "ARS" ? "ARS" : "USD",
       precio_unidad: str(fd, "precioUnidad") || "total",

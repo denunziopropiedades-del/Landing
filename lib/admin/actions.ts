@@ -1,5 +1,6 @@
 "use server";
 
+import { normalizarLinkMaps } from "@/lib/geo";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/server";
@@ -135,7 +136,7 @@ export async function upsertProyectoAction(_prev: ActionResult | null, formData:
       slug: optStr(formData, "slug") ?? slugify(nombre),
       descripcion: str(formData, "descripcion"),
       ubicacion: str(formData, "ubicacion"),
-      ubicacion_maps_url: optStr(formData, "ubicacionMapsUrl"),
+      ubicacion_maps_url: normalizarLinkMaps(optStr(formData, "ubicacionMapsUrl")),
       meta_descripcion: optStr(formData, "metaDescripcion"),
       imagen_portada: optStr(formData, "imagenPortada"),
       whatsapp_numero: optStr(formData, "whatsappNumero"),

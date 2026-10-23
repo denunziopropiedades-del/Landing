@@ -74,3 +74,15 @@ export function coordsDesdeTexto(texto: string | null | undefined): Coordenadas 
 }
 
 export const esLinkCorto = (url: string) => /^https?:\/\/(maps\.app\.goo\.gl|goo\.gl\/maps|g\.co\/kgs|maps\.google\.[a-z.]+\/\?cid)/i.test(url.trim());
+
+/**
+ * Lo que se carga en "Link de Google Maps": si son coordenadas sueltas ("-34.91, -58.38",
+ * copiadas con clic derecho en Google Maps), se guardan como link de Google Maps.
+ */
+export function normalizarLinkMaps(valor: string | null | undefined): string | null {
+  const v = (valor ?? "").trim();
+  if (!v) return null;
+  if (/^https?:\/\//i.test(v)) return v;
+  const c = coordsDesdeTexto(v);
+  return c ? `https://www.google.com/maps?q=${c.lat},${c.lng}` : v;
+}
