@@ -10,7 +10,7 @@ import {
   type ClienteParaDocumento,
   type DocumentoGenerado,
 } from "@/lib/admin/documentos-actions";
-import { camposDe, contarBlancos, convertirBlancos, formatearValor, nombreArchivo, sugerencias, type Campo, type Modelo } from "@/lib/documentos/plantillas";
+import { camposDe, contarBlancos, contarPorcentajes, convertirBlancos, convertirPorcentajes, formatearValor, nombreArchivo, sugerencias, type Campo, type Modelo } from "@/lib/documentos/plantillas";
 import { textoDeDocx } from "@/lib/documentos/docx";
 
 const input = "w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm focus:border-brand-green-600 focus:outline-none";
@@ -55,10 +55,10 @@ function Vista({ cuerpo, valores, campos, firma }: { cuerpo: string; valores: Re
   const html = useMemo(() => {
     const esc = (t: string) => t.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]!);
     let t = esc(cuerpo);
-    t = t.replace(/\{\{\s*([^{}|=]+?)\s*(?:\|[^{}=]*?)?(?:=([^{}]*?))?\s*\}\}/g, (_x, et: string, def: string | undefined) => {
+    t = t.replace(/\{\{\s*([^{}|=]+?)\s*(?:\|([^{}=]*?))?(?:=([^{}]*?))?\s*\}\}/g, (_x, et: string, tipoOc: string | undefined, def: string | undefined) => {
       const c = porClave.get(et.trim().toLowerCase());
-      const v = valores[et.trim().toLowerCase()] || def || "";
-      const txt = v ? esc(formatearValor(c?.tipo ?? "texto", v)) : "________________";
+      const v = valores[et.trim().toLowerCase()] || def || c?.porDefecto || "";
+      const txt = v ? esc(formatearValor(tipoOc?.trim().toLowerCase() || c?.tipo || "texto", v)) : "________________";
       return `<mark class="${v ? "lleno" : "vacio"}" title="${esc(et.trim())}">${txt}</mark>`;
     });
     t = t.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
@@ -88,7 +88,7 @@ function EditorModelo({ modelo, onCerrar, onGuardado }: { modelo?: Modelo; onCer
   const [pend, start] = useTransition();
   const archivo = useRef<HTMLInputElement>(null);
   const campos = camposDe(cuerpo);
-  const xs = contarBlancos(cuerpo);
+  const xs = contarBlancos(cuerpo) + contarPorcentajes(cuerpo);
   const [aviso, setAviso] = useState<string | null>(null);
 
   const subir = async (f: File) => {
@@ -96,7 +96,7 @@ function EditorModelo({ modelo, onCerrar, onGuardado }: { modelo?: Modelo; onCer
     try {
       const texto = /\.docx$/i.test(f.name) ? await textoDeDocx(f) : await f.text();
       // Los espacios para completar del Word ("_____" o "XXXX") se convierten solos en campos.
-      const convertido = contarBlancos(texto) > 0 ? convertirBlancos(texto) : texto;
+      const convertido = convertirPorcentajes(convertirBlancos(texto));
       setCuerpo(convertido);
       const total = camposDe(convertido).length;
       setAviso(
@@ -110,7 +110,7 @@ function EditorModelo({ modelo, onCerrar, onGuardado }: { modelo?: Modelo; onCer
     }
   };
 
-  const convertirXs = () => setCuerpo((c) => convertirBlancos(c));
+  const convertirXs = () => setCuerpo((c) => convertirPorcentajes(convertirBlancos(c)));
 
   const renombrar = (c: Campo, nuevo: string) => {
     const limpio = nuevo.replace(/[{}|=]/g, "").trim();
@@ -158,7 +158,7 @@ function EditorModelo({ modelo, onCerrar, onGuardado }: { modelo?: Modelo; onCer
         <input ref={archivo} type="file" accept=".docx,.txt,text/plain" hidden onChange={(e) => e.target.files?.[0] && subir(e.target.files[0])} />
         {xs > 0 && (
           <button type="button" onClick={convertirXs} className="inline-flex items-center gap-2 rounded-lg bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-200">
-            <Wand2 className="h-4 w-4" /> Convertir {xs} espacios en blanco en campos
+            <Wand2 className="h-4 w-4" /> Convertir {xs} espacios en blanco y porcentajes en campos
           </button>
         )}
       </div>
@@ -169,7 +169,7 @@ function EditorModelo({ modelo, onCerrar, onGuardado }: { modelo?: Modelo; onCer
           <textarea id="mod-cuerpo" className={`${input} min-h-[380px] font-mono text-[13px] leading-relaxed`} value={cuerpo} onChange={(e) => setCuerpo(e.target.value)} placeholder="Pegá acá el texto del contrato o escrito…" />
           <p className="mt-2 text-xs leading-relaxed text-brand-black/60">
             Marcá los datos variables entre llaves dobles: <code>{"{{Nombre del cliente}}"}</code>. Opcional: tipo <code>{"{{Fecha de firma|fecha}}"}</code>,{" "}
-            <code>{"|hora"}</code>, <code>{"|numero"}</code>; valor por defecto <code>{"{{Localidad=La Plata}}"}</code>. <code>**texto**</code> va en negrita y una línea con{" "}
+            <code>{"|hora"}</code>, <code>{"|numero"}</code>, <code>{"|porcentaje en letras"}</code>; valor por defecto <code>{"{{Localidad=La Plata}}"}</code>. <code>**texto**</code> va en negrita y una línea con{" "}
             <code>[FIRMA]</code> ubica la firma y sello.
           </p>
         </div>
@@ -468,7 +468,7 @@ export default function DocumentosManager({
                       {c.tipo === "texto largo" ? (
                         <textarea rows={3} {...props} />
                       ) : (
-                        <input type={c.tipo === "fecha" ? "date" : c.tipo === "hora" ? "time" : "text"} inputMode={c.tipo === "numero" ? "decimal" : undefined} {...props} />
+                        <input type={c.tipo === "fecha" ? "date" : c.tipo === "hora" ? "time" : "text"} inputMode={c.tipo === "numero" || c.tipo === "porcentaje" ? "decimal" : undefined} {...props} />
                       )}
                     </div>
                   );

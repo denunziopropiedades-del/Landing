@@ -9,7 +9,7 @@
  * Sin dependencias de servidor: se usa también en el navegador.
  */
 
-export type TipoCampo = "texto" | "fecha" | "hora" | "numero" | "texto largo";
+export type TipoCampo = "texto" | "fecha" | "hora" | "numero" | "porcentaje" | "texto largo";
 
 export type Campo = { clave: string; etiqueta: string; tipo: TipoCampo; porDefecto: string };
 
@@ -23,7 +23,7 @@ export type Modelo = {
 
 const RE_CAMPO = /\{\{\s*([^{}|=]+?)\s*(?:\|\s*([^{}=]+?)\s*)?(?:=\s*([^{}]*?)\s*)?\}\}/g;
 
-const TIPOS: TipoCampo[] = ["texto", "fecha", "hora", "numero", "texto largo"];
+const TIPOS: TipoCampo[] = ["texto", "fecha", "hora", "numero", "porcentaje", "texto largo"];
 
 /** Campos de un modelo, en orden de aparición y sin repetir. */
 export function camposDe(cuerpo: string): Campo[] {
@@ -31,13 +31,123 @@ export function camposDe(cuerpo: string): Campo[] {
   for (const m of cuerpo.matchAll(RE_CAMPO)) {
     const etiqueta = m[1].trim();
     const clave = etiqueta.toLowerCase();
-    const tipoRaw = (m[2] ?? "texto").trim().toLowerCase() as TipoCampo;
+    const tipoRaw = (m[2] ?? "texto").trim().toLowerCase().replace(/^porcentaje.*/, "porcentaje") as TipoCampo;
     const tipo = TIPOS.includes(tipoRaw) ? tipoRaw : "texto";
     const previo = vistos.get(clave);
     if (!previo) vistos.set(clave, { clave, etiqueta, tipo, porDefecto: (m[3] ?? "").trim() });
+    else if (tipo === "porcentaje" && previo.tipo === "numero") previo.tipo = "porcentaje";
     else if (!previo.porDefecto && m[3]) previo.porDefecto = m[3].trim();
   }
   return [...vistos.values()];
+}
+
+const UNIDADES = ["cero", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "once", "doce", "trece", "catorce", "quince", "dieciséis", "diecisiete", "dieciocho", "diecinueve", "veinte", "veintiuno", "veintidós", "veintitrés", "veinticuatro", "veinticinco", "veintiséis", "veintisiete", "veintiocho", "veintinueve"];
+const DECENAS = ["", "", "", "treinta", "cuarenta", "cincuenta", "sesenta", "setenta", "ochenta", "noventa"];
+
+/** Enteros de 0 a 100 en letras ("cuarenta", "treinta y cinco", "cien"). */
+export function numeroEnLetras(n: number): string | null {
+  if (!Number.isInteger(n) || n < 0 || n > 100) return null;
+  if (n === 100) return "cien";
+  if (n < 30) return UNIDADES[n];
+  const d = Math.floor(n / 10);
+  const u = n % 10;
+  return u ? `${DECENAS[d]} y ${UNIDADES[u]}` : DECENAS[d];
+}
+
+const NUM_LETRAS = `(?:${[...UNIDADES, ...DECENAS.filter(Boolean), "cien"].sort((a, b) => b.length - a.length).join("|")})(?:\\s+y\\s+(?:${UNIDADES.slice(1, 10).join("|")}))?`;
+// "CUARENTA POR CIENTO (40%)", "40%" y repartos tipo "60/40" (que sumen 100).
+const RE_PORCENTAJE = new RegExp(
+  `\\b(${NUM_LETRAS})\\s+por\\s+ciento\\s*\\(\\s*(\\d+(?:[.,]\\d+)?)\\s*%\\s*\\)` +
+    `|(\\d+(?:[.,]\\d+)?)\\s*%` +
+    `|\\b(\\d{1,2})\\s*\\/\\s*(\\d{1,2})\\b`,
+  "gi",
+);
+
+const esReparto = (a: string, b: string) => Number(a) + Number(b) === 100;
+
+/** Cuántos porcentajes escritos a mano hay (fuera de campos ya marcados). */
+export function contarPorcentajes(cuerpo: string) {
+  const sinCampos = cuerpo.replace(RE_CAMPO, "");
+  let n = 0;
+  for (const m of sinCampos.matchAll(RE_PORCENTAJE)) if (m[1] || m[3] || (m[4] && esReparto(m[4], m[5]))) n++;
+  return n;
+}
+
+/**
+ * Convierte los porcentajes del texto en campos, para cambiarlos en cada contrato.
+ * Cada valor distinto es un campo con el valor original por defecto, nombrado según la
+ * parte que aparece cerca ("Porcentaje de El comercializador"); los de cláusulas penales,
+ * multas o intereses van aparte. La versión en letras se escribe sola:
+ * 35 → "TREINTA Y CINCO POR CIENTO (35%)".
+ */
+export function convertirPorcentajes(cuerpo: string): string {
+  type Ocurrencia = { inicio: number; fin: number; valores: string[]; formato: string[]; penal: boolean };
+  const protegidos = [...cuerpo.matchAll(RE_CAMPO)].map((m) => [m.index!, m.index! + m[0].length]);
+  const dentro = (i: number) => protegidos.some(([a, b]) => i >= a && i < b);
+  const ocurrencias: Ocurrencia[] = [];
+  for (const m of cuerpo.matchAll(RE_PORCENTAJE)) {
+    const inicio = m.index!;
+    if (dentro(inicio)) continue;
+    const fin = inicio + m[0].length;
+    // Cláusula penal, multas o intereses: se buscan desde el último título o punto y aparte.
+    const parrafo = cuerpo.slice(Math.max(0, cuerpo.lastIndexOf("\n\n", inicio - 1)), inicio);
+    const tituloPrevio = cuerpo.slice(Math.max(0, inicio - 600), inicio).split("\n").filter((l) => l.trim()).slice(-2).join(" ");
+    const penal = /penal|multa|inter[eé]s|mora\b/i.test(parrafo + " " + tituloPrevio);
+    if (m[1]) {
+      const minus = m[1] === m[1].toLowerCase();
+      ocurrencias.push({ inicio, fin, valores: [m[2]], formato: [minus ? "porcentaje en minusculas" : "porcentaje en letras"], penal });
+    } else if (m[3]) ocurrencias.push({ inicio, fin, valores: [m[3]], formato: ["porcentaje"], penal });
+    else if (m[4] && esReparto(m[4], m[5])) ocurrencias.push({ inicio, fin, valores: [m[4], m[5]], formato: ["numero", "numero"], penal: false });
+  }
+  if (!ocurrencias.length) return cuerpo;
+
+  // Votos: qué parte ("EL POSEEDOR", "LA LOCATARIA"…) aparece más cerca de cada valor.
+  const RE_PARTE = /\b(EL|LA|LOS|LAS)\s+([A-ZÁÉÍÓÚÑ]{4,}(?:\s+[A-ZÁÉÍÓÚÑ]{4,})?)/g;
+  const votos = new Map<string, Map<string, number>>();
+  for (const o of ocurrencias) {
+    if (o.valores.length > 1 || o.penal) continue;
+    const v = o.valores[0];
+    const antes = cuerpo.slice(Math.max(0, o.inicio - 120), o.inicio);
+    const despues = cuerpo.slice(o.fin, o.fin + 60);
+    const cerca: { parte: string; dist: number }[] = [];
+    for (const p of despues.matchAll(RE_PARTE)) cerca.push({ parte: `${p[1]} ${p[2]}`, dist: p.index! });
+    for (const p of antes.matchAll(RE_PARTE)) cerca.push({ parte: `${p[1]} ${p[2]}`, dist: antes.length - p.index! - p[0].length + 10 });
+    const elegida = cerca.filter((c) => c.parte !== "LAS PARTES").sort((a, b) => a.dist - b.dist)[0];
+    if (!elegida) continue;
+    const mapa = votos.get(v) ?? new Map<string, number>();
+    mapa.set(elegida.parte, (mapa.get(elegida.parte) ?? 0) + 1);
+    votos.set(v, mapa);
+  }
+
+  const usados = new Set(camposDe(cuerpo).map((c) => c.clave));
+  const nombres = new Map<string, string>();
+  const asignar = (clave: string, nombre: string) => {
+    let final = nombre;
+    let k = 2;
+    while (usados.has(final.toLowerCase())) final = `${nombre} ${k++}`;
+    usados.add(final.toLowerCase());
+    nombres.set(clave, final);
+  };
+  let n = 0;
+  for (const o of ocurrencias) {
+    o.valores.forEach((v) => {
+      const clave = o.penal ? `penal|${v}` : v;
+      if (nombres.has(clave)) return;
+      if (o.penal) return asignar(clave, "Porcentaje de la cláusula penal");
+      const mapa = votos.get(v);
+      const parte = mapa ? [...mapa.entries()].sort((a, b) => b[1] - a[1])[0][0] : null;
+      const quien = parte ? limpiarEtiqueta(parte).replace(/^El /, "el ").replace(/^La /, "la ").replace(/^Los /, "los ").replace(/^Las /, "las ") : "";
+      asignar(clave, quien ? `Porcentaje ${quien.startsWith("el ") ? `del ${quien.slice(3)}` : `de ${quien}`}` : `Porcentaje ${++n}`);
+    });
+  }
+
+  let res = cuerpo;
+  for (let j = ocurrencias.length - 1; j >= 0; j--) {
+    const o = ocurrencias[j];
+    const partes = o.valores.map((v, i) => `{{${nombres.get(o.penal ? `penal|${v}` : v)}|${o.formato[i]}=${v.replace(",", ".")}}}`);
+    res = res.slice(0, o.inicio) + partes.join("/") + res.slice(o.fin);
+  }
+  return res;
 }
 
 /** Espacios para completar que trae un Word: "________" o "XXXX". */
@@ -136,9 +246,18 @@ export function convertirBlancos(cuerpo: string): string {
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
 /** Formatea el valor según el tipo de campo (fecha "2026-08-07" → "7 de agosto de 2026"). */
-export function formatearValor(tipo: TipoCampo, valor: string): string {
+export function formatearValor(tipo: TipoCampo | string, valor: string): string {
   const v = (valor ?? "").trim();
   if (!v) return v;
+  if (String(tipo).startsWith("porcentaje")) {
+    const n = Number(v.replace("%", "").replace(",", ".").trim());
+    if (!Number.isFinite(n)) return v;
+    const num = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 }).format(n);
+    const letras = tipo === "porcentaje" ? null : numeroEnLetras(n);
+    if (!letras) return `${num}%`;
+    const frase = `${letras} por ciento`;
+    return `${tipo === "porcentaje en minusculas" ? frase : frase.toUpperCase()} (${num}%)`;
+  }
   if (tipo === "fecha") {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
     if (m) return `${Number(m[3])} de ${MESES[Number(m[2]) - 1]} de ${m[1]}`;
@@ -153,12 +272,12 @@ export function formatearValor(tipo: TipoCampo, valor: string): string {
 /** Reemplaza los campos por sus valores. Los vacíos quedan como una línea para completar a mano. */
 export function completar(cuerpo: string, valores: Record<string, string>): string {
   const campos = new Map(camposDe(cuerpo).map((c) => [c.clave, c]));
-  return cuerpo.replace(RE_CAMPO, (_t, etiqueta: string) => {
+  return cuerpo.replace(RE_CAMPO, (_t, etiqueta: string, tipoOcurrencia?: string) => {
     const c = campos.get(etiqueta.trim().toLowerCase());
     const valor = valores[etiqueta.trim().toLowerCase()];
     if (!c) return "";
     const final = valor !== undefined && valor.trim() !== "" ? valor : c.porDefecto;
-    return final ? formatearValor(c.tipo, final) : "________________";
+    return final ? formatearValor(tipoOcurrencia?.trim().toLowerCase() || c.tipo, final) : "________________";
   });
 }
 
