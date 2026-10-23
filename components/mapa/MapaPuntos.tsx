@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import "leaflet/dist/leaflet.css";
 import type { CategoriaPunto, PuntoMapa } from "@/lib/mapa";
 
 /**
  * Mapa con un punto por publicación (venta, alquiler, campo) y por desarrollo.
- * Usa Leaflet (cargado desde CDN, sin dependencias nuevas) y mapas de CARTO/OpenStreetMap.
+ * Usa Leaflet y mapas de CARTO/OpenStreetMap.
  */
-
-const LEAFLET = "https://unpkg.com/leaflet@1.9.4/dist";
 
 export const CATEGORIAS: { value: CategoriaPunto; label: string; color: string }[] = [
   { value: "desarrollo", label: "Desarrollos", color: "#c9a14a" },
@@ -18,30 +17,23 @@ export const CATEGORIAS: { value: CategoriaPunto; label: string; color: string }
 ];
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-type L = any; // Leaflet se carga desde el CDN (sin tipos instalados)
+type L = any; // Leaflet no trae tipos
 declare global {
   interface Window {
     L?: L;
   }
 }
 
-let cargando: Promise<L> | null = null;
-function cargarLeaflet(): Promise<L> {
-  if (window.L) return Promise.resolve(window.L);
-  if (cargando) return cargando;
-  cargando = new Promise<L>((ok, mal) => {
-    const css = document.createElement("link");
-    css.rel = "stylesheet";
-    css.href = `${LEAFLET}/leaflet.css`;
-    document.head.appendChild(css);
-    const js = document.createElement("script");
-    js.src = `${LEAFLET}/leaflet.js`;
-    js.async = true;
-    js.onload = () => (window.L ? ok(window.L) : mal(new Error("Leaflet no cargó")));
-    js.onerror = () => mal(new Error("Leaflet no cargó"));
-    document.head.appendChild(js);
-  });
-  return cargando;
+/**
+ * Leaflet viene incluido en la web (paquete npm), así no depende de un CDN externo
+ * que algunos navegadores o redes bloquean.
+ */
+async function cargarLeaflet(): Promise<L> {
+  if (window.L) return window.L;
+  const mod = await import("leaflet");
+  const L = mod.default ?? mod;
+  window.L = L;
+  return L;
 }
 
 const esc = (t: string) => t.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -66,11 +58,21 @@ export default function MapaPuntos({ puntos, alto = 520, compacto = false }: { p
       .then((L) => {
         if (!vivo || !div.current || mapa.current) return;
         const m = L.map(div.current, { scrollWheelZoom: false, zoomControl: true, attributionControl: true }).setView([-35.1, -58.4], 8);
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+        const carto = L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
           maxZoom: 19,
           subdomains: "abcd",
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
         }).addTo(m);
+        // Si los mapas de CARTO no cargan, se pasa a los de OpenStreetMap.
+        let fallas = 0;
+        carto.on("tileerror", () => {
+          if (++fallas !== 4) return;
+          m.removeLayer(carto);
+          L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          }).addTo(m);
+        });
         // La rueda del mouse hace zoom recién después de tocar el mapa (así no traba el scroll de la página).
         m.on("click focus", () => m.scrollWheelZoom.enable());
         m.on("mouseout", () => m.scrollWheelZoom.disable());
