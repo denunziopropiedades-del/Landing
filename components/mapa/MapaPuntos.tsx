@@ -154,7 +154,7 @@ export default function MapaPuntos({ puntos, alto = 520, compacto = false }: { p
         {!listo && !error && <div className="absolute inset-0 flex items-center justify-center text-sm text-brand-black/50">Cargando mapa…</div>}
         {error && <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-brand-black/60">No se pudo cargar el mapa. Probá recargar la página.</div>}
       </div>
-      <p className="mt-2 text-xs text-brand-black/50">Los puntos con borde punteado tienen ubicación aproximada (zona). Tocá un punto para ver la publicación.</p>
+      <p className="mt-2 text-xs text-brand-black/50">Tocá un punto para ver la publicación.</p>
     </div>
   );
 }

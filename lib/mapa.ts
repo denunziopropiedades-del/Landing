@@ -1,5 +1,5 @@
 import { getProyectos } from "@/lib/content";
-import { CENTRO_PARTIDO, coordsDesdeTexto, esLinkCorto, partidoDesdeTexto, type Coordenadas } from "@/lib/geo";
+import { coordsDesdeTexto, esLinkCorto, type Coordenadas } from "@/lib/geo";
 import { esRural, formatearPrecio, getPropiedades, labelTipo, ubicacionTexto } from "@/lib/propiedades";
 
 export type CategoriaPunto = "venta" | "alquiler" | "campo" | "desarrollo";
@@ -59,31 +59,17 @@ async function coordsDe(...fuentes: (string | null | undefined)[]): Promise<Coor
   return null;
 }
 
-/** Corre levemente los puntos aproximados del mismo partido para que no queden encimados. */
-function desplazar(c: Coordenadas, semilla: string, indice: number): Coordenadas {
-  let h = 0;
-  for (const ch of semilla) h = (h * 31 + ch.charCodeAt(0)) | 0;
-  const ang = ((h >>> 0) % 360) * (Math.PI / 180) + indice;
-  const r = 0.012 + (indice % 4) * 0.006; // ~1,3 a 3 km
-  return { lat: c.lat + Math.sin(ang) * r, lng: c.lng + Math.cos(ang) * r };
-}
-
-/** Todas las publicaciones y desarrollos con su ubicación, para el mapa. */
+/**
+ * Publicaciones y desarrollos para el mapa. La ubicación sale SIEMPRE del "Link de Google Maps"
+ * cargado en el panel; si no tiene link, no se muestra (nunca se inventa una ubicación).
+ */
 export async function getPuntosMapa(): Promise<PuntoMapa[]> {
   const [propiedades, proyectos] = await Promise.all([getPropiedades(), getProyectos()]);
-  const porPartido = new Map<string, number>();
 
   const deProps = await Promise.all(
     propiedades.map(async (p): Promise<PuntoMapa | null> => {
-      const exacta = await coordsDe(p.mapsUrl, p.direccion);
-      let c = exacta;
-      if (!c) {
-        const centro = CENTRO_PARTIDO[p.partido] ?? CENTRO_PARTIDO[partidoDesdeTexto(p.localidad) ?? ""];
-        if (!centro) return null;
-        const n = porPartido.get(p.partido) ?? 0;
-        porPartido.set(p.partido, n + 1);
-        c = desplazar(centro, p.id, n);
-      }
+      const c = await coordsDe(p.mapsUrl, p.direccion);
+      if (!c) return null;
       const rural = esRural(p.tipo);
       return {
         id: p.id,
@@ -95,16 +81,14 @@ export async function getPuntosMapa(): Promise<PuntoMapa[]> {
         foto: p.fotos[0] ?? null,
         lat: c.lat,
         lng: c.lng,
-        aproximado: !exacta,
+        aproximado: false,
       };
     }),
   );
 
   const deProyectos = await Promise.all(
     proyectos.map(async (p): Promise<PuntoMapa | null> => {
-      const exacta = await coordsDe(p.ubicacionMapsUrl);
-      const partido = partidoDesdeTexto(`${p.ubicacion} ${p.nombre}`);
-      const c = exacta ?? (partido ? CENTRO_PARTIDO[partido] : null);
+      const c = await coordsDe(p.ubicacionMapsUrl);
       if (!c) return null;
       return {
         id: p.id,
@@ -116,7 +100,7 @@ export async function getPuntosMapa(): Promise<PuntoMapa[]> {
         foto: p.imagenPortada,
         lat: c.lat,
         lng: c.lng,
-        aproximado: !exacta,
+        aproximado: false,
       };
     }),
   );

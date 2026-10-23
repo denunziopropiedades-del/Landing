@@ -113,9 +113,9 @@ function PropiedadForm({ propiedad, onDone }: { propiedad?: Propiedad; onDone: (
         <input name="direccion" defaultValue={propiedad?.direccion ?? ""} className={inputClass} />
       </div>
       <div className="sm:col-span-3">
-        <label className={labelClass}>Ubicación en el mapa: coordenadas o link de Google Maps</label>
+        <label className={labelClass}>Link de Google Maps (opcional)</label>
         <input name="mapsUrl" defaultValue={propiedad?.mapsUrl ?? ""} placeholder="-34.9135, -58.3843  o  https://maps.app.goo.gl/…" className={inputClass} />
-        <p className="mt-1 text-[11px] text-brand-black/50">Para que el punto del mapa quede exacto: en Google Maps hacé clic derecho sobre el lugar, tocá las coordenadas (ej. -34.9135, -58.3843) y pegalas acá. También sirve el link de “Compartir”.</p>
+        <p className="mt-1 text-[11px] text-brand-black/50">El mapa de la web usa SIEMPRE este link: pegá el link de “Compartir” de Google Maps o las coordenadas (clic derecho sobre el lugar en Google Maps → tocá los números). Sin link, no aparece en el mapa.</p>
       </div>
 
       <div className="sm:col-span-2">
