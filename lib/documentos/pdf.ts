@@ -52,11 +52,13 @@ export async function generarDocumentoPdf(opts: {
     // Párrafos de una sola línea centrados si están todo en mayúsculas y negrita (fórmulas de cierre).
     const lineas = limpio.split("\n");
     const esFormula = lineas.length === 1 && /^\*\*[^*]+\*\*$/.test(limpio) && limpio === limpio.toUpperCase() && !limpio.endsWith(":**");
+    const mezclaNegrita = (l: string) => /\*\*[^*]+\*\*/.test(l) && !/^\*\*[^*]+\*\*$/.test(l.trim());
     for (let i = 0; i < lineas.length; i++) {
       escribirLinea(doc, lineas[i], {
         ancho,
         interlineado,
-        alinear: esFormula ? "center" : lineas.length > 1 ? "left" : "justify",
+        // pdfkit no justifica bien cuando cambia la fuente a mitad de línea: esos párrafos van alineados a la izquierda
+        alinear: esFormula ? "center" : lineas.length > 1 || mezclaNegrita(lineas[i]) ? "left" : "justify",
         sangria: !esFormula && lineas.length === 1 && !/^\*\*/.test(limpio) ? 1.25 * CM : 0,
       });
     }
