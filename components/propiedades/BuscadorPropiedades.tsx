@@ -21,6 +21,8 @@ const TIPOS_URBANOS = [
   { value: "ph", label: "PH" },
   { value: "terreno", label: "Terreno" },
   { value: "local", label: "Local" },
+  { value: "galpon", label: "Nave industrial / Galpón" },
+  { value: "lote_comercial", label: "Lote comercial" },
 ];
 
 const TIPOS_RURALES = [

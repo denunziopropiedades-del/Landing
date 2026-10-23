@@ -9,7 +9,7 @@ import {
   upsertPropiedadAction,
 } from "@/lib/admin/propiedades-actions";
 import { isCloudinaryConfigured, uploadToCloudinary } from "@/lib/cloudinary-client";
-import { esRural, formatearPrecio, labelTipo, SITUACIONES, TIPOS, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
+import { esRural, formatearPrecio, labelTipo, SITUACIONES, TIPOS, TIPOS_SIN_AMBIENTES, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
 import { ZONAS } from "@/lib/zonas";
 import EditorTexto from "@/components/admin/EditorTexto";
 
@@ -180,14 +180,18 @@ function PropiedadForm({ propiedad, onDone }: { propiedad?: Propiedad; onDone: (
         </>
       ) : (
         <>
-          <div>
-            <label className={labelClass}>Ambientes</label>
-            <input name="ambientes" inputMode="numeric" defaultValue={propiedad?.ambientes ?? ""} className={inputClass} />
-          </div>
-          <div>
-            <label className={labelClass}>Dormitorios</label>
-            <input name="dormitorios" inputMode="numeric" defaultValue={propiedad?.dormitorios ?? ""} className={inputClass} />
-          </div>
+          {!TIPOS_SIN_AMBIENTES.includes(tipo) && (
+            <>
+              <div>
+                <label className={labelClass}>Ambientes</label>
+                <input name="ambientes" inputMode="numeric" defaultValue={propiedad?.ambientes ?? ""} className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>Dormitorios</label>
+                <input name="dormitorios" inputMode="numeric" defaultValue={propiedad?.dormitorios ?? ""} className={inputClass} />
+              </div>
+            </>
+          )}
           <div>
             <label className={labelClass}>Baños</label>
             <input name="banos" inputMode="numeric" defaultValue={propiedad?.banos ?? ""} className={inputClass} />

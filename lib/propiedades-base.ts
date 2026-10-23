@@ -2,7 +2,7 @@
 import { nombrePartido } from "@/lib/zonas";
 
 export type Operacion = "venta" | "alquiler";
-export type TipoPropiedad = "casa" | "departamento" | "ph" | "local" | "terreno" | "campo" | "chacra";
+export type TipoPropiedad = "casa" | "departamento" | "ph" | "local" | "galpon" | "terreno" | "lote_comercial" | "campo" | "chacra";
 export type UnidadPrecio = "total" | "mes" | "ha" | "ha_anio";
 export type SituacionDominial = "escritura" | "posesion";
 
@@ -53,13 +53,17 @@ export const TIPOS: { value: TipoPropiedad; label: string; plural: string }[] = 
   { value: "departamento", label: "Departamento", plural: "Departamentos" },
   { value: "ph", label: "PH", plural: "PH" },
   { value: "local", label: "Local", plural: "Locales" },
+  { value: "galpon", label: "Nave industrial / Galpón", plural: "Naves industriales y galpones" },
   { value: "terreno", label: "Terreno", plural: "Terrenos" },
+  { value: "lote_comercial", label: "Lote comercial", plural: "Lotes comerciales" },
   { value: "campo", label: "Campo", plural: "Campos" },
   { value: "chacra", label: "Chacra", plural: "Chacras" },
 ];
 
 export const TIPOS_RURALES: TipoPropiedad[] = ["campo", "chacra"];
 export const esRural = (t: TipoPropiedad) => TIPOS_RURALES.includes(t);
+/** Tipos sin ambientes ni dormitorios (se cargan solo superficies). */
+export const TIPOS_SIN_AMBIENTES: TipoPropiedad[] = ["galpon", "lote_comercial"];
 
 export function labelTipo(t: TipoPropiedad) {
   return TIPOS.find((x) => x.value === t)?.label ?? t;

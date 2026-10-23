@@ -13,7 +13,7 @@ create table if not exists propiedades (
   descripcion text not null default '',
 
   operacion text not null check (operacion in ('venta', 'alquiler')),
-  tipo text not null check (tipo in ('casa', 'departamento', 'ph', 'local', 'terreno', 'campo', 'chacra')),
+  tipo text not null check (tipo in ('casa', 'departamento', 'ph', 'local', 'galpon', 'terreno', 'lote_comercial', 'campo', 'chacra')),
 
   -- Ubicación: partido = slug de lib/zonas.ts (ej. 'presidente-peron').
   partido text not null,
@@ -73,3 +73,8 @@ alter table leads add column if not exists propiedad_id uuid references propieda
 -- Columnas agregadas después (por si la tabla ya existía):
 alter table propiedades add column if not exists financiacion_directa boolean not null default false;
 alter table propiedades add column if not exists situacion_dominial text check (situacion_dominial in ('escritura', 'posesion'));
+
+-- Nuevos tipos: naves industriales / galpones y lotes comerciales.
+alter table propiedades drop constraint if exists propiedades_tipo_check;
+alter table propiedades add constraint propiedades_tipo_check
+  check (tipo in ('casa', 'departamento', 'ph', 'local', 'galpon', 'terreno', 'lote_comercial', 'campo', 'chacra'));
