@@ -52,43 +52,103 @@ export async function generarDocumentoPdf(opts: {
     // Párrafos de una sola línea centrados si están todo en mayúsculas y negrita (fórmulas de cierre).
     const lineas = limpio.split("\n");
     const esFormula = lineas.length === 1 && /^\*\*[^*]+\*\*$/.test(limpio) && limpio === limpio.toUpperCase() && !limpio.endsWith(":**");
-    const mezclaNegrita = (l: string) => /\*\*[^*]+\*\*/.test(l) && !/^\*\*[^*]+\*\*$/.test(l.trim());
     for (let i = 0; i < lineas.length; i++) {
       escribirLinea(doc, lineas[i], {
         ancho,
         interlineado,
-        // pdfkit no justifica bien cuando cambia la fuente a mitad de línea: esos párrafos van alineados a la izquierda
-        alinear: esFormula ? "center" : lineas.length > 1 || mezclaNegrita(lineas[i]) ? "left" : "justify",
+        alinear: esFormula ? "center" : lineas.length > 1 ? "left" : "justify",
         sangria: !esFormula && lineas.length === 1 && !/^\*\*/.test(limpio) ? 1.25 * CM : 0,
       });
     }
-    doc.moveDown(0.6);
+    doc.y += 8;
   }
 
   return pdfToBuffer(doc);
 }
 
+type Parte = { t: string; negrita: boolean; ancho: number };
+type Palabra = { partes: Parte[]; ancho: number; espacio: number };
+
+/**
+ * Escribe un párrafo armando los renglones a mano (pdfkit corta mal cuando se mezclan
+ * negrita y texto normal en la misma línea). Justifica todas las líneas menos la última.
+ */
 function escribirLinea(
   doc: PDFKit.PDFDocument,
   linea: string,
   o: { ancho: number; interlineado: number; alinear: "left" | "center" | "justify"; sangria: number }
 ) {
-  const partes = linea.split(/(\*\*[^*]+\*\*)/g).filter((p) => p !== "");
-  if (partes.length === 0) {
-    doc.moveDown(0.5);
+  const TAM = 12;
+  const alto = TAM + o.interlineado;
+  const medir = (t: string, negrita: boolean) => doc.font(negrita ? "Times-Bold" : "Times-Roman").fontSize(TAM).widthOfString(t);
+
+  // 1) Palabras (una palabra puede mezclar negrita y normal, ej. “PÉREZ”)
+  const palabras: Palabra[] = [];
+  let actual: Parte[] = [];
+  const cerrar = (espacio: number) => {
+    if (actual.length) palabras.push({ partes: actual, ancho: actual.reduce((a, p) => a + p.ancho, 0), espacio });
+    actual = [];
+  };
+  for (const tramo of linea.split(/(\*\*[^*]+\*\*)/g)) {
+    if (!tramo) continue;
+    const negrita = /^\*\*[^*]+\*\*$/.test(tramo);
+    const txt = negrita ? tramo.slice(2, -2) : tramo;
+    for (const tok of txt.split(/(\s+)/)) {
+      if (!tok) continue;
+      if (/^\s+$/.test(tok)) cerrar(medir(" ", negrita));
+      else actual.push({ t: tok, negrita, ancho: medir(tok, negrita) });
+    }
+  }
+  cerrar(0);
+  if (palabras.length === 0) {
+    doc.y += alto * 0.5;
     return;
   }
-  partes.forEach((p, i) => {
-    const negrita = /^\*\*[^*]+\*\*$/.test(p);
-    doc.font(negrita ? "Times-Bold" : "Times-Roman");
-    doc.text(negrita ? p.slice(2, -2) : p, i === 0 ? doc.page.margins.left : undefined, undefined, {
-      width: o.ancho,
-      align: o.alinear,
-      lineGap: o.interlineado,
-      indent: i === 0 ? o.sangria : 0,
-      continued: i < partes.length - 1,
+
+  // 2) Renglones
+  const renglones: Palabra[][] = [];
+  let r: Palabra[] = [];
+  let usado = 0;
+  for (const w of palabras) {
+    const disponible = o.ancho - (renglones.length === 0 ? o.sangria : 0);
+    const sep = r.length ? r[r.length - 1].espacio : 0;
+    if (r.length && usado + sep + w.ancho > disponible) {
+      renglones.push(r);
+      r = [];
+      usado = 0;
+    }
+    usado += (r.length ? r[r.length - 1].espacio : 0) + w.ancho;
+    r.push(w);
+  }
+  if (r.length) renglones.push(r);
+
+  // 3) Dibujo
+  const izq = doc.page.margins.left;
+  let y = doc.y;
+  renglones.forEach((ren, idx) => {
+    if (y + alto > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage();
+      y = doc.page.margins.top;
+    }
+    const sangria = idx === 0 ? o.sangria : 0;
+    const disponible = o.ancho - sangria;
+    const natural = ren.reduce((acc, w, i) => acc + w.ancho + (i < ren.length - 1 ? w.espacio : 0), 0);
+    const huecos = ren.length - 1;
+    const justificar = o.alinear === "justify" && idx < renglones.length - 1 && huecos > 0;
+    const extra = justificar ? Math.max(0, disponible - natural) / huecos : 0;
+    let x = izq + sangria + (o.alinear === "center" ? (disponible - natural) / 2 : 0);
+    ren.forEach((w, i) => {
+      for (const p of w.partes) {
+        doc.font(p.negrita ? "Times-Bold" : "Times-Roman").fontSize(TAM).text(p.t, x, y, { lineBreak: false });
+        x += p.ancho;
+      }
+      if (i < ren.length - 1) x += w.espacio + extra;
     });
+    y += alto;
   });
+  doc.font("Times-Roman").fontSize(TAM);
+  doc.x = izq;
+  doc.y = y;
 }
 
 function dibujarFirma(doc: PDFKit.PDFDocument, firma: Firma, ancho: number) {
