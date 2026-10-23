@@ -7,6 +7,7 @@ import {
   Calculator,
   DollarSign,
   FileSliders,
+  FileSignature,
   FileText,
   HelpCircle,
   Image as ImageIcon,
@@ -31,6 +32,7 @@ const nav: { href: string; label: string; icon: typeof LayoutDashboard; roles?: 
   { href: "/admin/crm", label: "CRM (Leads)", icon: KanbanSquare },
   { href: "/admin/consultas", label: "Consultas y visitas", icon: MessageSquareText },
   { href: "/admin/reportes", label: "Reportes", icon: FileText },
+  { href: "/admin/documentos", label: "Contratos y escritos", icon: FileSignature },
   {
     href: "/admin/facturacion",
     label: "Facturación",

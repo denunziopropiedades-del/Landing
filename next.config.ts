@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/mercadopago/webhook": ["./node_modules/pdfkit/js/data/**/*"],
     "/api/leads/exportar-pdf": ["./node_modules/pdfkit/js/data/**/*"],
+    "/api/documentos/pdf": ["./node_modules/pdfkit/js/data/**/*"],
   },
 };
 
