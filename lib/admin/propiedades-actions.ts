@@ -41,8 +41,8 @@ const MENSAJE_SIN_TABLA =
   "Falta crear la tabla de propiedades: corré el archivo sql-propiedades.sql en Supabase → SQL Editor.";
 
 function errorDb(message: string) {
-  if (/financiacion_directa|situacion_dominial|tipo_barrio/i.test(message))
-    return "Faltan las columnas nuevas (financiación directa / escritura o posesión / barrio cerrado o abierto): corré sql-propiedades-actualizacion.sql en Supabase → SQL Editor.";
+  if (/financiacion_directa|situacion_dominial|tipo_barrio|anticipo|precio_contado/i.test(message))
+    return "Faltan las columnas nuevas (financiación, escritura o posesión, barrio, anticipo o valor de contado): corré sql-propiedades-actualizacion.sql en Supabase → SQL Editor.";
   return /relation .*propiedades.* does not exist|Could not find the table/i.test(message) ? MENSAJE_SIN_TABLA : message;
 }
 
@@ -95,6 +95,8 @@ export async function upsertPropiedadAction(_prev: ActionResult | null, fd: Form
       moneda: str(fd, "moneda") === "ARS" ? "ARS" : "USD",
       precio_unidad: str(fd, "precioUnidad") || "total",
       expensas: rural ? null : optNum(fd, "expensas"),
+      anticipo: str(fd, "operacion") === "venta" ? optNum(fd, "anticipo") : null,
+      precio_contado: str(fd, "operacion") === "venta" ? optNum(fd, "precioContado") : null,
       ambientes: rural ? null : optNum(fd, "ambientes"),
       dormitorios: rural ? null : optNum(fd, "dormitorios"),
       banos: rural ? null : optNum(fd, "banos"),

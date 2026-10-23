@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Bath, BedDouble, Droplets, House, MapPin, Maximize2, Wheat, Zap } from "lucide-react";
-import { esRural, formatearPrecio, labelBarrio, labelSituacion, labelTipo, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
+import { esRural, formatearMonto, formatearPrecio, labelBarrio, labelSituacion, labelTipo, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
 
 export default function PropiedadCard({ propiedad: p }: { propiedad: Propiedad }) {
   const rural = esRural(p.tipo);
@@ -56,6 +56,13 @@ export default function PropiedadCard({ propiedad: p }: { propiedad: Propiedad }
           </p>
         ) : (
           <p className="text-xl font-extrabold text-brand-black">{formatearPrecio(p)}</p>
+        )}
+        {(p.anticipo || p.precioContado) && (
+          <p className="mt-0.5 text-[13px] font-semibold text-brand-green-700">
+            {[p.anticipo ? `Anticipo ${formatearMonto(p.anticipo, p.moneda)}` : null, p.precioContado ? `Contado ${formatearMonto(p.precioContado, p.moneda)}` : null]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
         )}
         <h3 className="mt-0.5 line-clamp-1 font-semibold text-brand-black">{p.titulo}</h3>
         <p className="mb-3 mt-0.5 flex items-center gap-1 text-[13px] text-brand-black/60">

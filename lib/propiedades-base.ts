@@ -34,6 +34,9 @@ export type Propiedad = {
   moneda: "USD" | "ARS";
   precioUnidad: UnidadPrecio;
   expensas: number | null;
+  /** Venta en cuotas: anticipo y valor de contado (misma moneda que el precio). */
+  anticipo: number | null;
+  precioContado: number | null;
   ambientes: number | null;
   dormitorios: number | null;
   banos: number | null;
@@ -94,6 +97,8 @@ export function mapPropiedad(p: Record<string, unknown>): Propiedad {
     moneda: ((p.moneda as string) ?? "USD") as "USD" | "ARS",
     precioUnidad: ((p.precio_unidad as string) ?? "total") as UnidadPrecio,
     expensas: num(p.expensas),
+    anticipo: num(p.anticipo),
+    precioContado: num(p.precio_contado),
     ambientes: num(p.ambientes),
     dormitorios: num(p.dormitorios),
     banos: num(p.banos),
@@ -114,6 +119,12 @@ export function mapPropiedad(p: Record<string, unknown>): Propiedad {
     orden: (p.orden as number) ?? 0,
     creadoEn: (p.creado_en as string) ?? "",
   };
+}
+
+/** Monto con su moneda: "USD 3.200" o "$ 1.500.000". */
+export function formatearMonto(n: number, moneda: "USD" | "ARS") {
+  const monto = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(n);
+  return moneda === "USD" ? `USD ${monto}` : `$ ${monto}`;
 }
 
 export function formatearPrecio(p: Pick<Propiedad, "precio" | "moneda" | "precioUnidad">) {

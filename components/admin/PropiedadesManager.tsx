@@ -137,6 +137,18 @@ function PropiedadForm({ propiedad, onDone }: { propiedad?: Propiedad; onDone: (
           <option value="ha_anio">Por hectárea por año</option>
         </select>
       </div>
+      {operacion === "venta" && (
+        <>
+          <div className="sm:col-span-2">
+            <label className={labelClass}>Anticipo (opcional)</label>
+            <input name="anticipo" inputMode="decimal" defaultValue={propiedad?.anticipo ?? ""} placeholder="900" className={inputClass} />
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelClass}>Valor de contado (opcional)</label>
+            <input name="precioContado" inputMode="decimal" defaultValue={propiedad?.precioContado ?? ""} placeholder="6.500" className={inputClass} />
+          </div>
+        </>
+      )}
       {!rural && (
         <div>
           <label className={labelClass}>Expensas ($)</label>

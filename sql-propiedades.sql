@@ -81,3 +81,7 @@ alter table propiedades add constraint propiedades_tipo_check
 
 -- Barrio cerrado o abierto.
 alter table propiedades add column if not exists tipo_barrio text check (tipo_barrio in ('cerrado', 'abierto'));
+
+-- Venta en cuotas: anticipo y valor de contado.
+alter table propiedades add column if not exists anticipo numeric;
+alter table propiedades add column if not exists precio_contado numeric;

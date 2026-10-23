@@ -6,7 +6,7 @@ import { Bath, BedDouble, Check, Droplets, MapPin, Maximize2, MessageCircle, Rul
 import PaginaPortal from "@/components/propiedades/PaginaPortal";
 import ConsultaForm from "@/components/propiedades/ConsultaForm";
 import { getSiteTextos } from "@/lib/content";
-import { esRural, formatearPrecio, getPropiedadBySlug, labelBarrio, labelSituacion, labelTipo, SITUACIONES, ubicacionTexto } from "@/lib/propiedades";
+import { esRural, formatearMonto, formatearPrecio, getPropiedadBySlug, labelBarrio, labelSituacion, labelTipo, SITUACIONES, ubicacionTexto } from "@/lib/propiedades";
 import { getPartido } from "@/lib/zonas";
 import { esHtml, sanitizarHtml } from "@/lib/texto-enriquecido";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
@@ -190,6 +190,22 @@ export default async function PropiedadPage({ params }: { params: Promise<Params
               <p className="mt-1 text-sm text-white/60">
                 Total aprox.: {p.moneda} {fmt(p.precio * p.hectareas)}
               </p>
+            )}
+            {(p.anticipo || p.precioContado) && (
+              <div className="mt-4 grid gap-2 border-t border-white/15 pt-4 text-sm">
+                {p.anticipo && (
+                  <p className="flex justify-between gap-3">
+                    <span className="text-white/60">Anticipo</span>
+                    <span className="font-bold">{formatearMonto(p.anticipo, p.moneda)}</span>
+                  </p>
+                )}
+                {p.precioContado && (
+                  <p className="flex justify-between gap-3">
+                    <span className="text-white/60">Valor de contado</span>
+                    <span className="font-bold text-brand-gold-400">{formatearMonto(p.precioContado, p.moneda)}</span>
+                  </p>
+                )}
+              </div>
             )}
             <a
               href={buildWhatsappUrl(mensajeWa, textos.whatsappNumero)}
