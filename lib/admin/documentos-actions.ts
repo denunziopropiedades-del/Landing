@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/server";
 import { requireRole, AdminActionError } from "@/lib/admin/auth";
 import { registrarActividad } from "@/lib/admin/activity";
-import { camposDe, MODELOS_INCORPORADOS, type Modelo } from "@/lib/documentos/plantillas";
+import { MODELOS_INCORPORADOS, type Modelo } from "@/lib/documentos/plantillas";
 
 type R<T = undefined> = ({ ok: true } & (T extends undefined ? object : { data: T })) | { ok: false; error: string };
 
@@ -124,8 +124,6 @@ export async function guardarModeloAction(input: { id?: string; nombre: string; 
     const cuerpo = input.cuerpo.trim();
     if (nombre.length < 3) throw new AdminActionError("Poné un nombre al modelo.");
     if (cuerpo.length < 20) throw new AdminActionError("El texto del modelo está vacío.");
-    if (camposDe(cuerpo).length === 0)
-      throw new AdminActionError("El modelo no tiene campos para completar. Marcá los datos variables así: {{Nombre del cliente}}.");
     if (input.id && MODELOS_INCORPORADOS.some((m) => m.id === input.id))
       throw new AdminActionError("Los modelos que vienen con el sistema no se editan: guardalo como copia.");
     const admin = (await getSupabaseAdminClient())!;

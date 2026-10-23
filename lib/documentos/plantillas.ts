@@ -40,6 +40,99 @@ export function camposDe(cuerpo: string): Campo[] {
   return [...vistos.values()];
 }
 
+/** Espacios para completar que trae un Word: "________" o "XXXX". */
+export const RE_BLANCO = /_{4,}|X{3,}/g;
+
+const VACIAS = new Set(["de", "del", "la", "las", "el", "los", "a", "al", "en", "y", "e", "o", "con", "por", "para", "nº", "n°", "no", "nro", "nro.", "n.º", "sr.", "sra.", "sr./sra.", "señor", "señora"]);
+const SIN_CAMPO = /^firma/i; // las líneas de firma quedan para firmar a mano
+
+function limpiarEtiqueta(t: string) {
+  const s = t.replace(/\*\*/g, "").replace(/[“”"«»]/g, "").replace(/\s+/g, " ").replace(/[:\-–—,.;]+$/, "").trim();
+  if (!s) return "";
+  const conMayus = s.length <= 4 && s === s.toUpperCase() ? s : s === s.toUpperCase() ? s.toLowerCase() : s;
+  return (conMayus.charAt(0).toUpperCase() + conMayus.slice(1)).replace(/\bn([º°])/g, "N$1");
+}
+
+function etiquetaDesde(antes: string, despues: string): string {
+  const seg = antes.replace(/\*\*/g, "").split(/[,.;()]/).pop()!.trim();
+  // Formato "Ubicación: ____" → se usa la frase completa.
+  if (/:\s*$/.test(seg) && seg.split(/\s+/).length <= 6) return limpiarEtiqueta(seg);
+  const palabras = seg.split(/\s+/).filter(Boolean);
+  while (palabras.length && VACIAS.has(palabras[palabras.length - 1].toLowerCase())) palabras.pop();
+  if (palabras.length) {
+    const ult = palabras[palabras.length - 1];
+    // Un nombre en mayúsculas antes del espacio ("OBDULIO ____") pide el nombre completo.
+    if (ult.length > 4 && ult === ult.toUpperCase() && /\p{Lu}/u.test(ult)) return "Nombre completo";
+    return limpiarEtiqueta(ult);
+  }
+  const sig = despues.replace(/\*\*/g, "").split(/\s+/).find((w) => w && !VACIAS.has(w.toLowerCase()));
+  return sig ? limpiarEtiqueta(sig.replace(/[^\p{L}\p{N}]/gu, "")) : "";
+}
+
+function esTitulo(linea: string, soloNegritas: boolean) {
+  if (soloNegritas && !/^\s*\*\*.*\*\*\s*$/.test(linea)) return false;
+  const t = linea.replace(/\*\*/g, "").trim();
+  return t.length >= 3 && t.length <= 70 && /\p{Lu}/u.test(t) && t === t.toUpperCase() && !/_{3,}|X{3,}/.test(t);
+}
+
+/** Cuántos espacios en blanco convertibles hay (sin contar líneas de firma). */
+export function contarBlancos(cuerpo: string) {
+  let n = 0;
+  for (const linea of cuerpo.split("\n")) {
+    for (const m of linea.matchAll(RE_BLANCO)) if (!SIN_CAMPO.test(linea.slice(0, m.index).replace(/\*\*/g, "").trim())) n++;
+  }
+  return n;
+}
+
+/**
+ * Convierte los espacios en blanco ("______", "XXXX") en campos con nombre, tomado del
+ * texto que los rodea: "Ubicación: ____" → {{Ubicación}}, "DNI Nº ____" → {{DNI}}.
+ * Si un nombre se repite, se le agrega el título de su sección: {{DNI — El poseedor}},
+ * {{Ubicación — Inmueble Nº 2}}. Las líneas de "Firma" no se tocan.
+ */
+export function convertirBlancos(cuerpo: string): string {
+  const lineas = cuerpo.split("\n");
+  type Hueco = { linea: number; inicio: number; fin: number; base: string; seccion: string };
+  const huecos: Hueco[] = [];
+  let seccion = "";
+  let n = camposDe(cuerpo).length;
+  // Si el Word trae títulos en negrita, solo esos marcan secciones (un nombre en mayúsculas no).
+  const soloNegritas = lineas.some((l) => /^\s*\*\*.*\*\*\s*$/.test(l));
+  lineas.forEach((linea, i) => {
+    if (esTitulo(linea, soloNegritas)) seccion = limpiarEtiqueta(linea);
+    let previo = 0;
+    for (const m of linea.matchAll(RE_BLANCO)) {
+      const inicio = m.index!;
+      const fin = inicio + m[0].length;
+      const antes = linea.slice(previo, inicio);
+      previo = fin;
+      if (SIN_CAMPO.test(linea.slice(0, inicio).replace(/\*\*/g, "").trim())) continue;
+      const despues = linea.slice(fin).split(RE_BLANCO)[0];
+      const e = etiquetaDesde(antes, despues);
+      const base = e === "Días" ? "Día" : e || `Dato ${++n}`;
+      huecos.push({ linea: i, inicio, fin, base, seccion });
+    }
+  });
+  const usadas = new Set(camposDe(cuerpo).map((c) => c.clave));
+  const veces = new Map<string, number>();
+  for (const h of huecos) veces.set(h.base.toLowerCase(), (veces.get(h.base.toLowerCase()) ?? 0) + 1);
+  const nombres = huecos.map((h) => {
+    let nombre = (veces.get(h.base.toLowerCase()) ?? 0) > 1 && h.seccion ? `${h.base} — ${h.seccion}` : h.base;
+    let k = 2;
+    const raiz = nombre;
+    while (usadas.has(nombre.toLowerCase())) nombre = `${raiz} ${k++}`;
+    usadas.add(nombre.toLowerCase());
+    return nombre.replace(/[{}|=]/g, "");
+  });
+  // Reemplazar de atrás para adelante para no correr las posiciones.
+  for (let j = huecos.length - 1; j >= 0; j--) {
+    const h = huecos[j];
+    const l = lineas[h.linea];
+    lineas[h.linea] = `${l.slice(0, h.inicio)}{{${nombres[j]}}}${l.slice(h.fin)}`;
+  }
+  return lineas.join("\n");
+}
+
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
 /** Formatea el valor según el tipo de campo (fecha "2026-08-07" → "7 de agosto de 2026"). */

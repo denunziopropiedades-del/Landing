@@ -10,7 +10,7 @@ import {
   type ClienteParaDocumento,
   type DocumentoGenerado,
 } from "@/lib/admin/documentos-actions";
-import { camposDe, formatearValor, nombreArchivo, sugerencias, type Campo, type Modelo } from "@/lib/documentos/plantillas";
+import { camposDe, contarBlancos, convertirBlancos, formatearValor, nombreArchivo, sugerencias, type Campo, type Modelo } from "@/lib/documentos/plantillas";
 import { textoDeDocx } from "@/lib/documentos/docx";
 
 const input = "w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm focus:border-brand-green-600 focus:outline-none";
@@ -88,23 +88,29 @@ function EditorModelo({ modelo, onCerrar, onGuardado }: { modelo?: Modelo; onCer
   const [pend, start] = useTransition();
   const archivo = useRef<HTMLInputElement>(null);
   const campos = camposDe(cuerpo);
-  const xs = (cuerpo.match(/X{3,}/g) ?? []).length;
+  const xs = contarBlancos(cuerpo);
+  const [aviso, setAviso] = useState<string | null>(null);
 
   const subir = async (f: File) => {
     setError(null);
     try {
       const texto = /\.docx$/i.test(f.name) ? await textoDeDocx(f) : await f.text();
-      setCuerpo(texto);
+      // Los espacios para completar del Word ("_____" o "XXXX") se convierten solos en campos.
+      const convertido = contarBlancos(texto) > 0 ? convertirBlancos(texto) : texto;
+      setCuerpo(convertido);
+      const total = camposDe(convertido).length;
+      setAviso(
+        total > 0
+          ? `Se detectaron ${total} campos para completar. Revisá los nombres a la derecha y renombralos si querés.`
+          : "El archivo no tiene espacios para completar. Podés marcar los datos que cambian entre llaves dobles, por ejemplo {{Nombre del cliente}}, o guardarlo así como modelo fijo.",
+      );
       if (!nombre) setNombre(f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "));
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo leer el archivo.");
     }
   };
 
-  const convertirXs = () => {
-    let n = campos.length;
-    setCuerpo((c) => c.replace(/X{3,}/g, () => `{{Dato ${++n}}}`));
-  };
+  const convertirXs = () => setCuerpo((c) => convertirBlancos(c));
 
   const renombrar = (c: Campo, nuevo: string) => {
     const limpio = nuevo.replace(/[{}|=]/g, "").trim();
@@ -152,7 +158,7 @@ function EditorModelo({ modelo, onCerrar, onGuardado }: { modelo?: Modelo; onCer
         <input ref={archivo} type="file" accept=".docx,.txt,text/plain" hidden onChange={(e) => e.target.files?.[0] && subir(e.target.files[0])} />
         {xs > 0 && (
           <button type="button" onClick={convertirXs} className="inline-flex items-center gap-2 rounded-lg bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-200">
-            <Wand2 className="h-4 w-4" /> Convertir {xs} “XXXX” en campos
+            <Wand2 className="h-4 w-4" /> Convertir {xs} espacios en blanco en campos
           </button>
         )}
       </div>
@@ -186,6 +192,7 @@ function EditorModelo({ modelo, onCerrar, onGuardado }: { modelo?: Modelo; onCer
           </div>
         </div>
       </div>
+      {aviso && !error && <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-brand-green-800">{aviso}</p>}
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       <div className="mt-4 flex justify-end gap-2">
         <button type="button" onClick={onCerrar} className="rounded-lg px-4 py-2 text-sm font-semibold text-brand-black/60 hover:bg-black/5">
