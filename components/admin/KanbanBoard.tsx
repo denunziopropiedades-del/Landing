@@ -14,13 +14,21 @@ import {
   actualizarSexoLeadAction,
   asignarLeadAction,
   asignarLoteLeadAction,
-  cambiarProyectoLeadAction,
+  cambiarInteresLeadAction,
   deleteLeadAction,
   generarCuotasLeadAction,
 } from "@/lib/admin/actions";
 import { buildWhatsappClienteUrl } from "@/lib/whatsapp";
 import { formatUsd } from "@/lib/utils";
 import type { EstadoLead, Lead, Lote, Perfil, Proyecto, Rol } from "@/types/site";
+
+/** Propiedades (venta, alquiler, campos…) para elegir qué le interesa a cada lead. */
+export type OpcionPropiedad = { id: string; titulo: string; grupo: "venta" | "alquiler" | "campo" };
+const GRUPOS_PROPIEDAD: { grupo: OpcionPropiedad["grupo"]; label: string }[] = [
+  { grupo: "venta", label: "Compra / Venta" },
+  { grupo: "alquiler", label: "Alquileres" },
+  { grupo: "campo", label: "Campos" },
+];
 
 const COLUMNAS: { estado: EstadoLead; label: string; color: string }[] = [
   { estado: "nuevo", label: "Nuevo", color: "border-t-blue-500" },
@@ -40,6 +48,7 @@ function LeadCard({
   lead,
   vendedores,
   proyectos,
+  propiedades,
   lotes,
   puedeAsignar,
   puedeBorrar,
@@ -50,6 +59,7 @@ function LeadCard({
   lead: Lead;
   vendedores: Perfil[];
   proyectos: Proyecto[];
+  propiedades: OpcionPropiedad[];
   lotes: Lote[];
   puedeAsignar: boolean;
   puedeBorrar: boolean;
@@ -245,6 +255,7 @@ function LeadCard({
       {/* Datos principales, siempre visibles */}
       <div className="space-y-0.5 text-xs text-brand-black/60">
         {lead.proyectoNombre && <p>Barrio: {lead.proyectoNombre}</p>}
+        {lead.propiedadTitulo && <p>Propiedad: {lead.propiedadTitulo}</p>}
         {lead.manzana && <p>Manzana: {lead.manzana}</p>}
         {lead.loteNumero && <p>Lote: {lead.loteNumero}</p>}
       </div>
@@ -285,24 +296,42 @@ function LeadCard({
         <div className="mt-2 space-y-2">
           {puedeAsignar ? (
             <select
-              defaultValue={lead.proyectoId ?? ""}
+              defaultValue={lead.propiedadId ? `prop:${lead.propiedadId}` : lead.proyectoId ? `des:${lead.proyectoId}` : ""}
               onChange={(e) => {
-                const proyectoId = e.target.value || null;
+                const v = e.target.value;
+                const proyectoId = v.startsWith("des:") ? v.slice(4) : null;
+                const propiedadId = v.startsWith("prop:") ? v.slice(5) : null;
                 const proyectoNombre = proyectos.find((p) => p.id === proyectoId)?.nombre;
+                const propiedadTitulo = propiedades.find((p) => p.id === propiedadId)?.titulo;
                 startTransition(() => {
-                  cambiarProyectoLeadAction(lead.id, proyectoId).then((res) => {
-                    if (res.ok) onActualizado(lead.id, { proyectoId, proyectoNombre });
+                  cambiarInteresLeadAction(lead.id, { proyectoId, propiedadId }).then((res) => {
+                    if (res.ok) onActualizado(lead.id, { proyectoId, proyectoNombre, propiedadId, propiedadTitulo });
+                    else alert(res.error);
                   });
                 });
               }}
               className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs text-brand-black/70"
             >
-              <option value="">Sin desarrollo</option>
-              {proyectos.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
-                </option>
-              ))}
+              <option value="">Sin asignar</option>
+              <optgroup label="Desarrollos">
+                {proyectos.map((p) => (
+                  <option key={p.id} value={`des:${p.id}`}>
+                    {p.nombre}
+                  </option>
+                ))}
+              </optgroup>
+              {GRUPOS_PROPIEDAD.map((g) => {
+                const lista = propiedades.filter((p) => p.grupo === g.grupo);
+                return lista.length ? (
+                  <optgroup key={g.grupo} label={g.label}>
+                    {lista.map((p) => (
+                      <option key={p.id} value={`prop:${p.id}`}>
+                        {p.titulo}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : null;
+              })}
             </select>
           ) : null}
 
@@ -683,12 +712,14 @@ export default function KanbanBoard({
   leads: leadsIniciales,
   vendedores,
   proyectos,
+  propiedades = [],
   lotes,
   rolActual,
 }: {
   leads: Lead[];
   vendedores: Perfil[];
   proyectos: Proyecto[];
+  propiedades?: OpcionPropiedad[];
   lotes: Lote[];
   rolActual: Rol;
 }) {
@@ -752,6 +783,7 @@ export default function KanbanBoard({
                 lead={lead}
                 vendedores={vendedores}
                 proyectos={proyectos}
+                propiedades={propiedades}
                 lotes={lotes}
                 puedeAsignar={puedeAsignar}
                 puedeBorrar={puedeBorrar}

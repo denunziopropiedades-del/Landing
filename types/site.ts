@@ -199,6 +199,9 @@ export type Lead = {
   tipo: "reserva" | "contacto" | "meta" | "manual" | "visita";
   proyectoId: string | null;
   proyectoNombre?: string;
+  /** Propiedad (venta, alquiler, campo…) que le interesa, en vez de un desarrollo. */
+  propiedadId?: string | null;
+  propiedadTitulo?: string;
   loteId: string | null;
   loteNombre?: string;
   loteNumero?: string;

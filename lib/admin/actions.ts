@@ -1997,6 +1997,35 @@ export async function cambiarProyectoLeadAction(id: string, proyectoId: string |
   }
 }
 
+/** Lo que le interesa al lead: un desarrollo o una propiedad (venta, alquiler, campo…). */
+export async function cambiarInteresLeadAction(
+  id: string,
+  interes: { proyectoId: string | null; propiedadId: string | null },
+): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+    const [{ data: proyecto }, { data: propiedad }] = await Promise.all([
+      interes.proyectoId ? admin.from("proyectos").select("nombre").eq("id", interes.proyectoId).maybeSingle() : Promise.resolve({ data: null }),
+      interes.propiedadId ? admin.from("propiedades").select("titulo").eq("id", interes.propiedadId).maybeSingle() : Promise.resolve({ data: null }),
+    ]);
+    const { error } = await admin
+      .from("leads")
+      .update({ proyecto_id: interes.proyectoId, propiedad_id: interes.propiedadId, actualizado_en: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw new Error(/propiedad_id/.test(error.message) ? "Falta la columna de propiedades en leads: corré sql-propiedades.sql en Supabase." : error.message);
+    await registrarActividad(actor, "cambiar-proyecto", "lead", id, {
+      ...(await contextoLead(admin, id)),
+      nuevo: (proyecto as { nombre: string } | null)?.nombre ?? (propiedad as { titulo: string } | null)?.titulo ?? "Sin asignar",
+    });
+    revalidatePath("/admin/crm");
+    revalidatePath("/admin/consultas");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function cambiarProyectoVisitaAction(id: string, proyectoId: string | null): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor", "vendedor");

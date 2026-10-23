@@ -313,6 +313,13 @@ export async function getLeads(): Promise<Lead[]> {
   }
   if (error || !data) return [];
 
+  const titulosPropiedad = new Map<string, string>();
+  const idsPropiedad = [...new Set(data.map((l) => l.propiedad_id as string | null).filter((x): x is string => !!x))];
+  if (idsPropiedad.length) {
+    const { data: props } = await supabase.from("propiedades").select("id, titulo").in("id", idsPropiedad);
+    for (const pr of props ?? []) titulosPropiedad.set(pr.id as string, pr.titulo as string);
+  }
+
   return data.map((l) => {
     const lotesOperacion = (
       (l.lead_lotes ?? []) as unknown as {
@@ -357,6 +364,8 @@ export async function getLeads(): Promise<Lead[]> {
     tipo: l.tipo,
     proyectoId: l.proyecto_id,
     proyectoNombre: (l.proyectos as { nombre: string } | null)?.nombre,
+    propiedadId: (l.propiedad_id as string | null) ?? null,
+    propiedadTitulo: l.propiedad_id ? titulosPropiedad.get(l.propiedad_id as string) : undefined,
     loteId: l.lote_id,
     loteNombre: lotes[0]?.nombre,
     loteNumero: lotes.length > 1 ? lotes.map((x) => x.numero).join(", ") : lotes[0]?.numero,

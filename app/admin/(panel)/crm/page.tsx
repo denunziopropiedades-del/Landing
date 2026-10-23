@@ -3,15 +3,23 @@ import KanbanBoard from "@/components/admin/KanbanBoard";
 import NuevoClienteForm from "@/components/admin/NuevoClienteForm";
 import { getLeads, getLotesAdminTodos, getPerfiles, getProyectosAdmin } from "@/lib/admin/data";
 import { getPerfilActual } from "@/lib/admin/auth";
+import { getPropiedadesAdmin } from "@/lib/admin/propiedades-actions";
+import { esRural } from "@/lib/propiedades-base";
 
 export default async function AdminCrmPage() {
-  const [leads, perfiles, proyectos, lotes, actual] = await Promise.all([
+  const [leads, perfiles, proyectos, lotes, actual, { propiedades: listaPropiedades }] = await Promise.all([
     getLeads(),
     getPerfiles(),
     getProyectosAdmin(),
     getLotesAdminTodos(),
     getPerfilActual(),
+    getPropiedadesAdmin(),
   ]);
+  const propiedades = listaPropiedades.map((p) => ({
+    id: p.id,
+    titulo: p.titulo,
+    grupo: esRural(p.tipo) ? ("campo" as const) : p.operacion === "alquiler" ? ("alquiler" as const) : ("venta" as const),
+  }));
   // Cualquier miembro activo del staff puede recibir leads asignados, no solo los que
   // tienen el rol puntual "vendedor" (un administrador/supervisor también puede vender).
   const vendedores = perfiles.filter((p) => p.activo);
@@ -34,7 +42,7 @@ export default async function AdminCrmPage() {
       )}
 
       <div className="mt-8">
-        <KanbanBoard leads={leads} vendedores={vendedores} proyectos={proyectos} lotes={lotes} rolActual={actual?.rol ?? "vendedor"} />
+        <KanbanBoard leads={leads} vendedores={vendedores} proyectos={proyectos} propiedades={propiedades} lotes={lotes} rolActual={actual?.rol ?? "vendedor"} />
       </div>
 
       {leads.length === 0 && (
