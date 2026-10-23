@@ -1,3 +1,4 @@
+import PDFDocument from "pdfkit";
 import { completar } from "@/lib/documentos/plantillas";
 
 function pdfToBuffer(doc: PDFKit.PDFDocument): Promise<Buffer> {
@@ -25,7 +26,6 @@ export async function generarDocumentoPdf(opts: {
   firma: Firma;
   comprimir?: boolean;
 }): Promise<Buffer> {
-  const PDFDocument = (await import("pdfkit")).default;
   const doc = new PDFDocument({
     compress: opts.comprimir ?? true,
     size: "A4",

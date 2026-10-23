@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
       { source: "/proyectos/:slug", destination: "/desarrollos/:slug", permanent: true },
     ];
   },
+  // pdfkit lee sus fuentes (.afm) desde node_modules: no se empaqueta para que encuentre esos archivos.
+  serverExternalPackages: ["pdfkit"],
   outputFileTracingIncludes: {
     "/api/mercadopago/webhook": ["./node_modules/pdfkit/js/data/**/*"],
     "/api/leads/exportar-pdf": ["./node_modules/pdfkit/js/data/**/*"],
