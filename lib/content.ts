@@ -59,6 +59,7 @@ function mapProyecto(p: Record<string, unknown>): Proyecto {
     orden: p.orden as number,
     celdaAnchoPct: (p.celda_ancho_pct as number) ?? null,
     celdaAltoPct: (p.celda_alto_pct as number) ?? null,
+    mostrarPrecios: p.mostrar_precios !== false,
   };
 }
 

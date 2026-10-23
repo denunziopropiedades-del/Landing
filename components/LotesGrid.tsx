@@ -7,7 +7,15 @@ import type { LoteTipo } from "@/types/site";
 import { cn, formatUsd } from "@/lib/utils";
 import { buildWhatsappUrl, mensajeConsultaLote } from "@/lib/whatsapp";
 
-export default function LotesGrid({ tiposLotes, numero }: { tiposLotes: LoteTipo[]; numero?: string }) {
+export default function LotesGrid({
+  tiposLotes,
+  numero,
+  mostrarPrecios = true,
+}: {
+  tiposLotes: LoteTipo[];
+  numero?: string;
+  mostrarPrecios?: boolean;
+}) {
   const [comparar, setComparar] = useState<string[]>([]);
 
   const toggleComparar = (id: string) => {
@@ -51,12 +59,18 @@ export default function LotesGrid({ tiposLotes, numero }: { tiposLotes: LoteTipo
               <h3 className="font-display text-2xl font-bold text-brand-black">{lote.nombre}</h3>
               <p className="mt-1 text-sm text-brand-black/60">{lote.dimensiones} metros</p>
 
-              <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-brand-black/40">
-                Precio de contado (precio final)
-              </p>
-              <p className="mt-1 font-display text-4xl font-extrabold text-brand-green-700">
-                {formatUsd(lote.precioUsd)}
-              </p>
+              {mostrarPrecios ? (
+                <>
+                  <p className="mt-6 text-xs font-semibold uppercase tracking-wide text-brand-black/40">
+                    Precio de contado (precio final)
+                  </p>
+                  <p className="mt-1 font-display text-4xl font-extrabold text-brand-green-700">
+                    {formatUsd(lote.precioUsd)}
+                  </p>
+                </>
+              ) : (
+                <p className="mt-6 font-display text-2xl font-bold text-brand-green-700">Consultá precio y financiación</p>
+              )}
               {typeof lote.disponibles === "number" && (
                 <p className="mt-1 text-xs text-brand-black/50">{lote.disponibles} lotes disponibles</p>
               )}
@@ -81,7 +95,7 @@ export default function LotesGrid({ tiposLotes, numero }: { tiposLotes: LoteTipo
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-green-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-green-600"
                 >
                   <MessageCircle className="h-4 w-4" />
-                  Consultar
+                  {mostrarPrecios ? "Consultar" : "Consultar precio"}
                 </a>
                 <button
                   type="button"
@@ -113,8 +127,8 @@ export default function LotesGrid({ tiposLotes, numero }: { tiposLotes: LoteTipo
                 <tr className="border-b border-black/10 text-brand-black/60">
                   <th className="py-2 pr-4 font-medium">Lote</th>
                   <th className="py-2 pr-4 font-medium">Superficie</th>
-                  <th className="py-2 pr-4 font-medium">Precio</th>
-                  <th className="py-2 pr-4 font-medium">USD / m²</th>
+                  {mostrarPrecios && <th className="py-2 pr-4 font-medium">Precio</th>}
+                  {mostrarPrecios && <th className="py-2 pr-4 font-medium">USD / m²</th>}
                 </tr>
               </thead>
               <tbody>
@@ -122,8 +136,8 @@ export default function LotesGrid({ tiposLotes, numero }: { tiposLotes: LoteTipo
                   <tr key={lote.nombre} className="border-b border-black/5 last:border-0">
                     <td className="py-3 pr-4 font-semibold text-brand-black">{lote.nombre}</td>
                     <td className="py-3 pr-4">{lote.superficieM2} m²</td>
-                    <td className="py-3 pr-4">{formatUsd(lote.precioUsd)}</td>
-                    <td className="py-3 pr-4">{formatUsd(Math.round(lote.precioUsd / lote.superficieM2))}</td>
+                    {mostrarPrecios && <td className="py-3 pr-4">{formatUsd(lote.precioUsd)}</td>}
+                    {mostrarPrecios && <td className="py-3 pr-4">{formatUsd(Math.round(lote.precioUsd / lote.superficieM2))}</td>}
                   </tr>
                 ))}
               </tbody>

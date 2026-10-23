@@ -34,6 +34,8 @@ export type Proyecto = {
   orden: number;
   celdaAnchoPct: number | null;
   celdaAltoPct: number | null;
+  /** Si es false, la web del desarrollo no muestra precios (se consultan por WhatsApp). */
+  mostrarPrecios?: boolean;
   /** Datos de la escribanía asignada a este proyecto, para el mail de firma al cliente. */
   escribaniaNombre?: string | null;
   escribaniaDireccion?: string | null;

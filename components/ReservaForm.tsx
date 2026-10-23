@@ -19,12 +19,14 @@ export default function ReservaForm({
   numero,
   comboLotes,
   planesFinanciacion,
+  mostrarPrecios = true,
 }: {
   proyectoId: string;
   lotes: Lote[];
   numero?: string;
   comboLotes?: ComboLotes | null;
   planesFinanciacion?: PlanFinanciacionFijo[];
+  mostrarPrecios?: boolean;
 }) {
   const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
   const [ultimaReserva, setUltimaReserva] = useState<ReservaInput | null>(null);
@@ -235,7 +237,7 @@ export default function ReservaForm({
                   />
                   Manzana {l.manzana} — Lote {l.numero} ({l.superficieM2} m²)
                 </span>
-                <span className="text-brand-black/60">{formatUsd(l.precioUsd)}</span>
+                {mostrarPrecios && <span className="text-brand-black/60">{formatUsd(l.precioUsd)}</span>}
               </label>
             );
           })}
@@ -260,14 +262,18 @@ export default function ReservaForm({
               </li>
             ))}
           </ul>
-          <p className="mt-3 flex items-center justify-between font-display text-lg font-bold text-brand-green-700">
-            <span>Total</span>
-            <span>{formatUsd(totalUsd)}</span>
-          </p>
+          {mostrarPrecios ? (
+            <p className="mt-3 flex items-center justify-between font-display text-lg font-bold text-brand-green-700">
+              <span>Total</span>
+              <span>{formatUsd(totalUsd)}</span>
+            </p>
+          ) : (
+            <p className="mt-3 text-sm text-brand-black/70">Te contactamos para pasarte el precio y las opciones de pago.</p>
+          )}
         </div>
       )}
 
-      {planes.length > 0 && (
+      {mostrarPrecios && planes.length > 0 && (
         <div className="sm:col-span-2">
           <label className="mb-1.5 block text-sm font-medium text-brand-black/80">Forma de pago</label>
           <div className="flex gap-2">

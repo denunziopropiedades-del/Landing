@@ -1,8 +1,8 @@
 "use client";
 
 import { Fragment, useActionState, useState, useTransition } from "react";
-import { Building2, Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
-import { eliminarProyectoAction, publicarProyectoAction, upsertProyectoAction } from "@/lib/admin/actions";
+import { Building2, DollarSign, Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
+import { eliminarProyectoAction, mostrarPreciosProyectoAction, publicarProyectoAction, upsertProyectoAction } from "@/lib/admin/actions";
 import type { Proyecto } from "@/types/site";
 
 const inputClass =
@@ -145,6 +145,13 @@ export default function ProyectosManager({ proyectos }: { proyectos: Proyecto[] 
     });
   };
 
+  const precios = (id: string, mostrar: boolean) => {
+    startTransition(async () => {
+      const r = await mostrarPreciosProyectoAction(id, mostrar);
+      if (!r.ok) alert(r.error);
+    });
+  };
+
   const eliminar = (id: string) => {
     if (!confirm("¿Eliminar este proyecto? Se eliminarán también sus lotes, galería y contenido asociado.")) return;
     startTransition(() => {
@@ -196,6 +203,18 @@ export default function ProyectosManager({ proyectos }: { proyectos: Proyecto[] 
                 >
                   {p.publicado ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                   {p.publicado ? "Publicado" : "Sin publicar"}
+                </button>
+                <button
+                  type="button"
+                  disabled={pending}
+                  title={p.mostrarPrecios !== false ? "Los precios se ven en la web. Tocá para ocultarlos." : "Los precios están ocultos. Tocá para mostrarlos."}
+                  onClick={() => precios(p.id, p.mostrarPrecios === false)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                    p.mostrarPrecios !== false ? "bg-brand-gold-100 text-brand-gold-700" : "bg-black/5 text-brand-black/50"
+                  }`}
+                >
+                  <DollarSign className="h-3.5 w-3.5" />
+                  {p.mostrarPrecios !== false ? "Precios visibles" : "Precios ocultos"}
                 </button>
                 <button type="button" onClick={() => setEditando(editando === p.id ? null : p.id)} className="text-brand-green-700 hover:underline">
                   <Pencil className="inline h-4 w-4" /> Editar

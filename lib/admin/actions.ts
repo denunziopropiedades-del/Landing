@@ -169,6 +169,26 @@ export async function upsertProyectoAction(_prev: ActionResult | null, formData:
   }
 }
 
+export async function mostrarPreciosProyectoAction(id: string, mostrar: boolean): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+    const { error } = await admin.from("proyectos").update({ mostrar_precios: mostrar }).eq("id", id);
+    if (error) {
+      if (/mostrar_precios/.test(error.message))
+        throw new AdminActionError("Falta actualizar la base: corré sql-precios-desarrollos.sql en Supabase → SQL Editor.");
+      throw new Error(error.message);
+    }
+    await registrarActividad(actor, mostrar ? "mostrar precios" : "ocultar precios", "proyecto", id);
+    revalidatePath("/admin/proyectos");
+    revalidatePath("/desarrollos");
+    revalidatePath("/");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function publicarProyectoAction(id: string, publicado: boolean): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor");

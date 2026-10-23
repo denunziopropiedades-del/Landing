@@ -90,6 +90,7 @@ export default async function ProyectoPage({ params }: { params: Promise<Params>
   const tiposLotes = agruparLotesPorTipo(lotes);
   const numero = proyecto.whatsappNumero ?? textos.whatsappNumero;
   const masterplan = galeria.find((g) => g.categoria === "masterplan")?.url;
+  const mostrarPrecios = proyecto.mostrarPrecios !== false;
 
   const schema = {
     "@context": "https://schema.org",
@@ -98,7 +99,7 @@ export default async function ProyectoPage({ params }: { params: Promise<Params>
     description: proyecto.descripcion,
     address: { "@type": "PostalAddress", addressLocality: proyecto.ubicacion, addressCountry: "AR" },
     offers:
-      tiposLotes.length > 0
+      mostrarPrecios && tiposLotes.length > 0
         ? {
             "@type": "AggregateOffer",
             priceCurrency: "USD",
@@ -124,8 +125,8 @@ export default async function ProyectoPage({ params }: { params: Promise<Params>
         />
         <Banners items={banners} numero={numero} />
         <PromoCountdown promo={promocion} />
-        <LotesGrid tiposLotes={tiposLotes} numero={numero} />
-        <ComboLotes combo={combo} />
+        <LotesGrid tiposLotes={tiposLotes} numero={numero} mostrarPrecios={mostrarPrecios} />
+        {mostrarPrecios && <ComboLotes combo={combo} />}
 
         <SeleccionLotesProvider>
           {masterplan && lotes.some((l) => l.posX !== null) && (
@@ -137,6 +138,7 @@ export default async function ProyectoPage({ params }: { params: Promise<Params>
                   numero={numero}
                   celdaAnchoPct={proyecto.celdaAnchoPct ?? undefined}
                   celdaAltoPct={proyecto.celdaAltoPct ?? undefined}
+                  mostrarPrecios={mostrarPrecios}
                 />
               </div>
             </section>
@@ -147,7 +149,7 @@ export default async function ProyectoPage({ params }: { params: Promise<Params>
           <Ubicacion ubicacion={proyecto.ubicacion} accesos={accesos} />
           <Galeria items={galeria} />
           <ProgresoDesarrollo progreso={progreso} />
-          <Financiacion tiposLotes={tiposLotes} config={financiacion} />
+          {mostrarPrecios && <Financiacion tiposLotes={tiposLotes} config={financiacion} />}
 
           <section id="reserva" className="bg-white py-20 sm:py-28">
             <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
@@ -165,6 +167,7 @@ export default async function ProyectoPage({ params }: { params: Promise<Params>
                   numero={numero}
                   comboLotes={combo}
                   planesFinanciacion={financiacion.planesFijos}
+                  mostrarPrecios={mostrarPrecios}
                 />
               </div>
             </div>

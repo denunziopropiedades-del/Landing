@@ -47,12 +47,14 @@ export default function MapaLotes({
   numero,
   celdaAnchoPct = 1.7,
   celdaAltoPct = 12.5,
+  mostrarPrecios = true,
 }: {
   imagenMasterplan: string;
   lotes: Lote[];
   numero?: string;
   celdaAnchoPct?: number;
   celdaAltoPct?: number;
+  mostrarPrecios?: boolean;
 }) {
   const [seleccionado, setSeleccionado] = useState<Lote | null>(null);
   const [expandido, setExpandido] = useState(false);
@@ -121,7 +123,7 @@ export default function MapaLotes({
       <p className="mt-1 text-xs text-brand-black/60">
         {seleccionado.superficieM2} m² ({seleccionado.dimensiones})
       </p>
-      <p className="mt-2 font-display text-lg font-bold text-brand-green-700">{formatUsd(seleccionado.precioUsd)}</p>
+      {mostrarPrecios && <p className="mt-2 font-display text-lg font-bold text-brand-green-700">{formatUsd(seleccionado.precioUsd)}</p>}
       <span
         className="mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
         style={{ backgroundColor: COLOR_ESTADO[seleccionado.estado] }}

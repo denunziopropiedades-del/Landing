@@ -58,6 +58,7 @@ export async function getProyectosAdmin(): Promise<Proyecto[]> {
     orden: p.orden,
     celdaAnchoPct: p.celda_ancho_pct ?? null,
     celdaAltoPct: p.celda_alto_pct ?? null,
+    mostrarPrecios: p.mostrar_precios !== false,
     escribaniaNombre: p.escribania_nombre ?? null,
     escribaniaDireccion: p.escribania_direccion ?? null,
     escribaniaMapsUrl: p.escribania_maps_url ?? null,
