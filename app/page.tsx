@@ -7,6 +7,7 @@ import Testimonios from "@/components/Testimonios";
 import Faq from "@/components/Faq";
 import Contacto from "@/components/Contacto";
 import Footer from "@/components/Footer";
+import IntroPortada from "@/components/IntroPortada";
 import BuscadorPropiedades from "@/components/propiedades/BuscadorPropiedades";
 import ZonasGrid from "@/components/propiedades/ZonasGrid";
 import PropiedadCard from "@/components/propiedades/PropiedadCard";
@@ -35,6 +36,7 @@ export default async function PortalHome() {
 
   return (
     <>
+      <IntroPortada />
       <Navbar numero={textos.whatsappNumero} />
       <main>
         {/* Portada con buscador */}
