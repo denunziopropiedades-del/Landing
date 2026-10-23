@@ -6,7 +6,7 @@ import { Bath, BedDouble, Check, Droplets, MapPin, Maximize2, MessageCircle, Rul
 import PaginaPortal from "@/components/propiedades/PaginaPortal";
 import ConsultaForm from "@/components/propiedades/ConsultaForm";
 import { getSiteTextos } from "@/lib/content";
-import { esRural, formatearPrecio, getPropiedadBySlug, labelSituacion, labelTipo, SITUACIONES, ubicacionTexto } from "@/lib/propiedades";
+import { esRural, formatearPrecio, getPropiedadBySlug, labelBarrio, labelSituacion, labelTipo, SITUACIONES, ubicacionTexto } from "@/lib/propiedades";
 import { getPartido } from "@/lib/zonas";
 import { esHtml, sanitizarHtml } from "@/lib/texto-enriquecido";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
@@ -90,6 +90,11 @@ export default async function PropiedadPage({ params }: { params: Promise<Params
                 {labelSituacion(p.situacion)}
               </span>
             )}
+            {p.barrio && (
+              <span className={`rounded-full px-3 py-1 text-xs font-bold ${p.barrio === "cerrado" ? "bg-brand-black text-brand-gold-500" : "bg-sky-600 text-white"}`}>
+                {labelBarrio(p.barrio)}
+              </span>
+            )}
             {p.aptoCredito && <span className="rounded-full bg-[#2f5d8a] px-3 py-1 text-xs font-bold text-white">Apto crédito bancario</span>}
             {p.financiacionDirecta && <span className="rounded-full bg-brand-gold-500 px-3 py-1 text-xs font-bold text-brand-black">Financiación directa</span>}
             {p.etiquetas.map((e) => (
@@ -119,13 +124,19 @@ export default async function PropiedadPage({ params }: { params: Promise<Params
             </div>
           )}
 
-          {(p.situacion || p.aptoCredito || p.financiacionDirecta) && (
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          {(p.situacion || p.barrio || p.aptoCredito || p.financiacionDirecta) && (
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {p.situacion && (
                 <div className="rounded-2xl bg-white p-4">
                   <span className="block text-xs text-brand-black/55">Situación dominial</span>
                   <span className="block font-bold text-brand-black">{labelSituacion(p.situacion)}</span>
                   <span className="block text-xs text-brand-black/55">{SITUACIONES.find((s) => s.value === p.situacion)?.detalle}</span>
+                </div>
+              )}
+              {p.barrio && (
+                <div className="rounded-2xl bg-white p-4">
+                  <span className="block text-xs text-brand-black/55">Tipo de barrio</span>
+                  <span className="block font-bold text-brand-black">{labelBarrio(p.barrio)}</span>
                 </div>
               )}
               {p.aptoCredito && (

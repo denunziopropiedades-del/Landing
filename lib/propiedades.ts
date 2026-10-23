@@ -15,6 +15,7 @@ export type FiltrosPropiedades = {
   aptoCredito?: boolean;
   financiacionDirecta?: boolean;
   situacion?: "escritura" | "posesion";
+  barrio?: "cerrado" | "abierto";
   limite?: number;
 };
 
@@ -40,6 +41,7 @@ export async function getPropiedades(filtros: FiltrosPropiedades = {}): Promise<
   if (filtros.aptoCredito) q = q.eq("apto_credito", true);
   if (filtros.financiacionDirecta) q = q.eq("financiacion_directa", true);
   if (filtros.situacion) q = q.eq("situacion_dominial", filtros.situacion);
+  if (filtros.barrio) q = q.eq("tipo_barrio", filtros.barrio);
   const ordenada = q.order("destacado", { ascending: false }).order("orden").order("creado_en", { ascending: false });
   const { data, error } = await (filtros.limite ? ordenada.limit(filtros.limite) : ordenada);
   if (error) {

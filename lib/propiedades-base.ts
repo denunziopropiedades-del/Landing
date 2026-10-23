@@ -12,6 +12,13 @@ export const SITUACIONES: { value: SituacionDominial; label: string; detalle: st
 ];
 export const labelSituacion = (s: SituacionDominial | null) => SITUACIONES.find((x) => x.value === s)?.label ?? null;
 
+export type TipoBarrio = "cerrado" | "abierto";
+export const BARRIOS: { value: TipoBarrio; label: string }[] = [
+  { value: "cerrado", label: "Barrio cerrado" },
+  { value: "abierto", label: "Barrio abierto" },
+];
+export const labelBarrio = (b: TipoBarrio | null) => BARRIOS.find((x) => x.value === b)?.label ?? null;
+
 export type Propiedad = {
   id: string;
   slug: string;
@@ -36,6 +43,7 @@ export type Propiedad = {
   financiacionDirecta: boolean;
   /** Situación dominial: escritura o derechos de posesión. */
   situacion: SituacionDominial | null;
+  barrio: TipoBarrio | null;
   hectareas: number | null;
   aptitud: string | null;
   agua: string | null;
@@ -94,6 +102,7 @@ export function mapPropiedad(p: Record<string, unknown>): Propiedad {
     aptoCredito: Boolean(p.apto_credito),
     financiacionDirecta: Boolean(p.financiacion_directa),
     situacion: p.situacion_dominial === "escritura" || p.situacion_dominial === "posesion" ? p.situacion_dominial : null,
+    barrio: p.tipo_barrio === "cerrado" || p.tipo_barrio === "abierto" ? p.tipo_barrio : null,
     hectareas: num(p.hectareas),
     aptitud: (p.aptitud as string) ?? null,
     agua: (p.agua as string) ?? null,

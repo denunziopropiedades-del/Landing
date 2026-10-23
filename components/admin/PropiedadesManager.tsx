@@ -9,7 +9,7 @@ import {
   upsertPropiedadAction,
 } from "@/lib/admin/propiedades-actions";
 import { isCloudinaryConfigured, uploadToCloudinary } from "@/lib/cloudinary-client";
-import { esRural, formatearPrecio, labelTipo, SITUACIONES, TIPOS, TIPOS_SIN_AMBIENTES, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
+import { BARRIOS, esRural, formatearPrecio, labelTipo, SITUACIONES, TIPOS, TIPOS_SIN_AMBIENTES, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
 import { ZONAS } from "@/lib/zonas";
 import EditorTexto from "@/components/admin/EditorTexto";
 
@@ -208,7 +208,7 @@ function PropiedadForm({ propiedad, onDone }: { propiedad?: Propiedad; onDone: (
         </>
       )}
 
-      <fieldset className="grid gap-3 rounded-xl bg-brand-cream p-3 sm:col-span-6 sm:grid-cols-3">
+      <fieldset className="grid gap-3 rounded-xl bg-brand-cream p-3 sm:col-span-6 sm:grid-cols-2 lg:grid-cols-4">
         <legend className="sr-only">Forma de pago y situación dominial</legend>
         <label className="flex items-center gap-2 text-sm font-semibold">
           <input type="checkbox" name="aptoCredito" defaultChecked={propiedad?.aptoCredito} className="h-4 w-4" /> Apto crédito bancario
@@ -223,6 +223,17 @@ function PropiedadForm({ propiedad, onDone }: { propiedad?: Propiedad; onDone: (
             {SITUACIONES.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelClass} htmlFor="barrio">Barrio</label>
+          <select id="barrio" name="barrio" defaultValue={propiedad?.barrio ?? ""} className={inputClass}>
+            <option value="">Sin dato</option>
+            {BARRIOS.map((b) => (
+              <option key={b.value} value={b.value}>
+                {b.label}
               </option>
             ))}
           </select>

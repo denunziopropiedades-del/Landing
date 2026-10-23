@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Bath, BedDouble, Droplets, House, MapPin, Maximize2, Wheat, Zap } from "lucide-react";
-import { esRural, formatearPrecio, labelSituacion, labelTipo, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
+import { esRural, formatearPrecio, labelBarrio, labelSituacion, labelTipo, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
 
 export default function PropiedadCard({ propiedad: p }: { propiedad: Propiedad }) {
   const rural = esRural(p.tipo);
@@ -14,6 +14,7 @@ export default function PropiedadCard({ propiedad: p }: { propiedad: Propiedad }
   const etiquetaFoto = p.etiquetas[0];
   const condiciones = [
     p.situacion ? { t: labelSituacion(p.situacion)!, c: p.situacion === "escritura" ? "bg-brand-green-700/10 text-brand-green-700" : "bg-amber-100 text-amber-900" } : null,
+    p.barrio ? { t: labelBarrio(p.barrio)!, c: p.barrio === "cerrado" ? "bg-brand-black/10 text-brand-black" : "bg-sky-100 text-sky-900" } : null,
     p.aptoCredito ? { t: "Apto crédito bancario", c: "bg-[#2f5d8a]/10 text-[#2f5d8a]" } : null,
     p.financiacionDirecta ? { t: "Financiación directa", c: "bg-brand-gold-500/15 text-[#7a5a1c]" } : null,
   ].filter((x): x is { t: string; c: string } => x !== null);

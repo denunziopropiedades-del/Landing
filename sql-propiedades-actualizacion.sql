@@ -9,3 +9,6 @@ alter table visitas add column if not exists propiedad_id uuid references propie
 alter table propiedades drop constraint if exists propiedades_tipo_check;
 alter table propiedades add constraint propiedades_tipo_check
   check (tipo in ('casa', 'departamento', 'ph', 'local', 'galpon', 'terreno', 'lote_comercial', 'campo', 'chacra'));
+
+-- Barrio cerrado o abierto.
+alter table propiedades add column if not exists tipo_barrio text check (tipo_barrio in ('cerrado', 'abierto'));

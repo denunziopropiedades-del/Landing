@@ -21,6 +21,7 @@ export type ParamsListado = {
   ha?: string;
   /** "escritura" | "posesion" */
   situacion?: string;
+  barrio?: string;
   /** "1" = solo apto crédito bancario */
   credito?: string;
   /** "1" = solo con financiación directa */
@@ -66,6 +67,7 @@ export default async function ListadoPropiedades({
     ambientesMin,
     hectareasMin,
     situacion: params.situacion === "escritura" || params.situacion === "posesion" ? params.situacion : undefined,
+    barrio: params.barrio === "cerrado" || params.barrio === "abierto" ? params.barrio : undefined,
     aptoCredito: params.credito === "1",
     financiacionDirecta: params.financiacion === "1",
   });
@@ -185,6 +187,12 @@ export default async function ListadoPropiedades({
           </Link>
           <Link href={href({ situacion: params.situacion === "posesion" ? undefined : "posesion" })} className={chip(params.situacion === "posesion")}>
             Derechos de posesión
+          </Link>
+          <Link href={href({ barrio: params.barrio === "cerrado" ? undefined : "cerrado" })} className={chip(params.barrio === "cerrado")}>
+            Barrio cerrado
+          </Link>
+          <Link href={href({ barrio: params.barrio === "abierto" ? undefined : "abierto" })} className={chip(params.barrio === "abierto")}>
+            Barrio abierto
           </Link>
           <Link href={href({ credito: params.credito === "1" ? undefined : "1" })} className={chip(params.credito === "1")}>
             Apto crédito bancario
