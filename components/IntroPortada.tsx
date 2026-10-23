@@ -108,10 +108,13 @@ const CSS = `
 .intro-destello{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 55%,rgba(255,214,150,.95),rgba(255,180,90,.35) 45%,transparent 75%);
   opacity:0;animation:intro-destello 1.5s ease-in-out 2.9s both}
 .intro-interior{opacity:0;animation:intro-mostrar 1.3s ease-out 3.3s forwards}
+/* En celulares la imagen no llega a cubrir el alto: el fondo es la misma imagen difuminada. */
+.intro-interior::before{content:"";position:absolute;inset:-40px;background:url(/intro/interior.webp) center/cover;filter:blur(28px) brightness(.5)}
+.intro-interior::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45))}
 /* La imagen interior cubre la pantalla, pero en celulares se achica lo justo para que la marca y el botón entren enteros. */
-.intro-marco{position:relative;flex:none;aspect-ratio:1673/940;width:max(100vw,177.98vh);
+.intro-marco{position:relative;z-index:1;flex:none;aspect-ratio:1673/940;width:max(100vw,177.98vh);
   animation:intro-asentar 2.4s cubic-bezier(.2,.7,.2,1) 3.3s both}
-@media (max-aspect-ratio:3/4){.intro-marco{width:265vw}}
+@media (max-aspect-ratio:3/4){.intro-marco{width:265vw;-webkit-mask-image:linear-gradient(transparent,#000 9%,#000 91%,transparent);mask-image:linear-gradient(transparent,#000 9%,#000 91%,transparent)}}
 .intro-marco img{display:block;width:100%;height:100%}
 .intro-boton{position:absolute;border-radius:14px;cursor:pointer;background:transparent;transition:box-shadow .3s,background .3s}
 .intro-boton:not(:disabled){animation:intro-latido 2.4s ease-in-out infinite}
