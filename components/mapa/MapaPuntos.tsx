@@ -6,7 +6,7 @@ import type { CategoriaPunto, PuntoMapa } from "@/lib/mapa";
 
 /**
  * Mapa con un punto por publicación (venta, alquiler, campo) y por desarrollo.
- * Usa Leaflet y mapas de CARTO/OpenStreetMap.
+ * Usa Leaflet y mapas de OpenStreetMap.
  */
 
 export const CATEGORIAS: { value: CategoriaPunto; label: string; color: string }[] = [
@@ -58,19 +58,19 @@ export default function MapaPuntos({ puntos, alto = 520, compacto = false }: { p
       .then((L) => {
         if (!vivo || !div.current || mapa.current) return;
         const m = L.map(div.current, { scrollWheelZoom: false, zoomControl: true, attributionControl: true }).setView([-35.1, -58.4], 8);
-        const carto = L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+        // Mapa base de OpenStreetMap (gratis, sin clave). CARTO ahora pide API key y muestra marcas de agua.
+        const osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 19,
-          subdomains: "abcd",
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).addTo(m);
-        // Si los mapas de CARTO no cargan, se pasa a los de OpenStreetMap.
+        // Si OpenStreetMap no responde, se pasa al mapa de calles de Esri (tampoco pide clave).
         let fallas = 0;
-        carto.on("tileerror", () => {
+        osm.on("tileerror", () => {
           if (++fallas !== 4) return;
-          m.removeLayer(carto);
-          L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          m.removeLayer(osm);
+          L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
             maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            attribution: "Tiles &copy; Esri",
           }).addTo(m);
         });
         // La rueda del mouse hace zoom recién después de tocar el mapa (así no traba el scroll de la página).
