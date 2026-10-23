@@ -454,7 +454,8 @@ export default function DocumentosManager({
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {campos.map((c) => {
                   const id = `campo-${c.clave.replace(/[^a-z0-9]+/g, "-")}`;
-                  const v = valores[c.clave] ?? "";
+                  // Los textos largos con un esquema por defecto (ej. el Anexo I) arrancan con ese esquema para completarlo.
+                  const v = valores[c.clave] ?? (c.tipo === "texto largo" && c.porDefecto.includes("\n") ? c.porDefecto : "");
                   const props = {
                     id,
                     value: v,
@@ -466,7 +467,7 @@ export default function DocumentosManager({
                     <div key={c.clave} className={c.tipo === "texto largo" || c.etiqueta.length > 28 ? "sm:col-span-2" : ""}>
                       <label className={label} htmlFor={id}>{c.etiqueta}</label>
                       {c.tipo === "texto largo" ? (
-                        <textarea rows={3} {...props} />
+                        <textarea rows={Math.min(14, Math.max(3, v.split("\n").length + 1))} {...props} />
                       ) : (
                         <input type={c.tipo === "fecha" ? "date" : c.tipo === "hora" ? "time" : "text"} inputMode={c.tipo === "numero" || c.tipo === "porcentaje" ? "decimal" : undefined} {...props} />
                       )}

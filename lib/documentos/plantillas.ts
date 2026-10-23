@@ -339,4 +339,381 @@ Es cuanto tengo que informar.
 
 [FIRMA]`,
   },
+  {
+    id: "colaboracion-comercializacion-posesion",
+    nombre: "Contrato de colaboración — comercialización de inmuebles en posesión",
+    categoria: "Contratos",
+    incorporado: true,
+    cuerpo: `**CONTRATO DE COLABORACIÓN PARA LA COMERCIALIZACIÓN Y DESARROLLO DE INMUEBLES EN POSESIÓN - AUTORIZACIÓN EXCLUSIVA DE COMERCIALIZACIÓN - DISTRIBUCIÓN DE RESULTADOS Y TRANSMISIÓN DE LA POSESIÓN**
+
+Entre **MATÍAS JAVIER DE NUNZIO**, DNI Nº 32.917.792, con domicilio real en Pasaje 4 Golondrinas Mza 403 Lote 14, Localidad de Alejandro Korn, Partido de San Vicente, Prov. Bs. As., en adelante “EL COMERCIALIZADOR”, por una parte; y **{{Nombre del poseedor}}**, DNI Nº {{DNI del poseedor}}, con domicilio real en {{Domicilio del poseedor}}, Localidad de {{Localidad del poseedor}}, Partido de {{Partido del poseedor}}, Prov. {{Provincia del poseedor=Bs. As.}}, en adelante “EL POSEEDOR”, por la otra; conjuntamente denominados “LAS PARTES”, convienen celebrar el presente “CONTRATO DE COLABORACIÓN PARA LA COMERCIALIZACIÓN Y DESARROLLO DE INMUEBLES EN POSESIÓN”, sujeto a las siguientes condiciones y estipulaciones:
+
+**PRIMERA. ANTECEDENTES. RECONOCIMIENTO DE LA SITUACIÓN POSESORIA**
+
+1.1. EL POSEEDOR manifiesta, declara y reconoce ejercer, por sí y/o por la sucesión de actos posesorios que invoca, la posesión pública, pacífica, continua e ininterrumpida de los inmuebles que serán individualizados en el ANEXO I del presente instrumento, desde aproximadamente el mes de {{Mes de inicio de la posesión}} del año {{Año de inicio de la posesión}}, circunstancia que constituye un antecedente esencial tenido en consideración por LAS PARTES para la celebración del presente contrato.
+
+1.2. LAS PARTES dejan expresamente establecido que el presente instrumento no importa transmisión, cesión ni constitución de derecho real alguno sobre los inmuebles, ni pretende sustituir los instrumentos que, en cada caso concreto, resulten necesarios para documentar la transmisión de derechos posesorios, la entrega de la posesión o cualquier otro acto jurídico que corresponda celebrar con los terceros adquirentes.
+
+1.3. La referencia efectuada a la situación posesoria de EL POSEEDOR constituye un presupuesto contractual y económico del presente acuerdo y no podrá ser interpretada como declaración de dominio registral cuando éste no se encuentre acreditado.
+
+**SEGUNDA. OBJETO**
+
+2.1. Por el presente, EL POSEEDOR encomienda a EL COMERCIALIZADOR, quien acepta, la organización, desarrollo, promoción, publicidad, individualización, mensura, puesta en mercado y comercialización de los inmuebles y/o fracciones de terreno individualizados en el ANEXO I.
+
+2.2. El objeto comprende todas aquellas actividades materiales, comerciales, técnicas y de gestión necesarias o convenientes para procurar la colocación de los inmuebles en el mercado y concretar operaciones con terceros interesados.
+
+2.3. EL COMERCIALIZADOR actuará con autonomía organizativa y comercial, sin que ello implique relación laboral, sociedad, mandato general, representación jurídica permanente ni comunidad de bienes entre LAS PARTES.
+
+**TERCERA. APORTE Y OBLIGACIONES DE EL POSEEDOR**
+
+EL POSEEDOR aporta al emprendimiento objeto del presente contrato:
+
+a) Sus derechos y acciones posesorias respecto de los inmuebles;
+
+b) Los antecedentes, documentación e información que obren en su poder respecto de los mismos;
+
+c) su disponibilidad para permitir la realización de las tareas técnicas necesarias;
+
+d) Su autorización para la promoción y comercialización;
+
+e) Su colaboración para la individualización y eventual subdivisión material de las fracciones;
+
+f) Su obligación de concurrir y suscribir aquellos instrumentos que razonablemente resulten necesarios para perfeccionar las operaciones con terceros, siempre que éstos resulten compatibles con el presente contrato y con la situación jurídica de los inmuebles.
+
+**CUARTA. OBLIGACIONES DE EL COMERCIALIZADOR**
+
+EL COMERCIALIZADOR asumirá, entre otras, las siguientes obligaciones:
+
+a) desarrollar la estrategia comercial;
+
+b) realizar publicaciones y acciones de publicidad;
+
+c) procurar y contactar potenciales adquirentes;
+
+d) coordinar visitas y reuniones;
+
+e) gestionar reservas, señas y propuestas de compra;
+
+f) coordinar, cuando corresponda, las tareas de mensura e individualización de las fracciones;
+
+g) contratar, cuando resulte necesario, profesionales, técnicos, agrimensores, gestores y demás auxiliares vinculados con la comercialización;
+
+h) organizar la documentación comercial de las operaciones;
+
+i) comunicar a EL POSEEDOR las operaciones concretadas y los pagos efectivamente percibidos;
+
+j) desarrollar todas aquellas gestiones razonablemente necesarias para el cumplimiento del objeto contractual.
+
+**QUINTA. AUTORIZACIÓN EXPRESA DE COMERCIALIZACIÓN**
+
+EL POSEEDOR otorga por el presente a EL COMERCIALIZADOR autorización expresa, suficiente y exclusiva para la comercialización de los inmuebles comprendidos en el ANEXO I durante la vigencia del presente contrato.
+
+La autorización comprende la facultad de:
+
+a) publicar los inmuebles;
+
+b) efectuar fotografías, videos y material publicitario;
+
+c) colocar cartelería;
+
+d) realizar campañas de publicidad;
+
+e) exhibir los inmuebles a interesados;
+
+f) recibir consultas y propuestas;
+
+g) negociar condiciones comerciales dentro de los parámetros acordados;
+
+h) gestionar reservas y propuestas;
+
+i) coordinar las tareas técnicas necesarias para la individualización de las fracciones.
+
+La presente autorización no comprende facultades para transmitir por sí el dominio ni para disponer jurídicamente de derechos que no le pertenecen, salvo autorización específica otorgada por EL POSEEDOR para un acto determinado.
+
+**SEXTA. EXCLUSIVIDAD**
+
+Durante la vigencia del presente contrato, EL POSEEDOR se obliga a no encomendar a terceros la comercialización de los inmuebles comprendidos en el ANEXO I ni desarrollar, por sí o por terceros, una actividad comercial paralela destinada a eludir la intervención de EL COMERCIALIZADOR.
+
+La exclusividad comprende tanto las operaciones realizadas directamente como aquellas instrumentadas por medio de terceros, familiares, mandatarios, sociedades, intermediarios o personas interpuestas.
+
+**SÉPTIMA. PARTICIPACIÓN ECONÓMICA. DISTRIBUCIÓN {{Porcentaje del poseedor|numero=60}}/{{Porcentaje del comercializador|numero=40}}**
+
+Como contraprestación por el conjunto de obligaciones, actividades, inversiones, gestiones y riesgos asumidos por EL COMERCIALIZADOR, LAS PARTES acuerdan que EL COMERCIALIZADOR tendrá derecho al {{Porcentaje del comercializador|porcentaje en letras=40}} del producido económico correspondiente a cada operación, correspondiendo el {{Porcentaje del poseedor|porcentaje en letras=60}} restante a EL POSEEDOR.
+
+La participación será determinada operación por operación y lote por lote, sin necesidad de aguardar la finalización total del proyecto ni la comercialización de la totalidad de los inmuebles.
+
+El porcentaje del {{Porcentaje del comercializador|porcentaje en letras=40}} constituye la participación contractual de EL COMERCIALIZADOR en el resultado económico de cada operación, y no una mera comisión aislada.
+
+**OCTAVA. DEVENGAMIENTO Y PAGO DE LA PARTICIPACIÓN**
+
+El derecho económico de EL COMERCIALIZADOR se devengará respecto de cada operación conforme al porcentaje de participación establecido en el presente contrato, correspondiendo el {{Porcentaje del poseedor|porcentaje=60}} a EL POSEEDOR y el {{Porcentaje del comercializador|porcentaje=40}} a EL COMERCIALIZADOR.
+
+Cuando la operación sea financiada por EL COMERCIALIZADOR, éste asumirá a su exclusivo cargo la financiación otorgada al adquirente, incluyendo la percepción de las cuotas y el riesgo propio de dicha financiación.
+
+En tales supuestos, EL POSEEDOR percibirá su participación del {{Porcentaje del poseedor|porcentaje en minusculas=60}} sobre el precio de la operación en la forma y oportunidad que se hubiera pactado con EL COMERCIALIZADOR, mientras que éste percibirá su participación del {{Porcentaje del comercializador|porcentaje en minusculas=40}} conforme al esquema de financiación convenido con el adquirente.
+
+Las reservas, señas, anticipos o cualquier otro importe entregado a cuenta de una operación serán imputados a la operación correspondiente y se distribuirán conforme al porcentaje de participación establecido, salvo pacto escrito en contrario.
+
+La financiación otorgada por EL COMERCIALIZADOR al adquirente no modificará ni reducirá el porcentaje de participación correspondiente a EL POSEEDOR, ni generará para éste obligación alguna de financiar, garantizar, adelantar o asumir el riesgo de cobro de las cuotas otorgadas por EL COMERCIALIZADOR.
+
+**NOVENA. PRECIO DE LAS OPERACIONES**
+
+El precio de cada lote o fracción será determinado de común acuerdo entre LAS PARTES.
+
+Ninguna reducción sustancial del precio previamente acordado podrá ser realizada unilateralmente por EL POSEEDOR cuando ello tenga por finalidad directa o indirecta afectar la participación económica de EL COMERCIALIZADOR.
+
+En caso de que una operación incluya intereses, actualizaciones, financiación, compensaciones, permutas, entregas de bienes o cualquier otra contraprestación económica, LAS PARTES deberán determinar su valor a efectos de establecer la participación correspondiente.
+
+**DÉCIMA. GASTOS DE COMERCIALIZACIÓN Y DESARROLLO**
+
+Serán a cargo de EL COMERCIALIZADOR los gastos ordinarios vinculados con la actividad comercial que éste desarrolle, incluyendo publicidad, publicaciones, promoción, difusión y demás erogaciones directamente relacionadas con la comercialización.
+
+Asimismo, EL COMERCIALIZADOR podrá asumir los gastos necesarios para mensuras, tareas técnicas e individualización de las fracciones, cuando así lo considere conveniente para el desarrollo del emprendimiento.
+
+Ello no implicará que EL COMERCIALIZADOR asuma obligaciones tributarias, cargas, deudas, pasivos, reclamos de terceros o gastos derivados de hechos jurídicos anteriores al presente contrato que correspondan exclusivamente a EL POSEEDOR.
+
+**DÉCIMA PRIMERA. MENSURA, INDIVIDUALIZACIÓN Y TAREAS TÉCNICAS**
+
+EL POSEEDOR autoriza expresamente a EL COMERCIALIZADOR a gestionar ante agrimensores, organismos públicos, profesionales, técnicos y demás autoridades competentes las tareas necesarias para determinar, medir, individualizar y, cuando jurídicamente resulte posible, subdividir las fracciones destinadas a comercialización.
+
+Toda subdivisión formal deberá ajustarse a la normativa administrativa, catastral y urbanística aplicable.
+
+La autorización conferida por esta cláusula no constituye por sí misma autorización para modificar derechos reales ni sustituye las autorizaciones administrativas o instrumentos jurídicos que legalmente correspondan.
+
+**DÉCIMA SEGUNDA. OBLIGACIÓN DE COLABORACIÓN**
+
+EL POSEEDOR se obliga a prestar toda colaboración razonablemente necesaria para el cumplimiento del objeto contractual.
+
+En particular deberá:
+
+a) proporcionar la documentación y antecedentes que obren en su poder;
+
+b) facilitar el acceso a los inmuebles;
+
+c) permitir las tareas de mensura e inspección;
+
+d) concurrir cuando su presencia resulte necesaria;
+
+e) suscribir la documentación que corresponda;
+
+f) brindar información veraz respecto de la situación posesoria;
+
+g) abstenerse de realizar actos que obstaculicen injustificadamente la comercialización.
+
+El incumplimiento injustificado de esta obligación será considerado incumplimiento esencial del contrato.
+
+**DÉCIMA TERCERA. PROHIBICIÓN DE ELUSIÓN**
+
+LAS PARTES reconocen que la actividad desarrollada por EL COMERCIALIZADOR genera un valor económico propio y constituye presupuesto indispensable para la concreción de las operaciones.
+
+En consecuencia, EL POSEEDOR no podrá eludir el derecho económico de EL COMERCIALIZADOR mediante la celebración directa de operaciones con personas que hubieran sido contactadas, informadas, derivadas o aproximadas al inmueble como consecuencia de la actividad desarrollada por EL COMERCIALIZADOR.
+
+La circunstancia de que el adquirente finalmente negocie directamente con EL POSEEDOR, sus familiares, representantes o terceros vinculados no extinguirá ni reducirá el derecho de EL COMERCIALIZADOR al {{Porcentaje del comercializador|porcentaje=40}} que le corresponde.
+
+**DÉCIMA CUARTA. PRESUNCIÓN DE VINCULACIÓN COMERCIAL**
+
+Se considerará, salvo prueba en contrario, que existe vinculación con la actividad de EL COMERCIALIZADOR cuando el potencial adquirente:
+
+a) haya consultado como consecuencia de una publicación realizada por éste;
+
+b) haya sido contactado por éste;
+
+c) haya visitado el inmueble mediante su gestión;
+
+d) haya recibido información, documentación o material publicitario proporcionado por éste;
+
+e) haya formulado una reserva o propuesta;
+
+f) haya mantenido negociaciones durante la vigencia del contrato.
+
+La protección contractual subsistirá aun cuando la operación sea finalmente instrumentada por EL POSEEDOR o por terceros.
+
+**DÉCIMA QUINTA. SUPUESTOS DE INTERPOSICIÓN**
+
+Las obligaciones económicas asumidas por EL POSEEDOR serán igualmente aplicables cuando una operación sea formalmente celebrada con:
+
+a) familiares;
+
+b) sociedades vinculadas;
+
+c) mandatarios;
+
+d) personas interpuestas;
+
+e) terceros relacionados;
+
+f) cesionarios;
+
+g) cualquier otra persona física o jurídica utilizada con la finalidad de evitar o disminuir la participación económica de EL COMERCIALIZADOR.
+
+La utilización de una estructura formal distinta no podrá ser invocada para desconocer la realidad económica de la operación.
+
+**DÉCIMA SEXTA. OPERACIONES POSTERIORES A LA EXTINCIÓN**
+
+La terminación del presente contrato no afectará el derecho de EL COMERCIALIZADOR respecto de las operaciones que se encuentren en curso al momento de su finalización ni respecto de aquellas que sean consecuencia directa de gestiones realizadas durante su vigencia.
+
+En particular, conservará su derecho al {{Porcentaje del comercializador|porcentaje=40}} cuando, con posterioridad a la extinción:
+
+a) se concrete una operación con un interesado previamente contactado;
+
+b) se perfeccione una negociación iniciada durante la vigencia;
+
+c) se concrete una venta respecto de un lote previamente publicado;
+
+d) se utilice información, documentación, publicidad o trabajo generado por EL COMERCIALIZADOR;
+
+e) se concrete la operación mediante una persona interpuesta.
+
+**DÉCIMA SÉPTIMA. PROTECCIÓN DE LAS INVERSIONES**
+
+Las inversiones y gastos realizados por EL COMERCIALIZADOR en publicidad, mensura, promoción, desarrollo y comercialización serán considerados parte integrante de las prestaciones asumidas por éste.
+
+En caso de resolución anticipada imputable a EL POSEEDOR, éste deberá respetar los derechos económicos ya devengados y aquellos que correspondan conforme las operaciones derivadas de la actividad desarrollada hasta la fecha de terminación.
+
+**DÉCIMA OCTAVA. INFORMACIÓN Y RENDICIÓN**
+
+Toda suma percibida como consecuencia de una operación deberá ser informada a la otra parte.
+
+EL POSEEDOR deberá comunicar a EL COMERCIALIZADOR, dentro de las cuarenta y ocho (48) horas de producido, cualquier pago, reserva, seña, anticipo o precio recibido de terceros respecto de los inmuebles objeto del presente.
+
+La omisión de informar una operación no impedirá el nacimiento ni ejercicio del derecho económico de EL COMERCIALIZADOR.
+
+**DÉCIMA NOVENA. RESPONSABILIDAD POR LA SITUACIÓN JURÍDICA**
+
+EL POSEEDOR declara bajo su responsabilidad que la información proporcionada a EL COMERCIALIZADOR respecto de la posesión y antecedentes de los inmuebles es verdadera.
+
+EL COMERCIALIZADOR no responderá por conflictos dominiales, registrales, sucesorios, fiscales, administrativos, posesorios o judiciales cuyo origen sea anterior a su intervención o que resulten ajenos a su actividad comercial.
+
+La responsabilidad de EL COMERCIALIZADOR quedará circunscripta a los actos propios que realice en ejecución del presente contrato.
+
+**VIGÉSIMA. INDEMNIDAD**
+
+EL POSEEDOR mantendrá indemne a EL COMERCIALIZADOR frente a reclamos de terceros derivados de hechos, actos, derechos, cargas, gravámenes, conflictos posesorios o controversias jurídicas cuya causa sea anterior al presente contrato o resulte ajena a la actividad desarrollada por EL COMERCIALIZADOR.
+
+Esta obligación subsistirá aun después de extinguido el presente contrato mientras subsistan reclamos vinculados con hechos anteriores.
+
+**VIGÉSIMA PRIMERA. AUSENCIA DE SOCIEDAD**
+
+El presente contrato no constituye sociedad, asociación, joint venture, sociedad de hecho ni comunidad de bienes entre LAS PARTES.
+
+La distribución económica del {{Porcentaje del poseedor|porcentaje=60}} y {{Porcentaje del comercializador|porcentaje=40}} constituye exclusivamente el mecanismo contractual mediante el cual LAS PARTES asignan los resultados económicos de las operaciones realizadas en ejecución del presente acuerdo.
+
+Cada parte conservará su autonomía jurídica, patrimonial y fiscal.
+
+**VIGÉSIMA SEGUNDA. AUTONOMÍA DE LAS PARTES**
+
+EL COMERCIALIZADOR desarrollará sus actividades con autonomía técnica, económica y organizativa.
+
+El presente contrato no genera relación laboral alguna entre LAS PARTES ni dependencia, subordinación jurídica o económica en los términos propios de un contrato de trabajo.
+
+**VIGÉSIMA TERCERA. PLAZO**
+
+El presente contrato tendrá una vigencia de {{Plazo del contrato=3 (tres)}} años, contados desde su suscripción o, en su defecto hasta la venta de todos los inmuebles, o sea lo que suceda primero, siendo la prórroga será automática, Salvo que LAS PARTES decidan o contrario.
+
+La expiración del plazo no afectará los derechos económicos que hubieran nacido durante su vigencia ni aquellos correspondientes a operaciones derivadas de las gestiones realizadas durante el período contractual.
+
+**VIGÉSIMA CUARTA. RESCISIÓN ANTICIPADA**
+
+Cualquiera de LAS PARTES podrá solicitar la rescisión por incumplimiento grave de la otra.
+
+Cuando la rescisión sea provocada por incumplimiento de EL POSEEDOR, quedarán a salvo todos los derechos económicos de EL COMERCIALIZADOR derivados de operaciones concretadas, en curso o causalmente vinculadas con su actividad.
+
+La rescisión no podrá ser utilizada como mecanismo para sustraer a EL COMERCIALIZADOR de la participación económica que legítimamente hubiera generado.
+
+**VIGÉSIMA QUINTA. CLÁUSULA PENAL**
+
+En caso de que EL POSEEDOR incumpla la exclusividad, celebre operaciones destinadas a eludir el derecho económico de EL COMERCIALIZADOR, o disponga de los inmuebles desconociendo el presente acuerdo, deberá abonar, en concepto de cláusula penal, una suma equivalente al {{Porcentaje de la cláusula penal|porcentaje en letras=40}} del valor económico de la operación indebidamente realizada, sin perjuicio del derecho de EL COMERCIALIZADOR a reclamar los daños adicionales que legalmente correspondan cuando éstos excedieran el monto de la penalidad pactada.
+
+La presente cláusula tendrá por finalidad garantizar el cumplimiento efectivo de las obligaciones de exclusividad, no elusión y respeto de la participación económica convenida.
+
+**VIGÉSIMA SEXTA. BUENA FE CONTRACTUAL**
+
+LAS PARTES declaran celebrar el presente contrato con plena libertad y conocimiento de sus alcances, comprometiéndose a ejecutarlo conforme los principios de buena fe, cooperación, confianza legítima y conservación del negocio jurídico.
+
+En particular, ninguna de LAS PARTES podrá adoptar conductas formalmente lícitas pero materialmente destinadas a frustrar la finalidad económica que constituyó causa determinante de la celebración del presente instrumento.
+
+**VIGÉSIMA SÉPTIMA. INTEGRIDAD CONTRACTUAL**
+
+El presente contrato constituye el acuerdo íntegro entre LAS PARTES respecto de su objeto.
+
+Toda modificación, ampliación, renuncia o incorporación deberá instrumentarse por escrito y ser suscripta por ambas partes.
+
+La eventual nulidad o ineficacia de alguna de sus cláusulas no afectará la validez del resto del contrato, debiendo procurarse, en cuanto jurídicamente resulte posible, la conservación de la finalidad económica perseguida.
+
+**VIGÉSIMA OCTAVA. DOMICILIOS Y NOTIFICACIONES**
+
+A todos los efectos derivados del presente contrato, LAS PARTES constituyen como domicilios especiales los indicados en el encabezamiento.
+
+Toda modificación deberá ser comunicada fehacientemente.
+
+Serán válidas las notificaciones cursadas mediante carta documento, acta notarial, medio electrónico que permita acreditar fehacientemente su recepción o cualquier otro mecanismo que LAS PARTES acuerden por escrito.
+
+**VIGÉSIMA NOVENA. JURISDICCIÓN**
+
+Para cualquier divergencia, controversia o cuestión derivada de la interpretación, ejecución, incumplimiento, resolución o extinción del presente contrato, LAS PARTES se someten a la jurisdicción de los Tribunales Ordinarios competentes del Departamento Judicial de {{Departamento judicial=Lomas de Zamora}}, con renuncia expresa a cualquier otro fuero o jurisdicción que pudiera corresponder, salvo que la legislación aplicable determine otro fuero de carácter improrrogable.
+
+**TRIGÉSIMA. ANEXO DE INMUEBLES**
+
+Forma parte integrante del presente contrato el ANEXO I, en el cual serán individualizados los inmuebles y/o fracciones comprendidos en el acuerdo.
+
+En dicho anexo podrán consignarse, según corresponda:
+
+ubicación;
+
+nomenclatura catastral;
+
+partida inmobiliaria;
+
+matrícula;
+
+superficie;
+
+medidas;
+
+linderos;
+
+antecedentes posesorios;
+
+plano;
+
+identificación de las fracciones;
+
+cantidad de lotes;
+
+precio de referencia;
+
+cualquier otro dato necesario para su correcta individualización.
+
+**TRIGÉSIMA PRIMERA. DECLARACIÓN FINAL**
+
+LAS PARTES declaran que el presente contrato constituye la expresión fiel de su voluntad negocial y que han tenido especialmente en consideración, para su celebración, la situación posesoria invocada por EL POSEEDOR y la actividad comercial, técnica y económica que será desarrollada por EL COMERCIALIZADOR.
+
+En consecuencia, reconocen que la distribución económica pactada del {{Porcentaje del poseedor|porcentaje en letras=60}} para EL POSEEDOR y {{Porcentaje del comercializador|porcentaje en letras=40}} para EL COMERCIALIZADOR constituye un elemento esencial del equilibrio contractual y una condición determinante para la celebración del presente acuerdo.
+
+En prueba de conformidad, se firman DOS (2) ejemplares de un mismo tenor y a un solo efecto, en la ciudad de {{Ciudad de firma}}, a los {{Día de firma}} días del mes de {{Mes de firma}} de {{Año de firma=2026}}.
+
+**EL POSEEDOR**
+
+Firma: ____________________________
+Aclaración: {{Nombre del poseedor}}
+DNI Nº {{DNI del poseedor}}
+
+**EL COMERCIALIZADOR**
+
+Firma: ____________________________
+Aclaración: MATÍAS JAVIER DE NUNZIO
+DNI Nº 32.917.792
+
+**ANEXO I — INDIVIDUALIZACIÓN DE LOS INMUEBLES**
+
+{{Inmuebles del Anexo I|texto largo=INMUEBLE Nº 1
+Ubicación: 
+Partida: 
+Nomenclatura catastral: 
+Matrícula: 
+Superficie: 
+Medidas y linderos: 
+Fracción/Lote: 
+Observaciones: }}`,
+  },
 ];
