@@ -64,6 +64,8 @@ export type ConsultaPropiedadInput = z.infer<typeof consultaPropiedadSchema>;
 
 export const visitaSchema = z.object({
   proyectoId: z.string().optional(),
+  /** Visita a una propiedad publicada (casa, depto, campo) en lugar de un desarrollo. */
+  propiedadId: z.string().uuid().optional(),
   nombre: z.string().trim().min(2, "Ingresá tu nombre"),
   // Obligatorio: se usa para la confirmación y para armar públicos en Meta Ads.
   email: z.string().trim().email("Ingresá un mail válido"),

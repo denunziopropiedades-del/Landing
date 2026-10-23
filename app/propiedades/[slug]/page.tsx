@@ -100,7 +100,7 @@ export default async function PropiedadPage({ params }: { params: Promise<Params
           <h1 className="mt-3 font-display text-3xl font-bold text-brand-black sm:text-4xl">{p.titulo}</h1>
           <p className="mt-1.5 flex items-center gap-1.5 text-brand-black/65">
             <MapPin className="h-4 w-4" />
-            {[p.direccion, ubicacionTexto(p)].filter(Boolean).join(" · ")}
+            {[p.direccion && !/^https?:\/\//i.test(p.direccion) ? p.direccion : null, ubicacionTexto(p)].filter(Boolean).join(" · ")}
             {partido && <span className="text-brand-black/40">· Zona {partido.zona.nombre}</span>}
           </p>
 
@@ -150,9 +150,9 @@ export default async function PropiedadPage({ params }: { params: Promise<Params
             </div>
           )}
 
-          {p.mapsUrl && (
+          {(p.mapsUrl || (p.direccion && /^https?:\/\//i.test(p.direccion))) && (
             <a
-              href={p.mapsUrl}
+              href={p.mapsUrl ?? p.direccion!}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-6 inline-flex items-center gap-2 rounded-full border border-black/15 bg-white px-5 py-2.5 text-sm font-semibold text-brand-black hover:bg-black/5"
@@ -182,7 +182,7 @@ export default async function PropiedadPage({ params }: { params: Promise<Params
               Consultar por WhatsApp
             </a>
             <Link
-              href="/visitas"
+              href={`/visitas?propiedad=${p.slug}`}
               className="mt-2 flex h-[52px] items-center justify-center rounded-full border border-white/25 font-semibold text-white hover:bg-white/10"
             >
               Coordinar una visita

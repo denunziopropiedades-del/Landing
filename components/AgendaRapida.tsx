@@ -47,10 +47,13 @@ export default function AgendaRapida({
   proyectos,
   proyectoInicialId,
   whatsappNumero,
+  propiedad,
 }: {
   proyectos: ProyectoOpcion[];
   proyectoInicialId?: string;
   whatsappNumero: string;
+  /** Si viene desde la ficha de una propiedad: la visita es a esa propiedad (no se elige barrio). */
+  propiedad?: { id: string; titulo: string; ubicacion: string };
 }) {
   const ahora = useMemo(ahoraBuenosAires, []);
   const dias = useMemo(() => proximosDias(ahora.fecha), [ahora.fecha]);
@@ -88,7 +91,8 @@ export default function AgendaRapida({
   const manana = libres.filter((h) => aMin(h) < 13 * 60);
   const tarde = libres.filter((h) => aMin(h) >= 13 * 60);
 
-  const proyecto = proyectos.find((p) => p.id === proyectoId);
+  const proyectoElegido = proyectos.find((p) => p.id === proyectoId);
+  const proyecto = propiedad ? { nombre: propiedad.titulo, ubicacion: propiedad.ubicacion } : proyectoElegido;
   const dia = dias.find((d) => d.iso === fecha);
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
   const datosOk = nombre.trim().length >= 2 && telefono.replace(/\D/g, "").length >= 8 && emailOk;
@@ -102,7 +106,15 @@ export default function AgendaRapida({
       const res = await fetch("/api/visitas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ proyectoId: proyectoId || undefined, nombre, telefono, email, fecha, horario }),
+        body: JSON.stringify({
+          proyectoId: propiedad ? undefined : proyectoId || undefined,
+          propiedadId: propiedad?.id,
+          nombre,
+          telefono,
+          email,
+          fecha,
+          horario,
+        }),
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) {
@@ -168,7 +180,18 @@ export default function AgendaRapida({
 
   return (
     <div className="space-y-7">
-      {proyectos.length > 1 && (
+      {propiedad && (
+        <div className="flex items-start gap-3 rounded-2xl border-2 border-brand-green-600 bg-white p-4">
+          <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-brand-green-700" />
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-black/50">Vas a visitar</p>
+            <p className="font-bold leading-snug text-brand-black">{propiedad.titulo}</p>
+            <p className="text-sm text-brand-black/60">{propiedad.ubicacion}</p>
+          </div>
+        </div>
+      )}
+
+      {!propiedad && proyectos.length > 1 && (
         <Paso numero={1} titulo="¿Qué barrio querés conocer?">
           <div className="grid gap-2">
             {proyectos.map((p) => (

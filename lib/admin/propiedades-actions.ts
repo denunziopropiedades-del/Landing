@@ -41,7 +41,7 @@ const MENSAJE_SIN_TABLA =
 
 function errorDb(message: string) {
   if (/financiacion_directa|situacion_dominial/i.test(message))
-    return "Faltan las columnas nuevas (financiación directa / escritura o posesión): corré sql-propiedades-financiacion.sql en Supabase → SQL Editor.";
+    return "Faltan las columnas nuevas (financiación directa / escritura o posesión): corré sql-propiedades-actualizacion.sql en Supabase → SQL Editor.";
   return /relation .*propiedades.* does not exist|Could not find the table/i.test(message) ? MENSAJE_SIN_TABLA : message;
 }
 

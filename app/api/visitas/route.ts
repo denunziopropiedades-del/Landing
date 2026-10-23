@@ -5,6 +5,7 @@ import { NOTA_COORDINACION_VISITA_HTML, NOTA_RESERVA_LOTE_HTML, sendEmail, sendN
 import { checkRateLimit } from "@/lib/rate-limit";
 import { crearEventoVisita } from "@/lib/google-calendar";
 import { bloqueReprogramarHtml, linkReprogramacion, motivoHorarioNoDisponible } from "@/lib/visitas";
+import { formatearPrecio, labelTipo, mapPropiedad, ubicacionTexto } from "@/lib/propiedades-base";
 
 export async function POST(request: Request) {
   const rate = await checkRateLimit(request, "visitas");
@@ -44,37 +45,61 @@ export async function POST(request: Request) {
       proyectoUbicacionMapsUrl = proyecto?.ubicacion_maps_url ?? undefined;
     }
 
-    const { data: lead, error: errorLead } = await supabase
-      .from("leads")
-      .insert({
-        tipo: "visita",
-        proyecto_id: data.proyectoId || null,
-        nombre: data.nombre,
-        email: data.email,
-        telefono: data.telefono,
-        observaciones: `Visita agendada para el ${data.fecha} a las ${data.horario}.`,
-        estado: "visita_programada",
-      })
-      .select("id")
-      .single();
-    if (errorLead) {
-      return NextResponse.json({ error: errorLead.message }, { status: 500 });
+    // Visita a una propiedad publicada (desde su ficha): se usa su título y ubicación.
+    let propiedadTexto: string | null = null;
+    if (data.propiedadId) {
+      const { data: prop } = await supabase.from("propiedades").select("*").eq("id", data.propiedadId).maybeSingle();
+      if (prop) {
+        const pr = mapPropiedad(prop);
+        proyectoNombre = pr.titulo;
+        proyectoUbicacion = [pr.direccion && !/^https?:\/\//i.test(pr.direccion) ? pr.direccion : null, ubicacionTexto(pr)].filter(Boolean).join(", ");
+        proyectoUbicacionMapsUrl = pr.mapsUrl ?? (pr.direccion && /^https?:\/\//i.test(pr.direccion) ? pr.direccion : undefined);
+        propiedadTexto = `${pr.titulo} (${labelTipo(pr.tipo)} en ${pr.operacion}, ${ubicacionTexto(pr)}, ${formatearPrecio(pr)})`;
+      }
     }
 
-    const { data: visita, error } = await supabase
-      .from("visitas")
-      .insert({
-        lead_id: lead.id,
-        proyecto_id: data.proyectoId || null,
-        nombre: data.nombre,
-        email: data.email,
-        telefono: data.telefono,
-        fecha: data.fecha,
-        horario: data.horario,
-        estado: "pendiente",
-      })
+    const filaLead: Record<string, unknown> = {
+      tipo: "visita",
+      proyecto_id: data.proyectoId || null,
+      nombre: data.nombre,
+      email: data.email,
+      telefono: data.telefono,
+      observaciones: [
+        `Visita agendada para el ${data.fecha} a las ${data.horario}.`,
+        propiedadTexto ? `🏠 Propiedad: ${propiedadTexto}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      estado: "visita_programada",
+    };
+    let { data: lead, error: errorLead } = await supabase
+      .from("leads")
+      .insert(data.propiedadId && propiedadTexto ? { ...filaLead, propiedad_id: data.propiedadId } : filaLead)
       .select("id")
       .single();
+    // Si todavía no existe la columna propiedad_id, se guarda igual (el dato queda en observaciones).
+    if (errorLead && data.propiedadId) ({ data: lead, error: errorLead } = await supabase.from("leads").insert(filaLead).select("id").single());
+    if (errorLead || !lead) {
+      return NextResponse.json({ error: errorLead?.message ?? "No se pudo registrar la visita." }, { status: 500 });
+    }
+
+    const filaVisita: Record<string, unknown> = {
+      lead_id: lead.id,
+      proyecto_id: data.proyectoId || null,
+      nombre: data.nombre,
+      email: data.email,
+      telefono: data.telefono,
+      fecha: data.fecha,
+      horario: data.horario,
+      estado: "pendiente",
+    };
+    let { data: visita, error } = await supabase
+      .from("visitas")
+      .insert(data.propiedadId && propiedadTexto ? { ...filaVisita, propiedad_id: data.propiedadId } : filaVisita)
+      .select("id")
+      .single();
+    if (error && error.code !== "23505" && data.propiedadId)
+      ({ data: visita, error } = await supabase.from("visitas").insert(filaVisita).select("id").single());
 
     if (error) {
       if (error.code === "23505") {
@@ -85,7 +110,7 @@ export async function POST(request: Request) {
       }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    visitaId = visita.id;
+    visitaId = visita?.id ?? null;
   }
 
   const googleEventId = await crearEventoVisita({
@@ -106,6 +131,7 @@ export async function POST(request: Request) {
       `Nueva visita agendada: ${data.nombre} — ${data.fecha} ${data.horario}`,
       `<h2>Nueva visita coordinada desde la web</h2>
        <ul>
+         ${proyectoNombre ? `<li><b>${data.propiedadId ? "Propiedad" : "Proyecto"}:</b> ${proyectoNombre}${proyectoUbicacion ? ` — ${proyectoUbicacion}` : ""}</li>` : ""}
          <li><b>Nombre:</b> ${data.nombre}</li>
          <li><b>Email:</b> ${data.email || "—"}</li>
          <li><b>Teléfono:</b> ${data.telefono}</li>
