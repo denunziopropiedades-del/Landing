@@ -34,6 +34,8 @@ create table if not exists propiedades (
   sup_cubierta numeric,
   sup_total numeric,
   apto_credito boolean not null default false,
+  financiacion_directa boolean not null default false,
+  situacion_dominial text check (situacion_dominial in ('escritura', 'posesion')),
 
   -- Campos / chacras.
   hectareas numeric,
@@ -67,3 +69,7 @@ create policy "Staff gestiona propiedades" on propiedades
 
 -- Consultas desde la ficha de una propiedad y pedidos de tasación quedan en leads.
 alter table leads add column if not exists propiedad_id uuid references propiedades(id) on delete set null;
+
+-- Columnas agregadas después (por si la tabla ya existía):
+alter table propiedades add column if not exists financiacion_directa boolean not null default false;
+alter table propiedades add column if not exists situacion_dominial text check (situacion_dominial in ('escritura', 'posesion'));

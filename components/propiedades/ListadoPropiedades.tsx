@@ -19,6 +19,12 @@ export type ParamsListado = {
   operacion?: string;
   amb?: string;
   ha?: string;
+  /** "escritura" | "posesion" */
+  situacion?: string;
+  /** "1" = solo apto crédito bancario */
+  credito?: string;
+  /** "1" = solo con financiación directa */
+  financiacion?: string;
 };
 
 const TIPOS_URBANOS = TIPOS.filter((t) => !TIPOS_RURALES.includes(t.value));
@@ -59,6 +65,9 @@ export default async function ListadoPropiedades({
     partido: partido?.slug,
     ambientesMin,
     hectareasMin,
+    situacion: params.situacion === "escritura" || params.situacion === "posesion" ? params.situacion : undefined,
+    aptoCredito: params.credito === "1",
+    financiacionDirecta: params.financiacion === "1",
   });
 
   /** Arma el link de un filtro conservando el resto. */
@@ -168,6 +177,21 @@ export default async function ListadoPropiedades({
                   {a}+ amb.
                 </Link>
               ))}
+        </Fila>
+
+        <Fila>
+          <Link href={href({ situacion: params.situacion === "escritura" ? undefined : "escritura" })} className={chip(params.situacion === "escritura")}>
+            Con escritura
+          </Link>
+          <Link href={href({ situacion: params.situacion === "posesion" ? undefined : "posesion" })} className={chip(params.situacion === "posesion")}>
+            Derechos de posesión
+          </Link>
+          <Link href={href({ credito: params.credito === "1" ? undefined : "1" })} className={chip(params.credito === "1")}>
+            Apto crédito bancario
+          </Link>
+          <Link href={href({ financiacion: params.financiacion === "1" ? undefined : "1" })} className={chip(params.financiacion === "1")}>
+            Financiación directa
+          </Link>
         </Fila>
       </div>
 

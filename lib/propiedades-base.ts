@@ -4,6 +4,13 @@ import { nombrePartido } from "@/lib/zonas";
 export type Operacion = "venta" | "alquiler";
 export type TipoPropiedad = "casa" | "departamento" | "ph" | "local" | "terreno" | "campo" | "chacra";
 export type UnidadPrecio = "total" | "mes" | "ha" | "ha_anio";
+export type SituacionDominial = "escritura" | "posesion";
+
+export const SITUACIONES: { value: SituacionDominial; label: string; detalle: string }[] = [
+  { value: "escritura", label: "Escritura", detalle: "Con escritura traslativa de dominio" },
+  { value: "posesion", label: "Derechos de posesión", detalle: "Derechos posesorios (animus domini)" },
+];
+export const labelSituacion = (s: SituacionDominial | null) => SITUACIONES.find((x) => x.value === s)?.label ?? null;
 
 export type Propiedad = {
   id: string;
@@ -26,6 +33,9 @@ export type Propiedad = {
   supCubierta: number | null;
   supTotal: number | null;
   aptoCredito: boolean;
+  financiacionDirecta: boolean;
+  /** Situación dominial: escritura o derechos de posesión. */
+  situacion: SituacionDominial | null;
   hectareas: number | null;
   aptitud: string | null;
   agua: string | null;
@@ -78,6 +88,8 @@ export function mapPropiedad(p: Record<string, unknown>): Propiedad {
     supCubierta: num(p.sup_cubierta),
     supTotal: num(p.sup_total),
     aptoCredito: Boolean(p.apto_credito),
+    financiacionDirecta: Boolean(p.financiacion_directa),
+    situacion: p.situacion_dominial === "escritura" || p.situacion_dominial === "posesion" ? p.situacion_dominial : null,
     hectareas: num(p.hectareas),
     aptitud: (p.aptitud as string) ?? null,
     agua: (p.agua as string) ?? null,

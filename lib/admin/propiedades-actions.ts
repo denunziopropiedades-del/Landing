@@ -40,6 +40,8 @@ const MENSAJE_SIN_TABLA =
   "Falta crear la tabla de propiedades: corré el archivo sql-propiedades.sql en Supabase → SQL Editor.";
 
 function errorDb(message: string) {
+  if (/financiacion_directa|situacion_dominial/i.test(message))
+    return "Faltan las columnas nuevas (financiación directa / escritura o posesión): corré sql-propiedades-financiacion.sql en Supabase → SQL Editor.";
   return /relation .*propiedades.* does not exist|Could not find the table/i.test(message) ? MENSAJE_SIN_TABLA : message;
 }
 
@@ -97,7 +99,9 @@ export async function upsertPropiedadAction(_prev: ActionResult | null, fd: Form
       banos: rural ? null : optNum(fd, "banos"),
       sup_cubierta: rural ? null : optNum(fd, "supCubierta"),
       sup_total: optNum(fd, "supTotal"),
-      apto_credito: !rural && fd.get("aptoCredito") === "on",
+      apto_credito: fd.get("aptoCredito") === "on",
+      financiacion_directa: fd.get("financiacionDirecta") === "on",
+      situacion_dominial: str(fd, "situacion") === "escritura" || str(fd, "situacion") === "posesion" ? str(fd, "situacion") : null,
       hectareas: rural ? optNum(fd, "hectareas") : null,
       aptitud: rural ? optStr(fd, "aptitud") : null,
       agua: rural ? optStr(fd, "agua") : null,

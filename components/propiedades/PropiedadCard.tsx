@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Bath, BedDouble, Droplets, House, MapPin, Maximize2, Wheat, Zap } from "lucide-react";
-import { esRural, formatearPrecio, labelTipo, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
+import { esRural, formatearPrecio, labelSituacion, labelTipo, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
 
 export default function PropiedadCard({ propiedad: p }: { propiedad: Propiedad }) {
   const rural = esRural(p.tipo);
@@ -11,7 +11,12 @@ export default function PropiedadCard({ propiedad: p }: { propiedad: Propiedad }
       ? "Venta"
       : "Alquiler";
   const colorOp = rural ? "bg-[#7a5a1c]" : p.operacion === "venta" ? "bg-brand-green-700" : "bg-[#2f5d8a]";
-  const etiquetaFoto = p.aptoCredito ? "Apto crédito" : p.etiquetas[0];
+  const etiquetaFoto = p.etiquetas[0];
+  const condiciones = [
+    p.situacion ? { t: labelSituacion(p.situacion)!, c: p.situacion === "escritura" ? "bg-brand-green-700/10 text-brand-green-700" : "bg-amber-100 text-amber-900" } : null,
+    p.aptoCredito ? { t: "Apto crédito bancario", c: "bg-[#2f5d8a]/10 text-[#2f5d8a]" } : null,
+    p.financiacionDirecta ? { t: "Financiación directa", c: "bg-brand-gold-500/15 text-[#7a5a1c]" } : null,
+  ].filter((x): x is { t: string; c: string } => x !== null);
 
   return (
     <Link
@@ -57,6 +62,15 @@ export default function PropiedadCard({ propiedad: p }: { propiedad: Propiedad }
           {ubicacionTexto(p)}
         </p>
 
+        {condiciones.length > 0 && (
+          <div className="-mt-1 mb-3 flex flex-wrap gap-1.5">
+            {condiciones.map((x) => (
+              <span key={x.t} className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${x.c}`}>
+                {x.t}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 border-t border-black/5 pt-3 text-[13px] text-brand-black/75 [&>span]:flex [&>span]:items-center [&>span]:gap-1.5">
           {rural ? (
             <>

@@ -6,7 +6,7 @@ import { Bath, BedDouble, Check, Droplets, MapPin, Maximize2, MessageCircle, Rul
 import PaginaPortal from "@/components/propiedades/PaginaPortal";
 import ConsultaForm from "@/components/propiedades/ConsultaForm";
 import { getSiteTextos } from "@/lib/content";
-import { esRural, formatearPrecio, getPropiedadBySlug, labelTipo, ubicacionTexto } from "@/lib/propiedades";
+import { esRural, formatearPrecio, getPropiedadBySlug, labelSituacion, labelTipo, SITUACIONES, ubicacionTexto } from "@/lib/propiedades";
 import { getPartido } from "@/lib/zonas";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
 
@@ -84,7 +84,13 @@ export default async function PropiedadPage({ params }: { params: Promise<Params
             <span className="rounded-full bg-brand-black px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
               {labelTipo(p.tipo)} · {p.operacion === "venta" ? "Venta" : rural ? "Arrendamiento" : "Alquiler"}
             </span>
-            {p.aptoCredito && <span className="rounded-full bg-brand-green-700 px-3 py-1 text-xs font-bold text-white">Apto crédito</span>}
+            {p.situacion && (
+              <span className={`rounded-full px-3 py-1 text-xs font-bold ${p.situacion === "escritura" ? "bg-brand-green-700 text-white" : "bg-amber-500 text-brand-black"}`}>
+                {labelSituacion(p.situacion)}
+              </span>
+            )}
+            {p.aptoCredito && <span className="rounded-full bg-[#2f5d8a] px-3 py-1 text-xs font-bold text-white">Apto crédito bancario</span>}
+            {p.financiacionDirecta && <span className="rounded-full bg-brand-gold-500 px-3 py-1 text-xs font-bold text-brand-black">Financiación directa</span>}
             {p.etiquetas.map((e) => (
               <span key={e} className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-brand-black/75">
                 {e}
@@ -109,6 +115,31 @@ export default async function PropiedadPage({ params }: { params: Promise<Params
                   </span>
                 </div>
               ))}
+            </div>
+          )}
+
+          {(p.situacion || p.aptoCredito || p.financiacionDirecta) && (
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {p.situacion && (
+                <div className="rounded-2xl bg-white p-4">
+                  <span className="block text-xs text-brand-black/55">Situación dominial</span>
+                  <span className="block font-bold text-brand-black">{labelSituacion(p.situacion)}</span>
+                  <span className="block text-xs text-brand-black/55">{SITUACIONES.find((s) => s.value === p.situacion)?.detalle}</span>
+                </div>
+              )}
+              {p.aptoCredito && (
+                <div className="rounded-2xl bg-white p-4">
+                  <span className="block text-xs text-brand-black/55">Forma de pago</span>
+                  <span className="block font-bold text-brand-black">Apto crédito bancario</span>
+                </div>
+              )}
+              {p.financiacionDirecta && (
+                <div className="rounded-2xl bg-white p-4">
+                  <span className="block text-xs text-brand-black/55">Forma de pago</span>
+                  <span className="block font-bold text-brand-black">Financiación directa</span>
+                  <span className="block text-xs text-brand-black/55">Consultá plan de cuotas</span>
+                </div>
+              )}
             </div>
           )}
 

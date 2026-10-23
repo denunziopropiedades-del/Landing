@@ -9,7 +9,7 @@ import {
   upsertPropiedadAction,
 } from "@/lib/admin/propiedades-actions";
 import { isCloudinaryConfigured, uploadToCloudinary } from "@/lib/cloudinary-client";
-import { esRural, formatearPrecio, labelTipo, TIPOS, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
+import { esRural, formatearPrecio, labelTipo, SITUACIONES, TIPOS, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
 import { ZONAS } from "@/lib/zonas";
 
 const inputClass = "w-full rounded-lg border border-black/10 px-3 py-2 text-sm focus:border-brand-green-600 focus:outline-none";
@@ -199,11 +199,30 @@ function PropiedadForm({ propiedad, onDone }: { propiedad?: Propiedad; onDone: (
             <label className={labelClass}>M² totales</label>
             <input name="supTotal" inputMode="decimal" defaultValue={propiedad?.supTotal ?? ""} className={inputClass} />
           </div>
-          <label className="flex items-end gap-2 pb-2 text-sm">
-            <input type="checkbox" name="aptoCredito" defaultChecked={propiedad?.aptoCredito} /> Apto crédito
-          </label>
+
         </>
       )}
+
+      <fieldset className="grid gap-3 rounded-xl bg-brand-cream p-3 sm:col-span-6 sm:grid-cols-3">
+        <legend className="sr-only">Forma de pago y situación dominial</legend>
+        <label className="flex items-center gap-2 text-sm font-semibold">
+          <input type="checkbox" name="aptoCredito" defaultChecked={propiedad?.aptoCredito} className="h-4 w-4" /> Apto crédito bancario
+        </label>
+        <label className="flex items-center gap-2 text-sm font-semibold">
+          <input type="checkbox" name="financiacionDirecta" defaultChecked={propiedad?.financiacionDirecta} className="h-4 w-4" /> Financiación directa
+        </label>
+        <div>
+          <label className={labelClass} htmlFor="situacion">Situación dominial</label>
+          <select id="situacion" name="situacion" defaultValue={propiedad?.situacion ?? ""} className={inputClass}>
+            <option value="">Sin dato</option>
+            {SITUACIONES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </fieldset>
 
       <div className="sm:col-span-6">
         <label className={labelClass}>Descripción</label>
