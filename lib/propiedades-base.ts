@@ -113,7 +113,8 @@ export function formatearPrecio(p: Pick<Propiedad, "precio" | "moneda" | "precio
 
 export function ubicacionTexto(p: Pick<Propiedad, "localidad" | "partido">) {
   const partido = nombrePartido(p.partido);
-  return p.localidad && p.localidad !== partido ? `${p.localidad}, ${partido}` : partido;
+  const loc = p.localidad?.trim();
+  return loc && loc.toLowerCase() !== partido.toLowerCase() ? `${loc}, ${partido}` : partido;
 }
 
 export function slugify(texto: string) {
