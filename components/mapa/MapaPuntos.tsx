@@ -74,6 +74,9 @@ export default function MapaPuntos({ puntos, alto = 520, compacto = false }: { p
         // La rueda del mouse hace zoom recién después de tocar el mapa (así no traba el scroll de la página).
         m.on("click focus", () => m.scrollWheelZoom.enable());
         m.on("mouseout", () => m.scrollWheelZoom.disable());
+        // Si la hoja de estilos de Leaflet llega después, se recalcula el tamaño para que no queden huecos.
+        setTimeout(() => m.invalidateSize(), 400);
+        setTimeout(() => m.invalidateSize(), 1500);
         mapa.current = m;
         capa.current = L.layerGroup().addTo(m);
         setListo(true);
