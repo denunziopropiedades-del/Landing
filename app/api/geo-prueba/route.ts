@@ -19,7 +19,7 @@ export async function GET(req: Request) {
   }
   try {
     const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=3&countrycodes=ar&q=${encodeURIComponent(q)}`, {
-      headers: { "User-Agent": "MatuLotes/1.0 (denunziopropiedades@gmail.com)" },
+      headers: { "User-Agent": "MatuLotes/1.0 (+https://matulotes.app)" },
       cache: "no-store",
     });
     out.nominatim = await r.json();
