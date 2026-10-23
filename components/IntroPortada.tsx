@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Intro de la portada: la puerta cerrada con la marca, la cámara se acerca, la puerta se
@@ -9,6 +9,8 @@ import { useEffect, useState } from "react";
  * si ya se vio, así no hay parpadeo.
  */
 const CLAVE = "denunzio-intro-vista";
+// Si nadie toca nada, entra solo al sitio cuando termina la animación (con la marca a la vista un par de segundos).
+const ENTRADA_AUTOMATICA_MS = 8000;
 
 // Botón "INGRESAR AL SITIO WEB" dibujado en cada imagen (en % de la imagen, ~1672×940).
 const BOTON_CERRADA = { left: 39.8, top: 67.5, width: 23.3, height: 7.6 };
@@ -16,6 +18,7 @@ const BOTON_ABIERTA = { left: 36.6, top: 68.6, width: 27.4, height: 9.4 };
 
 export default function IntroPortada() {
   const [estado, setEstado] = useState<"corriendo" | "saliendo" | "fin">("corriendo");
+  const salio = useRef(false);
 
   useEffect(() => {
     let vista = false;
@@ -29,13 +32,18 @@ export default function IntroPortada() {
     document.documentElement.style.overflow = "hidden";
     const tecla = (e: KeyboardEvent) => e.key === "Escape" && entrar();
     window.addEventListener("keydown", tecla);
+    const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const auto = setTimeout(entrar, reducido ? 3000 : ENTRADA_AUTOMATICA_MS);
     return () => {
+      clearTimeout(auto);
       window.removeEventListener("keydown", tecla);
       document.documentElement.style.overflow = "";
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function entrar() {
+    if (salio.current) return;
+    salio.current = true;
     try {
       localStorage.setItem(CLAVE, "1");
     } catch {}
