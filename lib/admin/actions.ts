@@ -1,5 +1,6 @@
 "use server";
 
+import { enviarEtapaCrm } from "@/lib/meta-capi";
 import { normalizarLinkMaps } from "@/lib/geo";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -1361,7 +1362,7 @@ export async function actualizarEstadoLeadAction(id: string, estado: EstadoLead)
 
     const { data: lead, error: errLead } = await admin
       .from("leads")
-      .select("lote_id, lead_lotes(lote_id)")
+      .select("lote_id, lead_lotes(lote_id), estado, external_id, email, telefono, nombre, apellido")
       .eq("id", id)
       .maybeSingle();
     if (errLead) throw new Error(errLead.message);
@@ -1394,6 +1395,18 @@ export async function actualizarEstadoLeadAction(id: string, estado: EstadoLead)
       } else if (estado === "descartado") {
         await admin.from("lotes").update({ estado: "disponible" }).in("id", loteIdsDelLead).eq("estado", "reservado");
       }
+    }
+
+    // Integración CRM → Meta: avisa el cambio de etapa (no frena si falla).
+    if (lead && lead.estado !== estado) {
+      await enviarEtapaCrm({
+        estado,
+        metaLeadId: lead.external_id as string | null,
+        email: lead.email as string | null,
+        telefono: lead.telefono as string | null,
+        nombre: lead.nombre as string | null,
+        apellido: lead.apellido as string | null,
+      });
     }
 
     const ctxLead = await contextoLead(admin, id);

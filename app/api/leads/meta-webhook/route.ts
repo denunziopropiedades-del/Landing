@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { enviarEtapaCrm } from "@/lib/meta-capi";
 import crypto from "node:crypto";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
@@ -106,6 +107,7 @@ export async function POST(request: Request) {
           estado: "nuevo",
           observaciones: "Lead generado desde un formulario de Meta Ads (Facebook/Instagram).",
         });
+        await enviarEtapaCrm({ estado: "nuevo", metaLeadId: leadgenId, email, telefono, nombre });
       }
 
       try {

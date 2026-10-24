@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { enviarEtapaCrm } from "@/lib/meta-capi";
 import crypto from "node:crypto";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
@@ -125,6 +126,8 @@ export async function POST(request: Request) {
     console.error("zapier-webhook: no se pudo insertar el lead", insertError);
     return NextResponse.json({ error: `No se pudo guardar el lead: ${insertError.message}` }, { status: 500 });
   }
+
+  await enviarEtapaCrm({ estado: "nuevo", metaLeadId: leadId ?? null, email, telefono, nombre });
 
   try {
     await sendNotificationEmail(
