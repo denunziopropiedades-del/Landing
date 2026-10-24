@@ -31,13 +31,15 @@ const META_PIXEL_IDS = (process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "")
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Matu Lotes | Inmobiliaria: casas, alquileres, campos y lotes",
-    template: "%s | Matu Lotes",
+    default: "De Nunzio Negocios Inmobiliarios | Inmobiliaria",
+    template: "%s | De Nunzio Negocios Inmobiliarios",
   },
   description:
-    "Matu Lotes, De Nunzio Negocios Inmobiliarios: casas, departamentos y campos en venta y alquiler, y lotes con escritura en La Plata, Corredor Sur, Ruta 3 y 205 y la Ribera.",
+    "Inmobiliaria De Nunzio Negocios Inmobiliarios: casas, departamentos y campos en venta y alquiler, y lotes con escritura en La Plata, Corredor Sur, Ruta 3 y 205 y la Ribera.",
   keywords: [
     "lotes en venta Buenos Aires",
+    "De Nunzio Negocios Inmobiliarios",
+    "inmobiliaria De Nunzio",
     "Matu Lotes",
     "terrenos en venta Buenos Aires",
     "lotes con escritura",
@@ -47,19 +49,19 @@ export const metadata: Metadata = {
     "campos en venta Lobos Saladillo Monte",
     "inmobiliaria Guernica",
   ],
-  authors: [{ name: "Matu Lotes" }],
+  authors: [{ name: "De Nunzio Negocios Inmobiliarios" }],
   openGraph: {
     type: "website",
     locale: "es_AR",
     url: SITE_URL,
-    siteName: "Matu Lotes",
-    title: "Matu Lotes | Inmobiliaria: casas, alquileres, campos y lotes",
+    siteName: "De Nunzio Negocios Inmobiliarios",
+    title: "De Nunzio Negocios Inmobiliarios | Inmobiliaria",
     description:
       "Inmobiliaria De Nunzio Negocios Inmobiliarios: casas, departamentos y campos en venta y alquiler, y lotes con escritura en el Departamento Judicial La Plata.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Matu Lotes",
+    title: "De Nunzio Negocios Inmobiliarios | Inmobiliaria",
     description:
       "Inmobiliaria De Nunzio Negocios Inmobiliarios: casas, departamentos y campos en venta y alquiler, y lotes con escritura en el Departamento Judicial La Plata.",
   },
@@ -72,7 +74,7 @@ export const metadata: Metadata = {
 const realEstateSchema = {
   "@context": "https://schema.org",
   "@type": "RealEstateAgent",
-  name: "Matu Lotes",
+  name: "De Nunzio Negocios Inmobiliarios",
   description:
     "De Nunzio Negocios Inmobiliarios — casas, departamentos y campos en venta y alquiler, y lotes con escritura, en los partidos del Departamento Judicial La Plata.",
   url: SITE_URL,
