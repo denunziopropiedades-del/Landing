@@ -150,8 +150,8 @@ export function convertirPorcentajes(cuerpo: string): string {
   return res;
 }
 
-/** Espacios para completar que trae un Word: "________", "XXXX", "………" o "........". */
-export const RE_BLANCO = /_{4,}|X{3,}|[.…]{4,}|…{2,}/g;
+/** Espacios para completar que trae un Word: "___", "XXXX", "…", "……", "...", "........" o ". . . .". */
+export const RE_BLANCO = /_{3,}|X{3,}|…+[.…]*|\.{3,}[.…]*|\.(?:[ \t]\.){3,}|(?<=:[ ]*)\t+/g; // la última: línea punteada de Word hecha con tabulación ("Nombre:⇥")
 
 const VACIAS = new Set(["de", "del", "la", "las", "el", "los", "a", "al", "en", "y", "e", "o", "con", "por", "para", "nº", "n°", "no", "nro", "nro.", "n.º", "sr.", "sra.", "sr./sra.", "señor", "señora"]);
 const SIN_CAMPO = /^firma/i; // las líneas de firma quedan para firmar a mano
@@ -171,6 +171,10 @@ function limpiarEtiqueta(t: string) {
 }
 
 function etiquetaDesde(antes: string, despues: string): string {
+  // "Sr. ……", "la Sra. ……", "Dr. ……" → el nombre de esa persona.
+  if (/\b(sr|sra|srta|sres|dr|dra)\.?(\s*\/\s*\w+\.?)?\s*$/i.test(antes)) return "Nombre";
+  // "$ ……", "USD ……" → un monto.
+  if (/(\$|u\$s|usd|ars)\s*$/i.test(antes.trim())) return "Monto";
   const seg = antes.replace(/\*\*/g, "").replace(/[“”"«»]/g, " ").split(/[,.;()]/).pop()!.trim();
   // Formato "Ubicación: ____" → se usa la frase completa.
   if (/:\s*$/.test(seg) && seg.split(/\s+/).length <= 6) return limpiarEtiqueta(seg);
@@ -194,7 +198,7 @@ function etiquetaDesde(antes: string, despues: string): string {
 function esTitulo(linea: string, soloNegritas: boolean) {
   if (soloNegritas && !/^\s*\*\*.*\*\*\s*$/.test(linea)) return false;
   const t = linea.replace(/\*\*/g, "").trim();
-  return t.length >= 3 && t.length <= 70 && /\p{Lu}/u.test(t) && t === t.toUpperCase() && !/_{3,}|X{3,}|…{2,}|\.{4,}/.test(t);
+  return t.length >= 3 && t.length <= 70 && /\p{Lu}/u.test(t) && t === t.toUpperCase() && !/_{3,}|X{3,}|…|\.{3,}/.test(t);
 }
 
 /** Cuántos espacios en blanco convertibles hay (sin contar líneas de firma). */
