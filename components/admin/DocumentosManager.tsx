@@ -122,7 +122,10 @@ function EditorModelo({ modelo, onCerrar, onGuardado }: { modelo?: Modelo; onCer
   const guardar = () =>
     start(async () => {
       setError(null);
-      const r = await guardarModeloAction({ id: modelo && !modelo.incorporado ? modelo.id : undefined, nombre, categoria, cuerpo });
+      // Si pegaron el texto sin convertir, los espacios en blanco ("……", "____", "XXXX") se convierten solos al guardar.
+      const final = camposDe(cuerpo).length > 0 ? cuerpo : convertirPorcentajes(convertirBlancos(cuerpo));
+      if (final !== cuerpo) setCuerpo(final);
+      const r = await guardarModeloAction({ id: modelo && !modelo.incorporado ? modelo.id : undefined, nombre, categoria, cuerpo: final });
       if (!r.ok) setError(r.error);
       else onGuardado(r.data.id);
     });

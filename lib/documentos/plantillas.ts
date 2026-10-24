@@ -150,29 +150,41 @@ export function convertirPorcentajes(cuerpo: string): string {
   return res;
 }
 
-/** Espacios para completar que trae un Word: "________" o "XXXX". */
-export const RE_BLANCO = /_{4,}|X{3,}/g;
+/** Espacios para completar que trae un Word: "________", "XXXX", "………" o "........". */
+export const RE_BLANCO = /_{4,}|X{3,}|[.…]{4,}|…{2,}/g;
 
 const VACIAS = new Set(["de", "del", "la", "las", "el", "los", "a", "al", "en", "y", "e", "o", "con", "por", "para", "nº", "n°", "no", "nro", "nro.", "n.º", "sr.", "sra.", "sr./sra.", "señor", "señora"]);
 const SIN_CAMPO = /^firma/i; // las líneas de firma quedan para firmar a mano
 
 function limpiarEtiqueta(t: string) {
-  const s = t.replace(/\*\*/g, "").replace(/[“”"«»]/g, "").replace(/\s+/g, " ").replace(/[:\-–—,.;]+$/, "").trim();
+  const s = t
+    .replace(/\*\*/g, "")
+    .replace(/[“”"«»]/g, "")
+    .replace(/\/(as?|os?|es)\b/g, "") // "Juez/a" → "Juez"
+    .replace(/\s+/g, " ")
+    .replace(/^[\/\s]+/, "")
+    .replace(/[:\-–—,.;\/]+$/, "")
+    .trim();
   if (!s) return "";
   const conMayus = s.length <= 4 && s === s.toUpperCase() ? s : s === s.toUpperCase() ? s.toLowerCase() : s;
   return (conMayus.charAt(0).toUpperCase() + conMayus.slice(1)).replace(/\bn([º°])/g, "N$1");
 }
 
 function etiquetaDesde(antes: string, despues: string): string {
-  const seg = antes.replace(/\*\*/g, "").split(/[,.;()]/).pop()!.trim();
+  const seg = antes.replace(/\*\*/g, "").replace(/[“”"«»]/g, " ").split(/[,.;()]/).pop()!.trim();
   // Formato "Ubicación: ____" → se usa la frase completa.
   if (/:\s*$/.test(seg) && seg.split(/\s+/).length <= 6) return limpiarEtiqueta(seg);
   const palabras = seg.split(/\s+/).filter(Boolean);
   while (palabras.length && VACIAS.has(palabras[palabras.length - 1].toLowerCase())) palabras.pop();
   if (palabras.length) {
     const ult = palabras[palabras.length - 1];
+    // Siglas ("CUIT/CUIL", "DNI") quedan tal cual.
+    if (/\//.test(ult) || /^(CUIT|CUIL|DNI|CBU|CVU|IVA)$/i.test(ult)) return ult.toUpperCase().replace(/[:,.;]+$/, "");
     // Un nombre en mayúsculas antes del espacio ("OBDULIO ____") pide el nombre completo.
     if (ult.length > 4 && ult === ult.toUpperCase() && /\p{Lu}/u.test(ult)) return "Nombre completo";
+    // Dos palabras cuando aclaran ("domicilio constituido", "autos caratulados").
+    const penult = palabras[palabras.length - 2];
+    if (penult && !VACIAS.has(penult.toLowerCase()) && /^\p{Ll}/u.test(ult) && /^\p{L}+$/u.test(penult)) return limpiarEtiqueta(`${penult} ${ult}`);
     return limpiarEtiqueta(ult);
   }
   const sig = despues.replace(/\*\*/g, "").split(/\s+/).find((w) => w && !VACIAS.has(w.toLowerCase()));
@@ -182,7 +194,7 @@ function etiquetaDesde(antes: string, despues: string): string {
 function esTitulo(linea: string, soloNegritas: boolean) {
   if (soloNegritas && !/^\s*\*\*.*\*\*\s*$/.test(linea)) return false;
   const t = linea.replace(/\*\*/g, "").trim();
-  return t.length >= 3 && t.length <= 70 && /\p{Lu}/u.test(t) && t === t.toUpperCase() && !/_{3,}|X{3,}/.test(t);
+  return t.length >= 3 && t.length <= 70 && /\p{Lu}/u.test(t) && t === t.toUpperCase() && !/_{3,}|X{3,}|…{2,}|\.{4,}/.test(t);
 }
 
 /** Cuántos espacios en blanco convertibles hay (sin contar líneas de firma). */
@@ -218,7 +230,10 @@ export function convertirBlancos(cuerpo: string): string {
       previo = fin;
       if (SIN_CAMPO.test(linea.slice(0, inicio).replace(/\*\*/g, "").trim())) continue;
       const despues = linea.slice(fin).split(RE_BLANCO)[0];
-      const e = etiquetaDesde(antes, despues);
+      let e = etiquetaDesde(antes, despues);
+      // "Nº ____/____": el segundo espacio sin texto antes es la continuación del anterior (ej. el año).
+      const anterior = huecos[huecos.length - 1];
+      if (!/\p{L}/u.test(antes) && anterior && anterior.linea === i) e = /expediente/i.test(anterior.base) ? "Año del expediente" : `${anterior.base} (2)`;
       const base = e === "Días" ? "Día" : e || `Dato ${++n}`;
       huecos.push({ linea: i, inicio, fin, base, seccion });
     }
