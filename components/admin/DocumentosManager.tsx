@@ -123,7 +123,8 @@ function EditorModelo({ modelo, onCerrar, onGuardado }: { modelo?: Modelo; onCer
     start(async () => {
       setError(null);
       // Si pegaron el texto sin convertir, los espacios en blanco ("……", "____", "XXXX") se convierten solos al guardar.
-      const final = camposDe(cuerpo).length > 0 ? cuerpo : convertirPorcentajes(convertirBlancos(cuerpo));
+      // Los espacios que queden ("……", "____", "XXXX") siempre se convierten; los porcentajes, si todavía no hay campos.
+      const final = camposDe(cuerpo).length > 0 ? convertirBlancos(cuerpo) : convertirPorcentajes(convertirBlancos(cuerpo));
       if (final !== cuerpo) setCuerpo(final);
       const r = await guardarModeloAction({ id: modelo && !modelo.incorporado ? modelo.id : undefined, nombre, categoria, cuerpo: final });
       if (!r.ok) setError(r.error);
@@ -211,7 +212,7 @@ function EditorModelo({ modelo, onCerrar, onGuardado }: { modelo?: Modelo; onCer
 
 /* ── Pantalla principal ─────────────────────────────────────────────────── */
 export default function DocumentosManager({
-  modelos,
+  modelos: modelosGuardados,
   historial,
   clientes,
   avisoTablas,
@@ -221,6 +222,12 @@ export default function DocumentosManager({
   clientes: ClienteParaDocumento[];
   avisoTablas: string | null;
 }) {
+  // Modelos guardados antes de que se reconocieran todos los formatos de espacios ("……", "...", etc.):
+  // se convierten al mostrarlos, así se pueden completar sin volver a cargarlos.
+  const modelos = useMemo(
+    () => modelosGuardados.map((m) => (m.incorporado ? m : { ...m, cuerpo: convertirBlancos(m.cuerpo) })),
+    [modelosGuardados],
+  );
   const [modeloId, setModeloId] = useState(modelos[0]?.id ?? "");
   const [editando, setEditando] = useState<Modelo | "nuevo" | null>(null);
   const [vista, setVista] = useState<"generar" | "historial">("generar");

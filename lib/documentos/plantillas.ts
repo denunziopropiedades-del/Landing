@@ -151,7 +151,7 @@ export function convertirPorcentajes(cuerpo: string): string {
 }
 
 /** Espacios para completar que trae un Word: "___", "XXXX", "…", "……", "...", "........" o ". . . .". */
-export const RE_BLANCO = /_{3,}|X{3,}|…+[.…]*|\.{3,}[.…]*|\.(?:[ \t]\.){3,}|(?<=:[ ]*)\t+/g; // la última: línea punteada de Word hecha con tabulación ("Nombre:⇥")
+export const RE_BLANCO = /_{3,}|X{3,}|[…⋯‥]+[.…⋯‥․·]*|[.․·]{3,}[.…⋯‥․·]*|\.(?:[ \t]\.){3,}|(?<=:[ ]*)\t+/g; // la última: línea punteada de Word hecha con tabulación ("Nombre:⇥")
 
 const VACIAS = new Set(["de", "del", "la", "las", "el", "los", "a", "al", "en", "y", "e", "o", "con", "por", "para", "nº", "n°", "no", "nro", "nro.", "n.º", "sr.", "sra.", "sr./sra.", "señor", "señora"]);
 const SIN_CAMPO = /^firma/i; // las líneas de firma quedan para firmar a mano
@@ -191,14 +191,19 @@ function etiquetaDesde(antes: string, despues: string): string {
     if (penult && !VACIAS.has(penult.toLowerCase()) && /^\p{Ll}/u.test(ult) && /^\p{L}+$/u.test(penult)) return limpiarEtiqueta(`${penult} ${ult}`);
     return limpiarEtiqueta(ult);
   }
-  const sig = despues.replace(/\*\*/g, "").split(/\s+/).find((w) => w && !VACIAS.has(w.toLowerCase()));
+  const sig = despues
+    .replace(/\*\*/g, "")
+    .split(/\s+/)
+    .find((w) => /\p{L}/u.test(w) && !VACIAS.has(w.toLowerCase()));
+  // "……, designado/a perito" / "……, en su carácter de" → quien firma.
+  if (sig && /^(designad|en$|quien|mayor|argentin|con$)/i.test(sig)) return "Nombre y apellido";
   return sig ? limpiarEtiqueta(sig.replace(/[^\p{L}\p{N}]/gu, "")) : "";
 }
 
 function esTitulo(linea: string, soloNegritas: boolean) {
   if (soloNegritas && !/^\s*\*\*.*\*\*\s*$/.test(linea)) return false;
   const t = linea.replace(/\*\*/g, "").trim();
-  return t.length >= 3 && t.length <= 70 && /\p{Lu}/u.test(t) && t === t.toUpperCase() && !/_{3,}|X{3,}|…|\.{3,}/.test(t);
+  return t.length >= 3 && t.length <= 70 && /\p{Lu}/u.test(t) && t === t.toUpperCase() && !/_{3,}|X{3,}|[…⋯‥]|[.․·]{3,}/.test(t);
 }
 
 /** Cuántos espacios en blanco convertibles hay (sin contar líneas de firma). */
