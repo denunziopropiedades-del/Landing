@@ -1563,6 +1563,95 @@ export async function asignarLoteLeadAction(leadId: string, loteId: string | nul
   }
 }
 
+/** Lo más repetido de una lista (para tomar medidas/precio "típicos" de una manzana o barrio). */
+function masRepetido<T>(valores: T[]): T | undefined {
+  const cuenta = new Map<T, number>();
+  for (const v of valores) cuenta.set(v, (cuenta.get(v) ?? 0) + 1);
+  let mejor: T | undefined;
+  let max = 0;
+  for (const [v, n] of cuenta) if (n > max) [mejor, max] = [v, n];
+  return mejor;
+}
+
+/**
+ * Crea un lote que todavía no estaba cargado en el barrio (a veces se suman
+ * lotes nuevos) y se lo asigna al lead. Superficie, medidas y precio se toman
+ * de los lotes de la misma manzana (o del barrio); después se corrigen en
+ * Lotes y precios si hace falta.
+ */
+export async function crearLoteParaLeadAction(
+  leadId: string,
+  proyectoId: string,
+  manzana: string,
+  numero: string
+): Promise<
+  | { ok: true; lote: { id: string; proyectoId: string; manzana: string; numero: string; nombre: string; superficieM2: number; dimensiones: string; precioUsd: number } }
+  | { ok: false; error: string }
+> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const mz = manzana.trim();
+    const nro = numero.trim();
+    if (!mz || !nro) throw new AdminActionError("Completá manzana y lote.");
+    const admin = (await getSupabaseAdminClient())!;
+
+    const { data: existentes, error: errLotes } = await admin
+      .from("lotes")
+      .select("id, manzana, numero, superficie_m2, dimensiones, precio_usd")
+      .eq("proyecto_id", proyectoId)
+      .limit(1000);
+    if (errLotes) throw new Error(errLotes.message);
+
+    const ya = (existentes ?? []).find((l) => l.manzana === mz && l.numero === nro);
+    let creado = ya ?? null;
+    if (!creado) {
+      const mismaManzana = (existentes ?? []).filter((l) => l.manzana === mz);
+      const base = mismaManzana.length ? mismaManzana : existentes ?? [];
+      const superficie = Number(masRepetido(base.map((l) => Number(l.superficie_m2))) ?? 0);
+      const dimensiones = masRepetido(base.map((l) => l.dimensiones as string)) ?? "A definir";
+      const precio = Number(masRepetido(base.map((l) => Number(l.precio_usd)).filter((n) => n > 0)) ?? 0);
+
+      const { data, error } = await admin
+        .from("lotes")
+        .insert({
+          proyecto_id: proyectoId,
+          nombre: `Lote ${mz}-${nro}`,
+          manzana: mz,
+          numero: nro,
+          superficie_m2: superficie,
+          dimensiones,
+          precio_usd: precio,
+          estado: "disponible",
+        })
+        .select("id, manzana, numero, superficie_m2, dimensiones, precio_usd")
+        .single();
+      if (error) throw new Error(error.code === "23505" ? "Ese lote ya existe en el barrio." : error.message);
+      creado = data;
+      await registrarActividad(actor, "crear", "lote", data.id, { manzana: mz, lote: nro, desdeCrm: true });
+    }
+
+    const asignado = await asignarLoteLeadAction(leadId, creado.id);
+    if (!asignado.ok) return asignado;
+    revalidatePath("/admin/lotes");
+
+    return {
+      ok: true,
+      lote: {
+        id: creado.id,
+        proyectoId,
+        manzana: creado.manzana,
+        numero: creado.numero,
+        nombre: `Lote ${creado.manzana}-${creado.numero}`,
+        superficieM2: Number(creado.superficie_m2),
+        dimensiones: creado.dimensiones,
+        precioUsd: Number(creado.precio_usd),
+      },
+    };
+  } catch (err) {
+    return fail(err) as { ok: false; error: string };
+  }
+}
+
 export async function actualizarObservacionesLeadAction(id: string, observaciones: string): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor", "vendedor");

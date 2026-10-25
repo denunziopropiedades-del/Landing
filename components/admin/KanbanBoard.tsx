@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { ChevronDown, ChevronUp, CreditCard, GripVertical, Mail, Phone, Trash2 } from "lucide-react";
 import {
   actualizarComisionHonorariosLeadAction,
@@ -15,6 +15,7 @@ import {
   actualizarSexoLeadAction,
   asignarLeadAction,
   asignarLoteLeadAction,
+  crearLoteParaLeadAction,
   cambiarInteresLeadAction,
   deleteLeadAction,
   generarCuotasLeadAction,
@@ -196,11 +197,14 @@ function LeadCard({
     () => proyectos.filter((p) => lotes.some((l) => l.proyectoId === p.id)),
     [proyectos, lotes]
   );
-  const lotesDelProyecto = useMemo(
-    () => lotes.filter((l) => l.proyectoId === proyectoParaLotes),
-    [lotes, proyectoParaLotes]
-  );
   const [loteElegido, setLoteElegido] = useState<string>(lead.lotes[0]?.id ?? lead.loteId ?? "");
+  // Lotes creados desde esta tarjeta (todavía no están en la lista que vino del servidor).
+  const lotesCreados = useRef<Lote[]>([]);
+  const lotesDelProyecto = useMemo(
+    () => [...lotes, ...lotesCreados.current].filter((l) => l.proyectoId === proyectoParaLotes),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lotes, proyectoParaLotes, loteElegido]
+  );
   const [manzanaManual, setManzanaManual] = useState(loteActual?.manzana ?? "");
   const [loteManual, setLoteManual] = useState(loteActual?.numero ?? "");
 
@@ -237,7 +241,35 @@ function LeadCard({
     const lote = lotesDelProyecto.find((l) => normalizar(l.manzana) === mz && normalizar(l.numero) === nro);
     if (!lote) {
       const barrio = proyectos.find((p) => p.id === proyectoParaLotes)?.nombre ?? "este barrio";
-      return alert(`No existe la Manzana ${manzanaManual.trim()} — Lote ${loteManual.trim()} en ${barrio}. Revisá los datos o cargalo en "Lotes y precios".`);
+      const mzTxt = manzanaManual.trim();
+      const nroTxt = loteManual.trim();
+      if (
+        !confirm(
+          `La Manzana ${mzTxt} — Lote ${nroTxt} no está cargada en ${barrio}.\n\n¿Crearla y asignársela a este cliente? Se crea con las medidas y el precio de los otros lotes de esa manzana (después los podés corregir en "Lotes y precios").`
+        )
+      )
+        return;
+      const proyectoId = proyectoParaLotes;
+      startTransition(() => {
+        crearLoteParaLeadAction(lead.id, proyectoId, mzTxt, nroTxt).then((res) => {
+          if (!res.ok) return alert(`No se pudo crear el lote: ${res.error}`);
+          const l = res.lote;
+          lotesCreados.current.push({ ...l } as unknown as Lote);
+          setLoteElegido(l.id);
+          setManzanaManual(l.manzana);
+          setLoteManual(l.numero);
+          onActualizado(lead.id, {
+            loteId: l.id,
+            manzana: l.manzana,
+            loteNumero: l.numero,
+            loteNombre: l.nombre,
+            ...(!lead.proyectoId
+              ? { proyectoId: l.proyectoId, proyectoNombre: proyectos.find((p) => p.id === l.proyectoId)?.nombre }
+              : {}),
+          });
+        });
+      });
+      return;
     }
     if (lote.id === loteElegido) return;
     asignarLote(lote.id);
