@@ -91,7 +91,7 @@ export default function LotesGrid({
                 <a
                   href={buildWhatsappUrl(mensajeConsultaLote(lote.nombre), numero)}
                   target="_blank"
-                  rel="noopener noreferrer"
+                  rel="noopener"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-green-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-green-600"
                 >
                   <MessageCircle className="h-4 w-4" />

@@ -220,7 +220,7 @@ export default async function ListadoPropiedades({
             <a
               href={buildWhatsappUrl(`Hola! Estoy buscando ${titulo.charAt(0).toLowerCase()}${titulo.slice(1)}. ¿Me avisan si tienen algo?`, numeroWhatsapp)}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 py-3 text-sm font-bold text-white"
             >
               <MessageCircle className="h-4 w-4" />

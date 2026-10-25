@@ -113,7 +113,7 @@ export default function Contacto({ textos }: { textos: SiteTextos }) {
               <a
                 href={buildWhatsappUrl(textos.whatsappMensajeDefault, textos.whatsappNumero)}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener"
                 className="inline-flex items-center gap-2 rounded-full bg-[#25D366]/15 px-4 py-2 text-sm font-medium text-[#25D366]"
               >
                 <MessageCircle className="h-4 w-4" /> WhatsApp

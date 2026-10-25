@@ -210,7 +210,7 @@ export default async function PropiedadPage({ params }: { params: Promise<Params
             <a
               href={buildWhatsappUrl(mensajeWa, textos.whatsappNumero)}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener"
               className="mt-5 flex h-[52px] items-center justify-center gap-2 rounded-full bg-[#25D366] font-bold text-white"
             >
               <MessageCircle className="h-5 w-5" />

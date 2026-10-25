@@ -70,7 +70,7 @@ export default function Hero({
           <a
             href={buildWhatsappUrl(whatsappMensaje, whatsappNumero)}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="noopener"
             className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-gold-500 px-8 py-4 text-base font-semibold text-brand-black shadow-lg shadow-black/30 transition hover:bg-brand-gold-400"
           >
             <MessageCircle className="h-5 w-5" />

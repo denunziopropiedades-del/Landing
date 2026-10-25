@@ -8,7 +8,7 @@ export default function WhatsappFloatButton({ mensaje, numero }: { mensaje?: str
     <a
       href={buildWhatsappUrl(mensaje, numero)}
       target="_blank"
-      rel="noopener noreferrer"
+      rel="noopener"
       aria-label="Escribinos por WhatsApp"
       className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-3.5 text-white shadow-[0_8px_24px_rgba(0,0,0,0.25)] transition-transform hover:scale-105 active:scale-95 sm:px-5"
     >

@@ -138,7 +138,7 @@ export default function MapaLotes({
               numero
             )}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="noopener"
             className="mt-3 flex items-center justify-center gap-2 rounded-full bg-brand-green-700 py-2 text-xs font-semibold text-white hover:bg-brand-green-600"
           >
             <MessageCircle className="h-3.5 w-3.5" />

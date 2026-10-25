@@ -67,7 +67,7 @@ function Aviso({ titulo, texto }: { titulo: string; texto: string }) {
       <a
         href="/api/whatsapp"
         target="_blank"
-        rel="noopener noreferrer"
+        rel="noopener"
         className="mt-5 inline-flex rounded-full bg-brand-green-700 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-green-600"
       >
         Escribir por WhatsApp

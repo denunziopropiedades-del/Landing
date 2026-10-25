@@ -52,7 +52,7 @@ export default async function VisitasPage({ searchParams }: { searchParams: Prom
 
         <p className="mt-10 text-center text-xs text-brand-black/45">
           ¿Preferís hablar con alguien?{" "}
-          <a href="/api/whatsapp" target="_blank" rel="noopener noreferrer" className="font-semibold underline">
+          <a href="/api/whatsapp" target="_blank" rel="noopener" className="font-semibold underline">
             Escribinos por WhatsApp
           </a>
         </p>

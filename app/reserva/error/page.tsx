@@ -14,7 +14,7 @@ export default function ReservaErrorPage() {
         <Link href="/" className="rounded-full border border-white/30 px-6 py-3 font-semibold text-white">
           Volver al inicio
         </Link>
-        <a href={buildWhatsappUrl()} target="_blank" rel="noopener noreferrer" className="rounded-full bg-brand-gold-500 px-6 py-3 font-semibold text-brand-black">
+        <a href={buildWhatsappUrl()} target="_blank" rel="noopener" className="rounded-full bg-brand-gold-500 px-6 py-3 font-semibold text-brand-black">
           Hablar por WhatsApp
         </a>
       </div>

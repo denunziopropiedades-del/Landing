@@ -139,7 +139,7 @@ export default function Navbar({
           <a
             href={buildWhatsappUrl(undefined, numero)}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="noopener"
             className="hidden items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 xl:inline-flex"
           >
             <MessageCircle className="h-4 w-4" />
@@ -195,7 +195,7 @@ export default function Navbar({
           <a
             href={buildWhatsappUrl(undefined, numero)}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="noopener"
             className="mt-4 flex items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 py-3.5 text-sm font-bold text-white"
           >
             <MessageCircle className="h-4 w-4" />

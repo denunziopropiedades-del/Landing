@@ -14,7 +14,7 @@ export default function Banners({ items, numero }: { items: Banner[]; numero?: s
               key={banner.id}
               href={banner.linkUrl ?? buildWhatsappUrl(undefined, numero)}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener"
               className="group relative block overflow-hidden rounded-2xl border border-black/5 shadow-sm transition hover:shadow-xl"
             >
               <div className="relative aspect-square w-full">

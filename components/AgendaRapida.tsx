@@ -157,7 +157,7 @@ export default function AgendaRapida({
         <a
           href={`/api/whatsapp?text=${texto}`}
           target="_blank"
-          rel="noopener noreferrer"
+          rel="noopener"
           className="mt-6 flex min-h-[52px] items-center justify-center rounded-full bg-[#25D366] px-6 font-bold text-white"
         >
           Avisar por WhatsApp
