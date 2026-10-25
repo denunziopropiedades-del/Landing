@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { crearLeadManualAction } from "@/lib/admin/actions";
-import type { Lote, Perfil, Proyecto, Rol } from "@/types/site";
+import type { Lote, Perfil, PlanFinanciacionFijo, Proyecto, Rol } from "@/types/site";
+import PlanFinanciacionCampos, { planVacio, type PlanEditable } from "@/components/admin/PlanFinanciacionCampos";
 
 const inputClass =
   "w-full rounded-lg border border-black/10 px-3 py-2 text-sm focus:border-brand-green-600 focus:outline-none";
@@ -13,16 +14,30 @@ export default function NuevoClienteForm({
   proyectos,
   lotes,
   vendedores,
+  planesPorProyecto = {},
   rolActual,
 }: {
   proyectos: Proyecto[];
   lotes: Lote[];
   vendedores: Perfil[];
+  planesPorProyecto?: Record<string, PlanFinanciacionFijo[]>;
   rolActual: Rol;
 }) {
   const [abierto, setAbierto] = useState(false);
   const [proyectoId, setProyectoId] = useState("");
+  const [formaPago, setFormaPago] = useState<"contado" | "financiado">("contado");
+  const [plan, setPlan] = useState<PlanEditable>(planVacio);
   const [state, formAction, pending] = useActionState(crearLeadManualAction, null);
+  // Se cierra y se limpia solo si se guardó bien; si falla, queda abierto con el error
+  // a la vista (antes se cerraba igual y el error no se llegaba a ver).
+  useEffect(() => {
+    if (state?.ok) {
+      setAbierto(false);
+      setProyectoId("");
+      setFormaPago("contado");
+      setPlan(planVacio);
+    }
+  }, [state]);
   const puedeAsignar = rolActual === "administrador" || rolActual === "supervisor";
 
   const lotesDelProyecto = useMemo(() => lotes.filter((l) => l.proyectoId === proyectoId), [lotes, proyectoId]);
@@ -36,12 +51,11 @@ export default function NuevoClienteForm({
         </button>
       </div>
 
+      {!abierto && state?.ok && <p className="mt-2 text-xs text-brand-green-700">Cliente agregado.</p>}
+
       {abierto && (
         <form
-          action={(fd) => {
-            formAction(fd);
-            setAbierto(false);
-          }}
+          action={formAction}
           className="mt-4 grid gap-3 sm:grid-cols-2"
         >
           <div>
@@ -106,6 +120,56 @@ export default function NuevoClienteForm({
                 ))}
               </select>
             </div>
+          )}
+          <div className="sm:col-span-2">
+            <label className={labelClass}>Forma de pago</label>
+            <input type="hidden" name="formaPago" value={formaPago} />
+            <div className="inline-flex rounded-full border border-black/10 p-0.5">
+              {(["contado", "financiado"] as const).map((op) => (
+                <button
+                  key={op}
+                  type="button"
+                  onClick={() => setFormaPago(op)}
+                  className={`rounded-full px-4 py-1.5 text-sm font-semibold ${
+                    formaPago === op ? "bg-brand-green-700 text-white" : "text-brand-black/60"
+                  }`}
+                >
+                  {op === "contado" ? "Contado" : "Financiado"}
+                </button>
+              ))}
+            </div>
+            {formaPago === "financiado" && (
+              <div className="mt-3">
+                <PlanFinanciacionCampos
+                  plan={plan}
+                  onChange={setPlan}
+                  planesSugeridos={planesPorProyecto[proyectoId] ?? []}
+                  conNombres
+                />
+              </div>
+            )}
+          </div>
+          <div>
+            <label className={labelClass}>Seña cobrada ($ ARS, opcional)</label>
+            <input name="importeCobrado" type="number" inputMode="decimal" min={0} className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Medio de pago de la seña</label>
+            <select name="medioPagoSena" defaultValue="" className={inputClass}>
+              <option value="">Sin especificar</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="efectivo">Efectivo</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelClass}>N° de transacción (opcional)</label>
+            <input name="numeroTransaccion" className={inputClass} />
+          </div>
+          {formaPago === "financiado" && (
+            <p className="text-[11px] text-brand-black/50 sm:col-span-2">
+              El cliente aparece en Cobranzas en cuanto tenga la seña cargada. Las cuotas se generan después desde su
+              tarjeta, al pactar la fecha de la primera.
+            </p>
           )}
           <div className="sm:col-span-2">
             <label className={labelClass}>Observaciones</label>

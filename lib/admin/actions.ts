@@ -1306,6 +1306,21 @@ async function verificarPropiedadLead(actorId: string, actorRol: Rol, leadId: st
   }
 }
 
+/** Valida los 3 datos de un plan de financiación cargado a mano en el panel. */
+function validarPlanFinanciacion(anticipo: string, cuotas: string, valorCuota: string) {
+  const plan = { anticipoUsd: Number(anticipo), cuotas: Number(cuotas), valorCuotaUsd: Number(valorCuota) };
+  if (!anticipo.trim() || !Number.isFinite(plan.anticipoUsd) || plan.anticipoUsd < 0) {
+    throw new AdminActionError("Completá el anticipo (USD) del plan de financiación.");
+  }
+  if (!Number.isInteger(plan.cuotas) || plan.cuotas <= 0) {
+    throw new AdminActionError("La cantidad de cuotas tiene que ser un número entero mayor a 0.");
+  }
+  if (!Number.isFinite(plan.valorCuotaUsd) || plan.valorCuotaUsd <= 0) {
+    throw new AdminActionError("Completá el valor de cada cuota (USD).");
+  }
+  return plan;
+}
+
 export async function crearLeadManualAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor", "vendedor");
@@ -1313,6 +1328,21 @@ export async function crearLeadManualAction(_prev: ActionResult | null, formData
 
     const nombre = str(formData, "nombre");
     if (!nombre) throw new AdminActionError("El nombre es obligatorio.");
+
+    const formaPago = str(formData, "formaPago") === "financiado" ? "financiado" : "contado";
+    const planFinanciacion =
+      formaPago === "financiado"
+        ? validarPlanFinanciacion(
+            str(formData, "anticipoUsd"),
+            str(formData, "cuotas"),
+            str(formData, "valorCuotaUsd")
+          )
+        : null;
+    const importeSenaTxt = str(formData, "importeCobrado");
+    const importeSena = importeSenaTxt ? Number(importeSenaTxt) : null;
+    if (importeSena !== null && (!Number.isFinite(importeSena) || importeSena < 0)) {
+      throw new AdminActionError("El importe de la seña no es válido.");
+    }
 
     const loteId = optStr(formData, "loteId");
     let manzana: string | null = null;
@@ -1336,6 +1366,11 @@ export async function crearLeadManualAction(_prev: ActionResult | null, formData
       observaciones: optStr(formData, "observaciones") ?? "",
       estado: "nuevo" as const,
       asignado_a: actor.rol === "vendedor" ? actor.id : optStr(formData, "asignadoA"),
+      forma_pago: formaPago,
+      plan_financiacion: planFinanciacion,
+      importe_cobrado: importeSena,
+      medio_pago_sena: optStr(formData, "medioPagoSena"),
+      numero_transaccion: optStr(formData, "numeroTransaccion"),
     };
 
     const { data, error } = await admin.from("leads").insert(payload).select("id").single();
@@ -1348,6 +1383,47 @@ export async function crearLeadManualAction(_prev: ActionResult | null, formData
     });
     revalidatePath("/admin/crm");
     revalidatePath("/admin/consultas");
+    revalidatePath("/admin/cobranzas");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/** Cambia la forma de pago de un lead ya cargado (contado / financiado + plan).
+ * Antes solo se podía definir desde la reserva web, así que un cliente cargado o
+ * cerrado a mano nunca podía pasar a financiado ni aparecer en Cobranzas. */
+export async function actualizarFormaPagoLeadAction(
+  id: string,
+  formaPago: "contado" | "financiado",
+  anticipoUsd: string,
+  cuotas: string,
+  valorCuotaUsd: string
+): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    await verificarPropiedadLead(actor.id, actor.rol, id);
+    const admin = (await getSupabaseAdminClient())!;
+
+    const { count } = await admin.from("cuotas").select("id", { count: "exact", head: true }).eq("lead_id", id);
+    if ((count ?? 0) > 0) {
+      throw new AdminActionError("Este cliente ya tiene cuotas generadas: no se puede cambiar el plan desde acá.");
+    }
+
+    const plan = formaPago === "financiado" ? validarPlanFinanciacion(anticipoUsd, cuotas, valorCuotaUsd) : null;
+    const { error } = await admin
+      .from("leads")
+      .update({ forma_pago: formaPago, plan_financiacion: plan, actualizado_en: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+
+    await registrarActividad(actor, "actualizar", "lead", id, {
+      ...(await contextoLead(admin, id)),
+      formaPago,
+      ...(plan ? { planFinanciacion: `${plan.anticipoUsd} USD + ${plan.cuotas} x ${plan.valorCuotaUsd} USD` } : {}),
+    });
+    revalidatePath("/admin/crm");
+    revalidatePath("/admin/cobranzas");
     return { ok: true };
   } catch (err) {
     return fail(err);

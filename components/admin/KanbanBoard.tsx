@@ -9,6 +9,7 @@ import {
   actualizarEstadoLeadAction,
   actualizarFechaNacimientoLeadAction,
   actualizarFirmaEscribaniaLeadAction,
+  actualizarFormaPagoLeadAction,
   actualizarObservacionesLeadAction,
   actualizarPagoLeadAction,
   actualizarSexoLeadAction,
@@ -20,7 +21,8 @@ import {
 } from "@/lib/admin/actions";
 import { buildWhatsappClienteUrl } from "@/lib/whatsapp";
 import { formatUsd } from "@/lib/utils";
-import type { EstadoLead, Lead, Lote, Perfil, Proyecto, Rol } from "@/types/site";
+import type { EstadoLead, Lead, Lote, Perfil, PlanFinanciacionFijo, Proyecto, Rol } from "@/types/site";
+import PlanFinanciacionCampos, { planAEditable, type PlanEditable } from "@/components/admin/PlanFinanciacionCampos";
 
 /** Propiedades (venta, alquiler, campos…) para elegir qué le interesa a cada lead. */
 export type OpcionPropiedad = { id: string; titulo: string; grupo: "venta" | "alquiler" | "campo" };
@@ -50,6 +52,7 @@ function LeadCard({
   proyectos,
   propiedades,
   lotes,
+  planesSugeridos,
   puedeAsignar,
   puedeBorrar,
   onMoved,
@@ -61,6 +64,7 @@ function LeadCard({
   proyectos: Proyecto[];
   propiedades: OpcionPropiedad[];
   lotes: Lote[];
+  planesSugeridos: PlanFinanciacionFijo[];
   puedeAsignar: boolean;
   puedeBorrar: boolean;
   onMoved: () => void;
@@ -83,6 +87,10 @@ function LeadCard({
   const [honorariosArs, setHonorariosArs] = useState(lead.honorariosArs?.toString() ?? "");
   const [gastosArs, setGastosArs] = useState(lead.gastosArs?.toString() ?? "");
   const [fechaPrimeraCuota, setFechaPrimeraCuota] = useState("");
+  const [formaPago, setFormaPago] = useState<"contado" | "financiado">(lead.formaPago ?? "contado");
+  const [plan, setPlan] = useState<PlanEditable>(planAEditable(lead.planFinanciacion));
+  const [editandoPlan, setEditandoPlan] = useState(false);
+  const [guardandoPlan, setGuardandoPlan] = useState(false);
   const [generandoCuotas, setGenerandoCuotas] = useState(false);
   const [expandido, setExpandido] = useState(false);
   const [, startTransition] = useTransition();
@@ -137,6 +145,33 @@ function LeadCard({
             medioPagoSena: medioPagoSena || null,
           });
       });
+    });
+  };
+
+  const guardarFormaPago = (nueva: "contado" | "financiado", planAGuardar: PlanEditable) => {
+    setGuardandoPlan(true);
+    startTransition(() => {
+      actualizarFormaPagoLeadAction(lead.id, nueva, planAGuardar.anticipoUsd, planAGuardar.cuotas, planAGuardar.valorCuotaUsd).then(
+        (res) => {
+          setGuardandoPlan(false);
+          if (!res.ok) {
+            alert(`No se pudo guardar la forma de pago: ${res.error}`);
+            return;
+          }
+          setEditandoPlan(false);
+          onActualizado(lead.id, {
+            formaPago: nueva,
+            planFinanciacion:
+              nueva === "financiado"
+                ? {
+                    anticipoUsd: Number(planAGuardar.anticipoUsd),
+                    cuotas: Number(planAGuardar.cuotas),
+                    valorCuotaUsd: Number(planAGuardar.valorCuotaUsd),
+                  }
+                : null,
+          });
+        }
+      );
     });
   };
 
@@ -495,14 +530,83 @@ function LeadCard({
             </div>
           </div>
 
-          {lead.formaPago === "financiado" && lead.planFinanciacion && (
+          <div>
+            <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Forma de pago</label>
+            {!lead.cantidadCuotas && (
+              <div className="mb-1.5 inline-flex rounded-full border border-black/10 p-0.5">
+                {(["contado", "financiado"] as const).map((op) => (
+                  <button
+                    key={op}
+                    type="button"
+                    disabled={guardandoPlan}
+                    onClick={() => {
+                      if (op === formaPago) return;
+                      setFormaPago(op);
+                      if (op === "contado") {
+                        if (lead.formaPago === "financiado") guardarFormaPago("contado", plan);
+                        setEditandoPlan(false);
+                      } else {
+                        setEditandoPlan(true);
+                      }
+                    }}
+                    className={`rounded-full px-3 py-0.5 text-xs font-semibold ${
+                      formaPago === op ? "bg-brand-green-700 text-white" : "text-brand-black/60"
+                    }`}
+                  >
+                    {op === "contado" ? "Contado" : "Financiado"}
+                  </button>
+                ))}
+              </div>
+            )}
+            {formaPago === "financiado" && (editandoPlan || !lead.planFinanciacion) && !lead.cantidadCuotas && (
+              <div className="space-y-1.5 rounded-lg border border-black/10 p-2">
+                <PlanFinanciacionCampos plan={plan} onChange={setPlan} planesSugeridos={planesSugeridos} compacto />
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    disabled={guardandoPlan}
+                    onClick={() => guardarFormaPago("financiado", plan)}
+                    className="rounded-full bg-brand-green-700 px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
+                  >
+                    {guardandoPlan ? "Guardando..." : "Guardar plan"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditandoPlan(false);
+                      setPlan(planAEditable(lead.planFinanciacion));
+                      setFormaPago(lead.formaPago ?? "contado");
+                    }}
+                    className="rounded-full px-3 py-1 text-xs text-brand-black/60"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {lead.formaPago === "financiado" && lead.planFinanciacion && !editandoPlan && (
             <div>
-              <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Plan de pago</label>
               <div className="rounded-lg border border-black/10 p-2 text-xs text-brand-black/70">
                 <p>
                   Financiado — anticipo {formatUsd(lead.planFinanciacion.anticipoUsd)}, {lead.planFinanciacion.cuotas} cuotas
                   de {formatUsd(lead.planFinanciacion.valorCuotaUsd)}
+                  {!lead.cantidadCuotas && (
+                    <button
+                      type="button"
+                      onClick={() => setEditandoPlan(true)}
+                      className="ml-1.5 text-brand-green-700 underline"
+                    >
+                      editar
+                    </button>
+                  )}
                 </p>
+                {!lead.importeCobrado && !lead.numeroTransaccion && !lead.pagoConfirmadoEn && (
+                  <p className="mt-1 text-[11px] text-amber-700">
+                    Cargá la seña (abajo) para que aparezca en Cobranzas.
+                  </p>
+                )}
                 {!lead.cantidadCuotas ? (
                   <div className="mt-2 flex items-center gap-1.5">
                     <input
@@ -714,6 +818,7 @@ export default function KanbanBoard({
   proyectos,
   propiedades = [],
   lotes,
+  planesPorProyecto = {},
   rolActual,
 }: {
   leads: Lead[];
@@ -721,6 +826,7 @@ export default function KanbanBoard({
   proyectos: Proyecto[];
   propiedades?: OpcionPropiedad[];
   lotes: Lote[];
+  planesPorProyecto?: Record<string, PlanFinanciacionFijo[]>;
   rolActual: Rol;
 }) {
   const [leads, setLeads] = useState(leadsIniciales);
@@ -785,6 +891,7 @@ export default function KanbanBoard({
                 proyectos={proyectos}
                 propiedades={propiedades}
                 lotes={lotes}
+                planesSugeridos={(lead.proyectoId && planesPorProyecto[lead.proyectoId]) || []}
                 puedeAsignar={puedeAsignar}
                 puedeBorrar={puedeBorrar}
                 onMoved={() => setDragOver(null)}

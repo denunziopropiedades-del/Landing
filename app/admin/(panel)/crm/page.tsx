@@ -1,7 +1,7 @@
 import ImportarLeadsMetaForm from "@/components/admin/ImportarLeadsMetaForm";
 import KanbanBoard from "@/components/admin/KanbanBoard";
 import NuevoClienteForm from "@/components/admin/NuevoClienteForm";
-import { getLeads, getLotesAdminTodos, getPerfiles, getProyectosAdmin } from "@/lib/admin/data";
+import { getFinanciacionAdmin, getLeads, getLotesAdminTodos, getPerfiles, getProyectosAdmin } from "@/lib/admin/data";
 import { getPerfilActual } from "@/lib/admin/auth";
 import { getPropiedadesAdmin } from "@/lib/admin/propiedades-actions";
 import { esRural } from "@/lib/propiedades-base";
@@ -23,6 +23,11 @@ export default async function AdminCrmPage() {
   // Cualquier miembro activo del staff puede recibir leads asignados, no solo los que
   // tienen el rol puntual "vendedor" (un administrador/supervisor también puede vender).
   const vendedores = perfiles.filter((p) => p.activo);
+  // Planes de financiación fijos de cada desarrollo, para ofrecerlos como atajo al
+  // marcar un cliente como financiado (igual se puede cargar un plan a medida).
+  const planesPorProyecto = Object.fromEntries(
+    await Promise.all(proyectos.map(async (p) => [p.id, (await getFinanciacionAdmin(p.id)).planesFijos] as const))
+  );
 
   return (
     <div>
@@ -32,7 +37,7 @@ export default async function AdminCrmPage() {
       </p>
 
       <div className="mt-8">
-        <NuevoClienteForm proyectos={proyectos} lotes={lotes} vendedores={vendedores} rolActual={actual?.rol ?? "vendedor"} />
+        <NuevoClienteForm proyectos={proyectos} lotes={lotes} vendedores={vendedores} planesPorProyecto={planesPorProyecto} rolActual={actual?.rol ?? "vendedor"} />
       </div>
 
       {(actual?.rol === "administrador" || actual?.rol === "supervisor") && (
@@ -42,7 +47,7 @@ export default async function AdminCrmPage() {
       )}
 
       <div className="mt-8">
-        <KanbanBoard leads={leads} vendedores={vendedores} proyectos={proyectos} propiedades={propiedades} lotes={lotes} rolActual={actual?.rol ?? "vendedor"} />
+        <KanbanBoard planesPorProyecto={planesPorProyecto} leads={leads} vendedores={vendedores} proyectos={proyectos} propiedades={propiedades} lotes={lotes} rolActual={actual?.rol ?? "vendedor"} />
       </div>
 
       {leads.length === 0 && (
