@@ -104,7 +104,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </form>
       </aside>
 
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-3 border-b border-black/5 bg-white px-4 py-3 lg:hidden">
           <MobileNavSelect items={navVisible.map(({ href, label }) => ({ href, label }))} />
           <form action={logoutAction}>
