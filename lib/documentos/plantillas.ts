@@ -4,6 +4,10 @@
  * Un modelo es texto común con campos entre llaves dobles: {{Nombre del perito}}.
  * - Tipo opcional después de "|": {{Día de la pericia|fecha}}, {{Hora|hora}}, {{Monto|numero}}, {{Observaciones|texto largo}}.
  * - Valor por defecto opcional después de "=": {{Localidad=Ciudad Autónoma de Buenos Aires}}.
+ * - Números escritos en letras solos: {{Precio|pesos}} → "PESOS DIECIOCHO MILLONES ($ 18.000.000)",
+ *   {{Frente|metros}} → "OCHO METROS CON VEINTICINCO CENTÍMETROS (8,25 m)",
+ *   {{Superficie|metros cuadrados}} → "DOSCIENTOS SIETE METROS CUADRADOS CON SETENTA Y OCHO DECÍMETROS CUADRADOS (207,78 m²)",
+ *   {{Años|en letras}} → "SIETE (7)" ({{…|en letras minusculas}} → "siete (7)").
  * - **negrita** marca texto en negrita en el PDF.
  * - Una línea que contiene solo [FIRMA] ubica el bloque de firma y sello.
  * Sin dependencias de servidor: se usa también en el navegador.
@@ -31,7 +35,11 @@ export function camposDe(cuerpo: string): Campo[] {
   for (const m of cuerpo.matchAll(RE_CAMPO)) {
     const etiqueta = m[1].trim();
     const clave = etiqueta.toLowerCase();
-    const tipoRaw = (m[2] ?? "texto").trim().toLowerCase().replace(/^porcentaje.*/, "porcentaje") as TipoCampo;
+    const tipoRaw = (m[2] ?? "texto")
+      .trim()
+      .toLowerCase()
+      .replace(/^porcentaje.*/, "porcentaje")
+      .replace(/^(pesos|metros.*|en letras.*)$/, "numero") as TipoCampo;
     const tipo = TIPOS.includes(tipoRaw) ? tipoRaw : "texto";
     const previo = vistos.get(clave);
     if (!previo) vistos.set(clave, { clave, etiqueta, tipo, porDefecto: (m[3] ?? "").trim() });
@@ -54,7 +62,83 @@ export function numeroEnLetras(n: number): string | null {
   return u ? `${DECENAS[d]} y ${UNIDADES[u]}` : DECENAS[d];
 }
 
-const NUM_LETRAS = `(?:${[...UNIDADES, ...DECENAS.filter(Boolean), "cien"].sort((a, b) => b.length - a.length).join("|")})(?:\\s+y\\s+(?:${UNIDADES.slice(1, 10).join("|")}))?`;
+const CENTENAS = ["", "ciento", "doscientos", "trescientos", "cuatrocientos", "quinientos", "seiscientos", "setecientos", "ochocientos", "novecientos"];
+
+/** 1 a 999 en letras. `apocope` = "un"/"veintiún" (delante de un sustantivo o de "mil"). */
+function tresCifras(n: number, apocope: boolean): string {
+  if (n === 100) return "cien";
+  const c = Math.floor(n / 100);
+  const r = n % 100;
+  let resto = r ? numeroEnLetras(r)! : "";
+  if (apocope) resto = resto.replace(/veintiuno$/, "veintiún").replace(/uno$/, "un");
+  return [CENTENAS[c], resto].filter(Boolean).join(" ");
+}
+
+/**
+ * Enteros de cualquier tamaño razonable en letras: 18000000 → "dieciocho millones".
+ * `apocope` para cuando sigue un sustantivo: 21 → "veintiún" (metros), 1 → "un".
+ */
+export function enteroEnLetras(n: number, apocope = false): string {
+  if (!Number.isInteger(n) || n < 0 || n >= 1e15) return String(n);
+  if (n === 0) return "cero";
+  const millones = Math.floor(n / 1e6);
+  const miles = Math.floor((n % 1e6) / 1000);
+  const unidades = n % 1000;
+  const partes: string[] = [];
+  if (millones) {
+    partes.push(millones === 1 ? "un millón" : `${enteroEnLetras(millones, true)} millones`);
+  }
+  if (miles) partes.push(miles === 1 ? "mil" : `${tresCifras(miles, true)} mil`);
+  if (unidades) partes.push(tresCifras(unidades, apocope));
+  return partes.join(" ");
+}
+
+const leerNumero = (v: string) => {
+  // Acepta "18.000.000", "18000000", "11,25", "11.25", "$ 18.000.000,50".
+  let t = v.replace(/[$\s]|m²|m2|m\b/gi, "");
+  if (t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, "");
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+};
+
+/** Parte entera y dos decimales (11,25 → [11, 25]; 207,5 → [207, 50]). */
+const partir = (n: number): [number, number] => {
+  const cent = Math.round(n * 100);
+  return [Math.floor(cent / 100), cent % 100];
+};
+
+const fmtAR = (n: number, dec = 2) => new Intl.NumberFormat("es-AR", { minimumFractionDigits: Number.isInteger(n) ? 0 : dec, maximumFractionDigits: dec }).format(n);
+
+/** Formatos que escriben el número en letras: "pesos", "metros", "metros cuadrados", "en letras". */
+function enLetras(tipo: string, v: string): string | null {
+  const n = leerNumero(v);
+  if (n === null || n < 0) return null;
+  const [ent, dec] = partir(n);
+  const M = (t: string) => t.toUpperCase();
+  if (tipo === "pesos") {
+    const centavos = dec ? ` CON ${String(dec).padStart(2, "0")}/100` : "";
+    return `PESOS ${M(enteroEnLetras(ent, true))}${centavos} ($ ${fmtAR(n)})`;
+  }
+  if (tipo === "metros cuadrados") {
+    const a = `${M(enteroEnLetras(ent, true))} ${ent === 1 ? "METRO CUADRADO" : "METROS CUADRADOS"}`;
+    const b = dec ? ` CON ${M(enteroEnLetras(dec, true))} ${dec === 1 ? "DECÍMETRO CUADRADO" : "DECÍMETROS CUADRADOS"}` : "";
+    return `${ent ? a : ""}${ent ? b : b.replace(/^ CON /, "")} (${fmtAR(n)} m²)`;
+  }
+  if (tipo === "metros") {
+    const a = `${M(enteroEnLetras(ent, true))} ${ent === 1 ? "METRO" : "METROS"}`;
+    const b = dec ? ` CON ${M(enteroEnLetras(dec, true))} ${dec === 1 ? "CENTÍMETRO" : "CENTÍMETROS"}` : "";
+    return `${ent ? a : ""}${ent ? b : b.replace(/^ CON /, "")} (${fmtAR(n)} m)`;
+  }
+  if (tipo === "en letras" || tipo === "en letras minusculas") {
+    if (!Number.isInteger(n)) return null;
+    const t = enteroEnLetras(n);
+    return `${tipo === "en letras" ? M(t) : t} (${n < 10000 ? n : fmtAR(n)})`; // años sin punto: (2019)
+  }
+  return null;
+}
+
+const NUM_LETRAS =`(?:${[...UNIDADES, ...DECENAS.filter(Boolean), "cien"].sort((a, b) => b.length - a.length).join("|")})(?:\\s+y\\s+(?:${UNIDADES.slice(1, 10).join("|")}))?`;
 // "CUARENTA POR CIENTO (40%)", "40%" y repartos tipo "60/40" (que sumen 100).
 const RE_PORCENTAJE = new RegExp(
   `\\b(${NUM_LETRAS})\\s+por\\s+ciento\\s*\\(\\s*(\\d+(?:[.,]\\d+)?)\\s*%\\s*\\)` +
@@ -273,6 +357,8 @@ const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "
 export function formatearValor(tipo: TipoCampo | string, valor: string): string {
   const v = (valor ?? "").trim();
   if (!v) return v;
+  const letras = enLetras(String(tipo), v);
+  if (letras) return letras;
   if (String(tipo).startsWith("porcentaje")) {
     const n = Number(v.replace("%", "").replace(",", ".").trim());
     if (!Number.isFinite(n)) return v;
