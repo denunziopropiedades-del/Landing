@@ -283,3 +283,49 @@ export async function sendEmail(to: string, subject: string, html: string, adjun
   if (!RESEND_API_KEY || !to) return { skipped: true as const };
   return enviar(to, subject, html, adjuntos);
 }
+
+export type EmailMasivo = { to: string; subject: string; html: string; headers?: Record<string, string> };
+
+/**
+ * Envía mails masivos (newsletter) con la API batch de Resend: hasta 100 por
+ * llamada, con una pausa entre tandas para no pasar el límite de pedidos por
+ * segundo. No agrega la firma (el newsletter tiene su propio diseño).
+ * Devuelve cuántos se enviaron y cuántos fallaron.
+ */
+export async function sendEmailsMasivos(mails: EmailMasivo[]): Promise<{ enviados: number; fallidos: number; errores: string[] }> {
+  if (!RESEND_API_KEY) throw new Error("Falta configurar RESEND_API_KEY: no se puede enviar el newsletter.");
+  let enviados = 0;
+  let fallidos = 0;
+  const errores: string[] = [];
+
+  for (let i = 0; i < mails.length; i += 100) {
+    const tanda = mails.slice(i, i + 100);
+    try {
+      const res = await fetch("https://api.resend.com/emails/batch", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify(
+          tanda.map((m) => ({
+            from: EMAIL_FROM,
+            to: [m.to],
+            reply_to: EMAIL_TO,
+            subject: m.subject,
+            html: m.html,
+            ...(m.headers ? { headers: m.headers } : {}),
+          }))
+        ),
+      });
+      if (res.ok) enviados += tanda.length;
+      else {
+        fallidos += tanda.length;
+        errores.push(`Resend (${res.status}): ${(await res.text()).slice(0, 300)}`);
+      }
+    } catch (err) {
+      fallidos += tanda.length;
+      errores.push(err instanceof Error ? err.message : String(err));
+    }
+    if (i + 100 < mails.length) await new Promise((r) => setTimeout(r, 700));
+  }
+
+  return { enviados, fallidos, errores };
+}
