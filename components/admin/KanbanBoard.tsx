@@ -187,25 +187,60 @@ function LeadCard({
     });
   };
 
-  const lotesDelProyecto = useMemo(
-    () => lotes.filter((l) => l.proyectoId === lead.proyectoId),
-    [lotes, lead.proyectoId]
+  // Barrio del que se eligen los lotes: el desarrollo del lead o, si vino por una
+  // propiedad (ej. "LOTE 20X30" de Arroyos de San Vicente), el que se elija acá.
+  const loteActual = lotes.find((l) => l.id === (lead.lotes[0]?.id ?? lead.loteId));
+  const [proyectoLotesId, setProyectoLotesId] = useState<string>(lead.proyectoId ?? loteActual?.proyectoId ?? "");
+  const proyectoParaLotes = lead.proyectoId ?? (proyectoLotesId || null);
+  const proyectosConLotes = useMemo(
+    () => proyectos.filter((p) => lotes.some((l) => l.proyectoId === p.id)),
+    [proyectos, lotes]
   );
+  const lotesDelProyecto = useMemo(
+    () => lotes.filter((l) => l.proyectoId === proyectoParaLotes),
+    [lotes, proyectoParaLotes]
+  );
+  const [loteElegido, setLoteElegido] = useState<string>(lead.lotes[0]?.id ?? lead.loteId ?? "");
+  const [manzanaManual, setManzanaManual] = useState(loteActual?.manzana ?? "");
+  const [loteManual, setLoteManual] = useState(loteActual?.numero ?? "");
 
   const asignarLote = (loteId: string) => {
-    const lote = lotesDelProyecto.find((l) => l.id === loteId);
+    const lote = lotes.find((l) => l.id === loteId);
     startTransition(() => {
       asignarLoteLeadAction(lead.id, loteId || null).then((res) => {
         if (!res.ok) alert(`No se pudo asignar el lote: ${res.error}`);
-        else
+        else {
+          setLoteElegido(loteId);
+          setManzanaManual(lote?.manzana ?? "");
+          setLoteManual(lote?.numero ?? "");
           onActualizado(lead.id, {
             loteId: loteId || null,
             manzana: lote?.manzana,
             loteNumero: lote?.numero,
             loteNombre: lote?.nombre,
+            ...(lote && !lead.proyectoId
+              ? { proyectoId: lote.proyectoId, proyectoNombre: proyectos.find((p) => p.id === lote.proyectoId)?.nombre }
+              : {}),
           });
+        }
       });
     });
+  };
+
+  // Carga a mano: se escribe manzana y lote y se busca ese lote en el barrio.
+  const normalizar = (v: string) => v.trim().toLowerCase().replace(/^0+(?=\d)/, "");
+  const asignarLoteManual = () => {
+    if (!proyectoParaLotes) return alert("Elegí primero el barrio.");
+    const mz = normalizar(manzanaManual);
+    const nro = normalizar(loteManual);
+    if (!mz || !nro) return alert("Completá manzana y lote.");
+    const lote = lotesDelProyecto.find((l) => normalizar(l.manzana) === mz && normalizar(l.numero) === nro);
+    if (!lote) {
+      const barrio = proyectos.find((p) => p.id === proyectoParaLotes)?.nombre ?? "este barrio";
+      return alert(`No existe la Manzana ${manzanaManual.trim()} — Lote ${loteManual.trim()} en ${barrio}. Revisá los datos o cargalo en "Lotes y precios".`);
+    }
+    if (lote.id === loteElegido) return;
+    asignarLote(lote.id);
   };
 
   const guardarFirma = () => {
@@ -376,10 +411,24 @@ function LeadCard({
               operaciones de 2-3 lotes juntos (reservar_lotes) se muestra solo lectura
               más abajo, porque reasignar ahí requiere elegir el combo completo. */}
           {puedeAsignar && lead.lotes.length <= 1 && (
-            <div>
+            <div className="space-y-1.5">
+              {!lead.proyectoId && (
+                <select
+                  value={proyectoLotesId}
+                  onChange={(e) => setProyectoLotesId(e.target.value)}
+                  className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs text-brand-black/70"
+                >
+                  <option value="">Barrio del lote…</option>
+                  {proyectosConLotes.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombre}
+                    </option>
+                  ))}
+                </select>
+              )}
               <select
-                defaultValue={lead.lotes[0]?.id ?? lead.loteId ?? ""}
-                disabled={!lead.proyectoId}
+                value={loteElegido}
+                disabled={!proyectoParaLotes}
                 onChange={(e) => asignarLote(e.target.value)}
                 className="w-full rounded-lg border border-black/10 px-2 py-1 text-xs text-brand-black/70 disabled:opacity-50"
               >
@@ -390,8 +439,33 @@ function LeadCard({
                   </option>
                 ))}
               </select>
-              {lead.proyectoId && lotesDelProyecto.length === 0 && (
-                <p className="mt-1 text-[11px] text-brand-black/40">Este desarrollo todavía no tiene lotes cargados.</p>
+              {proyectoParaLotes && (
+                <div className="flex items-center gap-1.5">
+                  <input
+                    value={manzanaManual}
+                    onChange={(e) => setManzanaManual(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && asignarLoteManual()}
+                    placeholder="Manzana"
+                    className="w-full min-w-0 rounded-lg border border-black/10 px-2 py-1 text-xs"
+                  />
+                  <input
+                    value={loteManual}
+                    onChange={(e) => setLoteManual(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && asignarLoteManual()}
+                    placeholder="Lote"
+                    className="w-full min-w-0 rounded-lg border border-black/10 px-2 py-1 text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={asignarLoteManual}
+                    className="shrink-0 rounded-lg bg-brand-black px-2.5 py-1 text-xs font-semibold text-white"
+                  >
+                    Asignar
+                  </button>
+                </div>
+              )}
+              {proyectoParaLotes && lotesDelProyecto.length === 0 && (
+                <p className="mt-1 text-[11px] text-brand-black/40">Este barrio todavía no tiene lotes cargados.</p>
               )}
             </div>
           )}

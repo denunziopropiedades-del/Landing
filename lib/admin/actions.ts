@@ -1518,22 +1518,26 @@ export async function asignarLoteLeadAction(leadId: string, loteId: string | nul
 
     const { data: lead, error: errLead } = await admin
       .from("leads")
-      .select("lote_id, estado")
+      .select("lote_id, estado, proyecto_id")
       .eq("id", leadId)
       .maybeSingle();
     if (errLead) throw new Error(errLead.message);
     const loteAnteriorId = lead?.lote_id ?? null;
 
     let manzana: string | null = null;
+    let proyectoDelLote: string | null = null;
     if (loteId) {
-      const { data: lote } = await admin.from("lotes").select("manzana").eq("id", loteId).maybeSingle();
+      const { data: lote } = await admin.from("lotes").select("manzana, proyecto_id").eq("id", loteId).maybeSingle();
       manzana = lote?.manzana ?? null;
+      proyectoDelLote = lote?.proyecto_id ?? null;
     }
 
-    const { error } = await admin
-      .from("leads")
-      .update({ lote_id: loteId, manzana, actualizado_en: new Date().toISOString() })
-      .eq("id", leadId);
+    // Si el cliente vino por una propiedad (sin desarrollo cargado), al asignarle
+    // un lote se le completa también el barrio, para Cobranzas y reportes.
+    const cambios: Record<string, unknown> = { lote_id: loteId, manzana, actualizado_en: new Date().toISOString() };
+    if (proyectoDelLote && !lead?.proyecto_id) cambios.proyecto_id = proyectoDelLote;
+
+    const { error } = await admin.from("leads").update(cambios).eq("id", leadId);
     if (error) {
       if (error.code === "23505") throw new AdminActionError("Ese lote ya está asignado a otro cliente.");
       throw new Error(error.message);
@@ -1609,8 +1613,10 @@ export async function actualizarDatosContactoLeadAction(
     const email = datos.email.trim();
     const telefono = datos.telefono.trim();
     if (!nombre) return { ok: false, error: "El nombre no puede quedar vacío." };
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: "El email no es válido." };
-    if (!telefono) return { ok: false, error: "El teléfono no puede quedar vacío." };
+    // Email y teléfono pueden quedar vacíos (hay clientes que llegan sin uno de
+    // los dos); si se carga un email, tiene que tener formato válido.
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      return { ok: false, error: `El email "${email}" no es válido. Revisalo o dejalo vacío.` };
 
     const admin = (await getSupabaseAdminClient())!;
     const { error } = await admin

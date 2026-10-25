@@ -104,10 +104,26 @@ export async function getLotesAdminTodos(): Promise<Lote[]> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return [];
 
-  const { data, error } = await supabase.from("lotes").select("*").order("manzana").order("numero");
-  if (error || !data) return [];
+  // Supabase devuelve como máximo 1000 filas por consulta: entre todos los
+  // desarrollos hay más lotes que eso, así que se traen por páginas (si no,
+  // los lotes de los últimos barrios quedaban afuera del CRM).
+  const PAGINA = 1000;
+  const data: Record<string, unknown>[] = [];
+  for (let desde = 0; ; desde += PAGINA) {
+    const { data: pagina, error } = await supabase
+      .from("lotes")
+      .select("*")
+      .order("manzana")
+      .order("numero")
+      .order("id")
+      .range(desde, desde + PAGINA - 1);
+    if (error) return [];
+    data.push(...(pagina ?? []));
+    if (!pagina || pagina.length < PAGINA) break;
+  }
 
-  return data.map((l) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data as any[]).map((l) => ({
     id: l.id,
     proyectoId: l.proyecto_id,
     nombre: l.nombre,
