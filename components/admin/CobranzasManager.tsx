@@ -2,9 +2,9 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { desmarcarCuotaPagadaAction, marcarCuotaPagadaAction } from "@/lib/admin/actions";
+import { desmarcarCuotaPagadaAction, guardarHonorarioCobranzaAction, marcarCuotaPagadaAction } from "@/lib/admin/actions";
 import { formatArs, formatUsd } from "@/lib/utils";
-import type { ClienteCobranzas, Cuota, MedioPago } from "@/types/site";
+import type { ClienteCobranzas, Cuota, MedioPago, MonedaHonorario } from "@/types/site";
 
 function hoyIso() {
   return new Date().toISOString().slice(0, 10);
@@ -23,7 +23,18 @@ const LABEL_MEDIO_PAGO: Record<MedioPago, string> = {
   efectivo: "Efectivo",
 };
 
-function FilaCuota({ cuota }: { cuota: Cuota }) {
+type Honorario = { monto: number; moneda: MonedaHonorario } | null;
+
+const fmtHonorario = (h: NonNullable<Honorario>) => (h.moneda === "ARS" ? formatArs(h.monto) : formatUsd(h.monto));
+
+/** Lo que le queda a la desarrolladora de una cuota después de los honorarios. */
+function netoDesarrolladora(montoUsd: number, h: Honorario) {
+  if (!h) return formatUsd(montoUsd);
+  if (h.moneda === "USD") return formatUsd(Math.max(0, montoUsd - h.monto));
+  return `${formatUsd(montoUsd)} − ${formatArs(h.monto)}`;
+}
+
+function FilaCuota({ cuota, honorario }: { cuota: Cuota; honorario: Honorario }) {
   const [editando, setEditando] = useState(false);
   const [monto, setMonto] = useState(cuota.montoUsd.toString());
   const [fecha, setFecha] = useState(hoyIso());
@@ -52,7 +63,15 @@ function FilaCuota({ cuota }: { cuota: Cuota }) {
     <tr className="border-b border-black/5 last:border-0">
       <td className="px-3 py-2 text-brand-black/70">{cuota.numero}</td>
       <td className="px-3 py-2 text-brand-black/70">{formatearFecha(cuota.vencimiento)}</td>
-      <td className="px-3 py-2 text-right text-brand-black/70">{formatUsd(cuota.montoUsd)}</td>
+      <td className="px-3 py-2 text-right text-brand-black/70">{formatUsd(cuota.pagada ? cuota.montoPagadoUsd ?? cuota.montoUsd : cuota.montoUsd)}</td>
+      {honorario && (
+        <>
+          <td className="whitespace-nowrap px-3 py-2 text-right font-medium text-brand-green-700">{fmtHonorario(honorario)}</td>
+          <td className="whitespace-nowrap px-3 py-2 text-right text-brand-black/70">
+            {netoDesarrolladora(cuota.pagada ? cuota.montoPagadoUsd ?? cuota.montoUsd : cuota.montoUsd, honorario)}
+          </td>
+        </>
+      )}
       <td className="px-3 py-2">
         {cuota.pagada ? (
           <span className="inline-flex flex-wrap items-center gap-1.5">
@@ -122,8 +141,51 @@ function FilaCuota({ cuota }: { cuota: Cuota }) {
   );
 }
 
+function HonorariosCobranza({ cliente }: { cliente: ClienteCobranzas }) {
+  const [monto, setMonto] = useState(cliente.honorarioCobranza?.toString() ?? "");
+  const [moneda, setMoneda] = useState<MonedaHonorario>(cliente.honorarioCobranzaMoneda);
+  const [mensaje, setMensaje] = useState("");
+  const [pend, start] = useTransition();
+  const cambio = monto !== (cliente.honorarioCobranza?.toString() ?? "") || moneda !== cliente.honorarioCobranzaMoneda;
+  const guardar = () =>
+    start(async () => {
+      const r = await guardarHonorarioCobranzaAction(cliente.leadId, monto, moneda);
+      setMensaje(r.ok ? "Guardado." : r.error);
+    });
+  return (
+    <div className="border-t border-black/5 p-4">
+      <p className="text-xs font-medium text-brand-black/50">Mis honorarios de gestión de cobranza (se descuentan de cada cuota)</p>
+      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+        <input
+          inputMode="decimal"
+          placeholder="Monto por cuota"
+          value={monto}
+          onChange={(e) => { setMonto(e.target.value); setMensaje(""); }}
+          className="w-36 rounded-lg border border-black/10 px-2 py-1.5 text-sm"
+        />
+        <select
+          value={moneda}
+          onChange={(e) => { setMoneda(e.target.value as MonedaHonorario); setMensaje(""); }}
+          className="rounded-lg border border-black/10 px-2 py-1.5 text-sm"
+        >
+          <option value="USD">USD</option>
+          <option value="ARS">Pesos</option>
+        </select>
+        <span className="text-xs text-brand-black/50">por cuota</span>
+        {cambio && (
+          <button type="button" onClick={guardar} disabled={pend} className="rounded-full bg-brand-green-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60">
+            {pend ? "Guardando…" : "Guardar"}
+          </button>
+        )}
+        {mensaje && <span className="text-xs text-brand-black/60">{mensaje}</span>}
+      </div>
+    </div>
+  );
+}
+
 function TarjetaCliente({ cliente }: { cliente: ClienteCobranzas }) {
   const [abierto, setAbierto] = useState(false);
+  const honorario: Honorario = cliente.honorarioCobranza ? { monto: cliente.honorarioCobranza, moneda: cliente.honorarioCobranzaMoneda } : null;
   const { cuotas } = cliente;
   const pagadas = cuotas.filter((c) => c.pagada).length;
   const enMora = cuotas.filter((c) => c.diasMora > 0).length;
@@ -206,21 +268,29 @@ function TarjetaCliente({ cliente }: { cliente: ClienteCobranzas }) {
             </div>
           </div>
 
+          <HonorariosCobranza cliente={cliente} />
+
           {cuotas.length > 0 ? (
             <div className="overflow-x-auto border-t border-black/5">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs font-medium uppercase tracking-wide text-brand-black/40">
-                    <th className="px-3 py-2">Cuota</th>
+                    <th className="px-3 py-2">N.º</th>
                     <th className="px-3 py-2">Vencimiento</th>
-                    <th className="px-3 py-2 text-right">Monto</th>
+                    <th className="px-3 py-2 text-right">Cuota</th>
+                    {honorario && (
+                      <>
+                        <th className="whitespace-nowrap px-3 py-2 text-right">Mis honorarios</th>
+                        <th className="whitespace-nowrap px-3 py-2 text-right">Neto desarrolladora</th>
+                      </>
+                    )}
                     <th className="px-3 py-2">Estado</th>
                     <th className="px-3 py-2" />
                   </tr>
                 </thead>
                 <tbody>
                   {cuotas.map((c) => (
-                    <FilaCuota key={c.id} cuota={c} />
+                    <FilaCuota key={c.id} cuota={c} honorario={honorario} />
                   ))}
                 </tbody>
               </table>
@@ -254,6 +324,16 @@ export default function CobranzasManager({ clientes }: { clientes: ClienteCobran
     const vencenEsteMes = cuotasTodas.filter((c) => c.vencimiento.slice(0, 7) === mes);
     const cobradasEsteMes = cuotasTodas.filter((c) => c.pagada && c.pagadoEn && c.pagadoEn.slice(0, 7) === mes);
     const totalSenasArs = clientes.reduce((acc, c) => acc + (c.senaImporteArs ?? 0), 0);
+    // Mis honorarios cobrados: monto fijo por cada cuota pagada, separado por moneda.
+    const honorarios = { USD: 0, ARS: 0, USDMes: 0, ARSMes: 0 };
+    for (const cl of clientes) {
+      if (!cl.honorarioCobranza) continue;
+      for (const cu of cl.cuotas) {
+        if (!cu.pagada) continue;
+        honorarios[cl.honorarioCobranzaMoneda] += cl.honorarioCobranza;
+        if (cu.pagadoEn?.slice(0, 7) === mes) honorarios[`${cl.honorarioCobranzaMoneda}Mes`] += cl.honorarioCobranza;
+      }
+    }
     return {
       totalFinanciado,
       totalCobrado,
@@ -262,6 +342,7 @@ export default function CobranzasManager({ clientes }: { clientes: ClienteCobran
       vencenEsteMes: vencenEsteMes.length,
       cobradasEsteMes: cobradasEsteMes.length,
       totalSenasArs,
+      honorarios,
       sinCuotasGeneradas: clientes.filter((c) => c.cuotas.length === 0).length,
     };
   }, [cuotasTodas, clientes]);
@@ -295,6 +376,17 @@ export default function CobranzasManager({ clientes }: { clientes: ClienteCobran
           <p className="text-xs text-brand-black/50">Señas abonadas</p>
           <p className="mt-1 font-display text-lg font-bold text-brand-black">{formatArs(resumen.totalSenasArs)}</p>
         </div>
+        {(resumen.honorarios.USD > 0 || resumen.honorarios.ARS > 0) && (
+          <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
+            <p className="text-xs text-brand-black/50">Mis honorarios cobrados</p>
+            <p className="mt-1 font-display text-lg font-bold text-brand-green-700">
+              {[resumen.honorarios.USD > 0 && formatUsd(resumen.honorarios.USD), resumen.honorarios.ARS > 0 && formatArs(resumen.honorarios.ARS)].filter(Boolean).join(" + ")}
+            </p>
+            <p className="text-[11px] text-brand-black/40">
+              este mes: {[resumen.honorarios.USD > 0 && formatUsd(resumen.honorarios.USDMes), resumen.honorarios.ARS > 0 && formatArs(resumen.honorarios.ARSMes)].filter(Boolean).join(" + ")}
+            </p>
+          </div>
+        )}
         <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
           <p className="text-xs text-brand-black/50">Cuotas en mora</p>
           <p className={`mt-1 font-display text-lg font-bold ${resumen.enMoraCantidad > 0 ? "text-red-600" : "text-brand-black"}`}>

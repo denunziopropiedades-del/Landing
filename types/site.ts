@@ -291,8 +291,13 @@ export type ClienteCobranzas = {
   senaMedioPago: MedioPago | null;
   senaNumeroTransaccion: string | null;
   senaPagoConfirmadoEn: string | null;
+  /** Honorarios de gestión de cobranza: monto fijo por cuota que se descuenta de la cuota. */
+  honorarioCobranza: number | null;
+  honorarioCobranzaMoneda: MonedaHonorario;
   cuotas: Cuota[];
 };
+
+export type MonedaHonorario = "USD" | "ARS";
 
 export type Gasto = {
   id: string;

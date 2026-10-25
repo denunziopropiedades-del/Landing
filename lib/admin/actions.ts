@@ -2396,3 +2396,35 @@ export async function eliminarGastoAction(id: string): Promise<ActionResult> {
     return fail(err);
   }
 }
+
+/** Honorarios de gestión de cobranza de un cliente: monto fijo por cuota, en USD o ARS. */
+export async function guardarHonorarioCobranzaAction(leadId: string, monto: string, moneda: string): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+    const limpio = monto.trim().replace(/\./g, "").replace(",", ".");
+    const valor = limpio ? Number(limpio) : null;
+    if (valor !== null && (!Number.isFinite(valor) || valor < 0)) return { ok: false, error: "El monto no es válido." };
+    const mon = moneda === "ARS" ? "ARS" : "USD";
+
+    const { error } = await admin
+      .from("leads")
+      .update({ honorario_cobranza: valor, honorario_cobranza_moneda: mon })
+      .eq("id", leadId);
+    if (error) {
+      if (/honorario_cobranza/.test(error.message)) {
+        return { ok: false, error: "Falta crear las columnas: corré sql-honorarios-cobranza.sql en Supabase → SQL Editor." };
+      }
+      throw new Error(error.message);
+    }
+
+    await registrarActividad(actor, "actualizar", "lead", leadId, {
+      ...(await contextoLead(admin, leadId)),
+      honorarioCobranza: valor === null ? "sin honorarios" : `${valor} ${mon} por cuota`,
+    });
+    revalidatePath("/admin/cobranzas");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}

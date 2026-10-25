@@ -3,6 +3,7 @@ import type {
   ActividadLog,
   Banner,
   ClienteCobranzas,
+  MonedaHonorario,
   ComboLotes,
   ConfigFinanciacion,
   Cuota,
@@ -438,6 +439,17 @@ export async function getClientesCobranzasAdmin(): Promise<ClienteCobranzas[]> {
     .eq("forma_pago", "financiado");
   if (error || !data) return [];
 
+  // Honorarios de cobranza en una consulta aparte: si todavía no se corrió
+  // sql-honorarios-cobranza.sql, Cobranzas sigue funcionando igual (sin honorarios).
+  const honorarios = new Map<string, { monto: number | null; moneda: MonedaHonorario }>();
+  const { data: hon } = await supabase
+    .from("leads")
+    .select("id, honorario_cobranza, honorario_cobranza_moneda")
+    .eq("forma_pago", "financiado");
+  for (const h of (hon ?? []) as { id: string; honorario_cobranza: unknown; honorario_cobranza_moneda: string | null }[]) {
+    honorarios.set(h.id, { monto: numOrNull(h.honorario_cobranza), moneda: h.honorario_cobranza_moneda === "ARS" ? "ARS" : "USD" });
+  }
+
   const hoyIso = new Date().toISOString().slice(0, 10);
 
   return data
@@ -494,6 +506,8 @@ export async function getClientesCobranzasAdmin(): Promise<ClienteCobranzas[]> {
         senaMedioPago: (l.medio_pago_sena as MedioPago | null) ?? null,
         senaNumeroTransaccion: l.numero_transaccion ?? null,
         senaPagoConfirmadoEn: l.pago_confirmado_en ?? null,
+        honorarioCobranza: honorarios.get(l.id)?.monto ?? null,
+        honorarioCobranzaMoneda: honorarios.get(l.id)?.moneda ?? "USD",
         cuotas,
       };
       return cliente;
