@@ -1,9 +1,20 @@
 import { siteTextosSeed } from "@/lib/data";
 
+/** Números que reciben las consultas de WhatsApp que llegan desde la web.
+ * Cada clic se reparte al azar entre ellos (ver app/api/whatsapp/route.ts). */
+export const NUMEROS_WHATSAPP_CONSULTAS = ["5491127424512", "5491161365523"];
+
+export function numeroWhatsappAleatorio() {
+  return NUMEROS_WHATSAPP_CONSULTAS[Math.floor(Math.random() * NUMEROS_WHATSAPP_CONSULTAS.length)];
+}
+
+/** Link de WhatsApp para las consultas de la web. No apunta a un número fijo:
+ * pasa por /api/whatsapp, que en cada clic elige uno de los números al azar.
+ * El parámetro `numero` se mantiene por compatibilidad pero ya no se usa. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function buildWhatsappUrl(mensaje?: string, numero?: string) {
-  const numeroFinal = (numero ?? siteTextosSeed.whatsappNumero).replace(/\D/g, "");
   const texto = encodeURIComponent(mensaje ?? siteTextosSeed.whatsappMensajeDefault);
-  return `https://wa.me/${numeroFinal}?text=${texto}`;
+  return `/api/whatsapp?text=${texto}`;
 }
 
 export function mensajeConsultaLote(nombreLote: string) {

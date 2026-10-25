@@ -65,7 +65,7 @@ function Aviso({ titulo, texto }: { titulo: string; texto: string }) {
       <p className="font-display text-xl font-bold text-brand-black">{titulo}</p>
       <p className="mt-2 text-sm text-brand-black/70">{texto}</p>
       <a
-        href="https://wa.me/5491127424512"
+        href="/api/whatsapp"
         target="_blank"
         rel="noopener noreferrer"
         className="mt-5 inline-flex rounded-full bg-brand-green-700 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-green-600"
