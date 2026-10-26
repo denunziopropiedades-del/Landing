@@ -152,7 +152,7 @@ function LeadCard({
   const guardarFormaPago = (nueva: "contado" | "financiado", planAGuardar: PlanEditable) => {
     setGuardandoPlan(true);
     startTransition(() => {
-      actualizarFormaPagoLeadAction(lead.id, nueva, planAGuardar.anticipoUsd, planAGuardar.cuotas, planAGuardar.valorCuotaUsd, planAGuardar.moneda).then(
+      actualizarFormaPagoLeadAction(lead.id, nueva, planAGuardar.anticipoUsd, planAGuardar.cuotas, planAGuardar.valorCuotaUsd, planAGuardar.moneda, planAGuardar.monedaAnticipo).then(
         (res) => {
           setGuardandoPlan(false);
           if (!res.ok) {
@@ -169,6 +169,7 @@ function LeadCard({
                     cuotas: Number(planAGuardar.cuotas),
                     valorCuotaUsd: Number(planAGuardar.valorCuotaUsd),
                     ...(planAGuardar.moneda === "ARS" ? { moneda: "ARS" as const } : {}),
+                    ...(planAGuardar.monedaAnticipo !== planAGuardar.moneda ? { monedaAnticipo: planAGuardar.monedaAnticipo } : {}),
                   }
                 : null,
           });
@@ -697,7 +698,7 @@ function LeadCard({
             <div>
               <div className="rounded-lg border border-black/10 p-2 text-xs text-brand-black/70">
                 <p>
-                  Financiado — anticipo {formatMoneda(lead.planFinanciacion.anticipoUsd, lead.planFinanciacion.moneda)}, {lead.planFinanciacion.cuotas} cuotas
+                  Financiado — anticipo {formatMoneda(lead.planFinanciacion.anticipoUsd, lead.planFinanciacion.monedaAnticipo ?? lead.planFinanciacion.moneda)}, {lead.planFinanciacion.cuotas} cuotas
                   de {formatMoneda(lead.planFinanciacion.valorCuotaUsd, lead.planFinanciacion.moneda)}
                   {!lead.cantidadCuotas && (
                     <button

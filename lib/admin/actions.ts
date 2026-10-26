@@ -1307,12 +1307,19 @@ async function verificarPropiedadLead(actorId: string, actorRol: Rol, leadId: st
 }
 
 /** Valida los 3 datos de un plan de financiación cargado a mano en el panel. */
-function validarPlanFinanciacion(anticipo: string, cuotas: string, valorCuota: string, moneda?: string) {
+function validarPlanFinanciacion(anticipo: string, cuotas: string, valorCuota: string, moneda?: string, monedaAnticipo?: string) {
   const mon = moneda === "ARS" ? ("ARS" as const) : ("USD" as const);
-  const plan = { anticipoUsd: Number(anticipo), cuotas: Number(cuotas), valorCuotaUsd: Number(valorCuota), ...(mon === "ARS" ? { moneda: mon } : {}) };
+  const monAnt = monedaAnticipo === "ARS" || monedaAnticipo === "USD" ? monedaAnticipo : mon;
+  const plan = {
+    anticipoUsd: Number(anticipo),
+    cuotas: Number(cuotas),
+    valorCuotaUsd: Number(valorCuota),
+    ...(mon === "ARS" ? { moneda: mon } : {}),
+    ...(monAnt !== mon ? { monedaAnticipo: monAnt } : {}),
+  };
   const etiqueta = mon === "ARS" ? "$" : "USD";
   if (!anticipo.trim() || !Number.isFinite(plan.anticipoUsd) || plan.anticipoUsd < 0) {
-    throw new AdminActionError(`Completá el anticipo (${etiqueta}) del plan de financiación.`);
+    throw new AdminActionError(`Completá el anticipo (${monAnt === "ARS" ? "$" : "USD"}) del plan de financiación.`);
   }
   if (!Number.isInteger(plan.cuotas) || plan.cuotas <= 0) {
     throw new AdminActionError("La cantidad de cuotas tiene que ser un número entero mayor a 0.");
@@ -1338,7 +1345,8 @@ export async function crearLeadManualAction(_prev: ActionResult | null, formData
             str(formData, "anticipoUsd"),
             str(formData, "cuotas"),
             str(formData, "valorCuotaUsd"),
-            str(formData, "monedaPlan")
+            str(formData, "monedaPlan"),
+            str(formData, "monedaAnticipo")
           )
         : null;
     const importeSenaTxt = str(formData, "importeCobrado");
@@ -1414,7 +1422,8 @@ export async function actualizarFormaPagoLeadAction(
   anticipoUsd: string,
   cuotas: string,
   valorCuotaUsd: string,
-  moneda?: string
+  moneda?: string,
+  monedaAnticipo?: string
 ): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor", "vendedor");
@@ -1426,7 +1435,7 @@ export async function actualizarFormaPagoLeadAction(
       throw new AdminActionError("Este cliente ya tiene cuotas generadas: no se puede cambiar el plan desde acá.");
     }
 
-    const plan = formaPago === "financiado" ? validarPlanFinanciacion(anticipoUsd, cuotas, valorCuotaUsd, moneda) : null;
+    const plan = formaPago === "financiado" ? validarPlanFinanciacion(anticipoUsd, cuotas, valorCuotaUsd, moneda, monedaAnticipo) : null;
     const { error } = await admin
       .from("leads")
       .update({ forma_pago: formaPago, plan_financiacion: plan, actualizado_en: new Date().toISOString() })
@@ -1436,7 +1445,7 @@ export async function actualizarFormaPagoLeadAction(
     await registrarActividad(actor, "actualizar", "lead", id, {
       ...(await contextoLead(admin, id)),
       formaPago,
-      ...(plan ? { planFinanciacion: `${plan.anticipoUsd} ${plan.moneda ?? "USD"} + ${plan.cuotas} x ${plan.valorCuotaUsd} ${plan.moneda ?? "USD"}` } : {}),
+      ...(plan ? { planFinanciacion: `${plan.anticipoUsd} ${plan.monedaAnticipo ?? plan.moneda ?? "USD"} + ${plan.cuotas} x ${plan.valorCuotaUsd} ${plan.moneda ?? "USD"}` } : {}),
     });
     revalidatePath("/admin/crm");
     revalidatePath("/admin/cobranzas");

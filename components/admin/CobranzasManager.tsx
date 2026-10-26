@@ -304,9 +304,9 @@ function TarjetaCliente({ cliente }: { cliente: ClienteCobranzas }) {
               <p className="font-medium text-brand-black/50">Plan elegido</p>
               {cliente.planFinanciacion ? (
                 <p className="mt-0.5 text-brand-black/80">
-                  Anticipo {fmtMoneda(cliente.planFinanciacion.anticipoUsd, monedaPlan)} + {cliente.planFinanciacion.cuotas} cuotas de{" "}
+                  Anticipo {fmtMoneda(cliente.planFinanciacion.anticipoUsd, cliente.planFinanciacion.monedaAnticipo ?? monedaPlan)} + {cliente.planFinanciacion.cuotas} cuotas de{" "}
                   {fmtMoneda(cliente.planFinanciacion.valorCuotaUsd, monedaPlan)}
-                  {monedaPlan === "ARS" && <span className="ml-1 rounded bg-sky-100 px-1 text-[10px] font-semibold text-sky-800">EN PESOS</span>}
+                  {monedaPlan === "ARS" && <span className="ml-1 rounded bg-sky-100 px-1 text-[10px] font-semibold text-sky-800">CUOTAS EN PESOS</span>}
                 </p>
               ) : (
                 <p className="mt-0.5 text-brand-black/40">Sin plan cargado</p>

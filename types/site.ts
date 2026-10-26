@@ -116,8 +116,10 @@ export type PlanFinanciacionFijo = {
   anticipoUsd: number;
   cuotas: number;
   valorCuotaUsd: number;
-  /** Moneda del plan; sin dato = USD. */
+  /** Moneda de las cuotas; sin dato = USD. */
   moneda?: MonedaHonorario;
+  /** Moneda del anticipo; sin dato = la misma que las cuotas. */
+  monedaAnticipo?: MonedaHonorario;
 };
 
 export type ConfigFinanciacion = {

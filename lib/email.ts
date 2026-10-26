@@ -74,14 +74,14 @@ export function armarMailBienvenidaReserva(datos: {
   manzana: string;
   lotes: { numero: string; superficieM2: number }[];
   linkPago?: string | null;
-  planFinanciacion?: { anticipoUsd: number; cuotas: number; valorCuotaUsd: number; moneda?: string } | null;
+  planFinanciacion?: { anticipoUsd: number; cuotas: number; valorCuotaUsd: number; moneda?: string; monedaAnticipo?: string } | null;
 }) {
   const filasLotes = datos.lotes
     .map((l) => `<li>Lote ${l.numero} &ndash; ${l.superficieM2} m²</li>`)
     .join("");
 
   const formaPagoHtml = datos.planFinanciacion
-    ? `<p style="margin: 0 0 4px; color: #333;"><b>FORMA DE PAGO:</b> Financiado — anticipo ${montoTexto(datos.planFinanciacion.anticipoUsd, datos.planFinanciacion.moneda)}, en ${datos.planFinanciacion.cuotas} cuotas de ${montoTexto(datos.planFinanciacion.valorCuotaUsd, datos.planFinanciacion.moneda)} c/u. Nuestro equipo se va a comunicar para acordar la fecha de la primera cuota.</p>`
+    ? `<p style="margin: 0 0 4px; color: #333;"><b>FORMA DE PAGO:</b> Financiado — anticipo ${montoTexto(datos.planFinanciacion.anticipoUsd, datos.planFinanciacion.monedaAnticipo ?? datos.planFinanciacion.moneda)}, en ${datos.planFinanciacion.cuotas} cuotas de ${montoTexto(datos.planFinanciacion.valorCuotaUsd, datos.planFinanciacion.moneda)} c/u. Nuestro equipo se va a comunicar para acordar la fecha de la primera cuota.</p>`
     : `<p style="margin: 0 0 4px; color: #333;"><b>FORMA DE PAGO:</b> Contado</p>`;
 
   const botonPago = datos.linkPago

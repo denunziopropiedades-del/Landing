@@ -4,9 +4,11 @@ import type { ChangeEvent } from "react";
 import { formatMoneda } from "@/lib/utils";
 import type { PlanFinanciacionFijo } from "@/types/site";
 
-export type PlanEditable = { anticipoUsd: string; cuotas: string; valorCuotaUsd: string; moneda: "USD" | "ARS" };
+type Mon = "USD" | "ARS";
+/** moneda = la de las cuotas; monedaAnticipo = la del anticipo (pueden ser distintas). */
+export type PlanEditable = { anticipoUsd: string; cuotas: string; valorCuotaUsd: string; moneda: Mon; monedaAnticipo: Mon };
 
-export const planVacio: PlanEditable = { anticipoUsd: "", cuotas: "", valorCuotaUsd: "", moneda: "USD" };
+export const planVacio: PlanEditable = { anticipoUsd: "", cuotas: "", valorCuotaUsd: "", moneda: "USD", monedaAnticipo: "USD" };
 
 export function planAEditable(plan: PlanFinanciacionFijo | null | undefined): PlanEditable {
   if (!plan) return planVacio;
@@ -15,6 +17,7 @@ export function planAEditable(plan: PlanFinanciacionFijo | null | undefined): Pl
     cuotas: String(plan.cuotas),
     valorCuotaUsd: String(plan.valorCuotaUsd),
     moneda: plan.moneda === "ARS" ? "ARS" : "USD",
+    monedaAnticipo: (plan.monedaAnticipo ?? plan.moneda) === "ARS" ? "ARS" : "USD",
   };
 }
 
@@ -39,28 +42,42 @@ export default function PlanFinanciacionCampos({
   const label = compacto
     ? "mb-1 block text-[11px] font-medium text-brand-black/50"
     : "mb-1 block text-xs font-medium text-brand-black/70";
-  const mon = plan.moneda === "ARS" ? "$" : "USD";
+  const simbolo = (m: Mon) => (m === "ARS" ? "$" : "USD");
+  const Selector = ({ valor, onElegir }: { valor: Mon; onElegir: (m: Mon) => void }) => (
+    <div className="inline-flex rounded-full border border-black/10 p-0.5">
+      {(["USD", "ARS"] as const).map((m) => (
+        <button
+          key={m}
+          type="button"
+          onClick={() => onElegir(m)}
+          className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${valor === m ? "bg-brand-green-700 text-white" : "text-brand-black/60"}`}
+        >
+          {m === "USD" ? "USD" : "Pesos"}
+        </button>
+      ))}
+    </div>
+  );
   const set = (k: keyof PlanEditable) => (e: ChangeEvent<HTMLInputElement>) => onChange({ ...plan, [k]: e.target.value });
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <span className={label.replace("mb-1 block ", "")}>Moneda del plan</span>
-        {conNombres && <input type="hidden" name="monedaPlan" value={plan.moneda} />}
-        <div className="inline-flex rounded-full border border-black/10 p-0.5">
-          {(["USD", "ARS"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => onChange({ ...plan, moneda: m })}
-              className={`rounded-full px-3 py-0.5 text-xs font-semibold ${plan.moneda === m ? "bg-brand-green-700 text-white" : "text-brand-black/60"}`}
-            >
-              {m === "USD" ? "Dólares" : "Pesos"}
-            </button>
-          ))}
-        </div>
+      {conNombres && (
+        <>
+          <input type="hidden" name="monedaPlan" value={plan.moneda} />
+          <input type="hidden" name="monedaAnticipo" value={plan.monedaAnticipo} />
+        </>
+      )}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        <span className="flex items-center gap-1.5">
+          <span className={label.replace("mb-1 block ", "")}>Anticipo en</span>
+          <Selector valor={plan.monedaAnticipo} onElegir={(m) => onChange({ ...plan, monedaAnticipo: m })} />
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className={label.replace("mb-1 block ", "")}>Cuotas en</span>
+          <Selector valor={plan.moneda} onElegir={(m) => onChange({ ...plan, moneda: m })} />
+        </span>
       </div>
-      {planesSugeridos.length > 0 && plan.moneda === "USD" && (
+      {planesSugeridos.length > 0 && plan.moneda === "USD" && plan.monedaAnticipo === "USD" && (
         <div className="flex flex-wrap gap-1.5">
           {planesSugeridos.map((p, i) => (
             <button
@@ -69,14 +86,14 @@ export default function PlanFinanciacionCampos({
               onClick={() => onChange(planAEditable(p))}
               className="rounded-full border border-brand-green-700/30 px-2.5 py-1 text-[11px] font-medium text-brand-green-700 hover:bg-brand-green-700/5"
             >
-              {formatMoneda(p.anticipoUsd, p.moneda)} + {p.cuotas} × {formatMoneda(p.valorCuotaUsd, p.moneda)}
+              {formatMoneda(p.anticipoUsd, p.monedaAnticipo ?? p.moneda)} + {p.cuotas} × {formatMoneda(p.valorCuotaUsd, p.moneda)}
             </button>
           ))}
         </div>
       )}
       <div className="grid grid-cols-3 gap-1.5">
         <div>
-          <label className={label}>Anticipo ({mon})</label>
+          <label className={label}>Anticipo ({simbolo(plan.monedaAnticipo)})</label>
           <input
             type="number"
             inputMode="decimal"
@@ -101,7 +118,7 @@ export default function PlanFinanciacionCampos({
           />
         </div>
         <div>
-          <label className={label}>Valor cuota ({mon})</label>
+          <label className={label}>Valor cuota ({simbolo(plan.moneda)})</label>
           <input
             type="number"
             inputMode="decimal"
