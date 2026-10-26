@@ -37,7 +37,7 @@ export default async function AdminCrmPage() {
       </p>
 
       <div className="mt-8">
-        <NuevoClienteForm proyectos={proyectos} lotes={lotes} vendedores={vendedores} planesPorProyecto={planesPorProyecto} rolActual={actual?.rol ?? "vendedor"} />
+        <NuevoClienteForm proyectos={proyectos} propiedades={propiedades} lotes={lotes} vendedores={vendedores} planesPorProyecto={planesPorProyecto} rolActual={actual?.rol ?? "vendedor"} />
       </div>
 
       {(actual?.rol === "administrador" || actual?.rol === "supervisor") && (

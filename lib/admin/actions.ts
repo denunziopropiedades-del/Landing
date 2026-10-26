@@ -1353,9 +1353,15 @@ export async function crearLeadManualAction(_prev: ActionResult | null, formData
       numeroLote = lote?.numero ?? null;
     }
 
+    // Interés: un desarrollo ("des:<id>") o una propiedad/campo ("prop:<id>").
+    const interes = str(formData, "interes");
+    const proyectoInteres = interes.startsWith("des:") ? interes.slice(4) : optStr(formData, "proyectoId");
+    const propiedadInteres = interes.startsWith("prop:") ? interes.slice(5) : null;
+
     const payload = {
       tipo: "manual" as const,
-      proyecto_id: optStr(formData, "proyectoId"),
+      proyecto_id: proyectoInteres || null,
+      ...(propiedadInteres ? { propiedad_id: propiedadInteres } : {}),
       lote_id: loteId,
       manzana,
       nombre,
@@ -1374,7 +1380,13 @@ export async function crearLeadManualAction(_prev: ActionResult | null, formData
     };
 
     const { data, error } = await admin.from("leads").insert(payload).select("id").single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("crearLeadManualAction", error);
+      if (error.code === "23505") {
+        throw new AdminActionError("Ese lote ya está reservado o vendido a otro cliente. Elegí otro lote o dejalo sin lote.");
+      }
+      throw new AdminActionError(`No se pudo guardar el cliente: ${error.message}`);
+    }
 
     await registrarActividad(actor, "crear", "lead", data.id, {
       origen: "manual",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { startTransition, useActionState, useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { crearLeadManualAction } from "@/lib/admin/actions";
 import type { Lote, Perfil, PlanFinanciacionFijo, Proyecto, Rol } from "@/types/site";
@@ -10,21 +10,26 @@ const inputClass =
   "w-full rounded-lg border border-black/10 px-3 py-2 text-sm focus:border-brand-green-600 focus:outline-none";
 const labelClass = "mb-1 block text-xs font-medium text-brand-black/70";
 
+type PropiedadOpcion = { id: string; titulo: string; grupo: "venta" | "alquiler" | "campo" };
+
 export default function NuevoClienteForm({
   proyectos,
+  propiedades = [],
   lotes,
   vendedores,
   planesPorProyecto = {},
   rolActual,
 }: {
   proyectos: Proyecto[];
+  propiedades?: PropiedadOpcion[];
   lotes: Lote[];
   vendedores: Perfil[];
   planesPorProyecto?: Record<string, PlanFinanciacionFijo[]>;
   rolActual: Rol;
 }) {
   const [abierto, setAbierto] = useState(false);
-  const [proyectoId, setProyectoId] = useState("");
+  const [interes, setInteres] = useState("");
+  const proyectoId = interes.startsWith("des:") ? interes.slice(4) : "";
   const [formaPago, setFormaPago] = useState<"contado" | "financiado">("contado");
   const [plan, setPlan] = useState<PlanEditable>(planVacio);
   const [state, formAction, pending] = useActionState(crearLeadManualAction, null);
@@ -33,7 +38,7 @@ export default function NuevoClienteForm({
   useEffect(() => {
     if (state?.ok) {
       setAbierto(false);
-      setProyectoId("");
+      setInteres("");
       setFormaPago("contado");
       setPlan(planVacio);
     }
@@ -55,7 +60,12 @@ export default function NuevoClienteForm({
 
       {abierto && (
         <form
-          action={formAction}
+          // Se envía a mano (en vez de action=) para que, si algo falla, no se borre lo escrito.
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            startTransition(() => formAction(fd));
+          }}
           className="mt-4 grid gap-3 sm:grid-cols-2"
         >
           <div>
@@ -79,24 +89,36 @@ export default function NuevoClienteForm({
             <input name="dni" className={inputClass} />
           </div>
           <div>
-            <label className={labelClass}>Desarrollo</label>
-            <select
-              name="proyectoId"
-              value={proyectoId}
-              onChange={(e) => setProyectoId(e.target.value)}
-              className={inputClass}
-            >
-              <option value="">Sin desarrollo</option>
-              {proyectos.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
-                </option>
-              ))}
+            <label className={labelClass}>Interesado en (opcional)</label>
+            <select name="interes" value={interes} onChange={(e) => setInteres(e.target.value)} className={inputClass}>
+              <option value="">Sin especificar</option>
+              {proyectos.length > 0 && (
+                <optgroup label="Desarrollos">
+                  {proyectos.map((p) => (
+                    <option key={p.id} value={`des:${p.id}`}>
+                      {p.nombre}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {(["venta", "alquiler", "campo"] as const).map((g) => {
+                const lista = propiedades.filter((p) => p.grupo === g);
+                if (!lista.length) return null;
+                return (
+                  <optgroup key={g} label={g === "venta" ? "Propiedades en venta" : g === "alquiler" ? "Alquileres" : "Campos"}>
+                    {lista.map((p) => (
+                      <option key={p.id} value={`prop:${p.id}`}>
+                        {p.titulo}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
             </select>
           </div>
           <div>
             <label className={labelClass}>Manzana / Lote (opcional)</label>
-            <select name="loteId" defaultValue="" disabled={!proyectoId} className={inputClass}>
+            <select key={proyectoId} name="loteId" defaultValue="" disabled={!proyectoId} className={inputClass}>
               <option value="">Sin lote puntual</option>
               {lotesDelProyecto.map((l) => (
                 <option key={l.id} value={l.id}>
@@ -184,7 +206,7 @@ export default function NuevoClienteForm({
               <Plus className="h-4 w-4" />
               Agregar cliente
             </button>
-            {state && !state.ok && <span className="text-xs text-red-600">{state.error}</span>}
+            {state && !state.ok && <span className="text-sm font-medium text-red-600">{state.error}</span>}
           </div>
         </form>
       )}
