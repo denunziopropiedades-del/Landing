@@ -26,6 +26,7 @@ const LABEL_MEDIO_PAGO: Record<MedioPago, string> = {
 type Honorario = { monto: number; moneda: MonedaHonorario } | null;
 
 const fmtHonorario = (h: NonNullable<Honorario>) => (h.moneda === "ARS" ? formatArs(h.monto) : formatUsd(h.monto));
+const fmtMoneda = (monto: number, moneda: MonedaHonorario) => (moneda === "ARS" ? formatArs(monto) : formatUsd(monto));
 
 /** Lo que le queda a la desarrolladora de una cuota después de los honorarios. */
 function netoDesarrolladora(montoUsd: number, h: Honorario) {
@@ -34,7 +35,7 @@ function netoDesarrolladora(montoUsd: number, h: Honorario) {
   return `${formatUsd(montoUsd)} − ${formatArs(h.monto)}`;
 }
 
-function FilaCuota({ cuota, honorario }: { cuota: Cuota; honorario: Honorario }) {
+function FilaCuota({ cuota, honorario, faltaDespues }: { cuota: Cuota; honorario: Honorario; faltaDespues: number }) {
   const [editando, setEditando] = useState(false);
   const [monto, setMonto] = useState(cuota.montoUsd.toString());
   const [fecha, setFecha] = useState(hoyIso());
@@ -70,6 +71,7 @@ function FilaCuota({ cuota, honorario }: { cuota: Cuota; honorario: Honorario })
           <td className="whitespace-nowrap px-3 py-2 text-right text-brand-black/70">
             {netoDesarrolladora(cuota.pagada ? cuota.montoPagadoUsd ?? cuota.montoUsd : cuota.montoUsd, honorario)}
           </td>
+          <td className="whitespace-nowrap px-3 py-2 text-right text-brand-black/60">{fmtMoneda(faltaDespues, honorario.moneda)}</td>
         </>
       )}
       <td className="px-3 py-2">
@@ -270,6 +272,30 @@ function TarjetaCliente({ cliente }: { cliente: ClienteCobranzas }) {
 
           <HonorariosCobranza cliente={cliente} />
 
+          {honorario && cuotas.length > 0 && (
+            <div className="grid grid-cols-3 gap-3 px-4 pb-4 text-xs">
+              <div className="rounded-xl bg-brand-black/[0.03] p-3">
+                <p className="text-brand-black/50">Mis honorarios totales</p>
+                <p className="mt-0.5 font-display text-base font-bold text-brand-black">{fmtMoneda(honorario.monto * cuotas.length, honorario.moneda)}</p>
+                <p className="text-[11px] text-brand-black/40">
+                  {cuotas.length} cuotas × {fmtHonorario(honorario)}
+                </p>
+              </div>
+              <div className="rounded-xl bg-brand-green-700/5 p-3">
+                <p className="text-brand-black/50">Ya cobrados</p>
+                <p className="mt-0.5 font-display text-base font-bold text-brand-green-700">{fmtMoneda(honorario.monto * pagadas, honorario.moneda)}</p>
+                <p className="text-[11px] text-brand-black/40">{pagadas} cuotas pagas</p>
+              </div>
+              <div className="rounded-xl bg-amber-500/5 p-3">
+                <p className="text-brand-black/50">Me falta cobrar</p>
+                <p className="mt-0.5 font-display text-base font-bold text-amber-700">
+                  {fmtMoneda(honorario.monto * (cuotas.length - pagadas), honorario.moneda)}
+                </p>
+                <p className="text-[11px] text-brand-black/40">{cuotas.length - pagadas} cuotas pendientes</p>
+              </div>
+            </div>
+          )}
+
           {cuotas.length > 0 ? (
             <div className="overflow-x-auto border-t border-black/5">
               <table className="w-full text-sm">
@@ -282,6 +308,9 @@ function TarjetaCliente({ cliente }: { cliente: ClienteCobranzas }) {
                       <>
                         <th className="whitespace-nowrap px-3 py-2 text-right">Mis honorarios</th>
                         <th className="whitespace-nowrap px-3 py-2 text-right">Neto desarrolladora</th>
+                        <th className="whitespace-nowrap px-3 py-2 text-right" title="Lo que me queda por cobrar de honorarios una vez paga esta cuota">
+                          Me falta cobrar
+                        </th>
                       </>
                     )}
                     <th className="px-3 py-2">Estado</th>
@@ -289,8 +318,13 @@ function TarjetaCliente({ cliente }: { cliente: ClienteCobranzas }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {cuotas.map((c) => (
-                    <FilaCuota key={c.id} cuota={c} honorario={honorario} />
+                  {cuotas.map((c, i) => (
+                    <FilaCuota
+                      key={c.id}
+                      cuota={c}
+                      honorario={honorario}
+                      faltaDespues={honorario ? honorario.monto * (cuotas.length - (i + 1)) : 0}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -325,11 +359,14 @@ export default function CobranzasManager({ clientes }: { clientes: ClienteCobran
     const cobradasEsteMes = cuotasTodas.filter((c) => c.pagada && c.pagadoEn && c.pagadoEn.slice(0, 7) === mes);
     const totalSenasArs = clientes.reduce((acc, c) => acc + (c.senaImporteArs ?? 0), 0);
     // Mis honorarios cobrados: monto fijo por cada cuota pagada, separado por moneda.
-    const honorarios = { USD: 0, ARS: 0, USDMes: 0, ARSMes: 0 };
+    const honorarios = { USD: 0, ARS: 0, USDMes: 0, ARSMes: 0, USDFalta: 0, ARSFalta: 0 };
     for (const cl of clientes) {
       if (!cl.honorarioCobranza) continue;
       for (const cu of cl.cuotas) {
-        if (!cu.pagada) continue;
+        if (!cu.pagada) {
+          honorarios[`${cl.honorarioCobranzaMoneda}Falta`] += cl.honorarioCobranza;
+          continue;
+        }
         honorarios[cl.honorarioCobranzaMoneda] += cl.honorarioCobranza;
         if (cu.pagadoEn?.slice(0, 7) === mes) honorarios[`${cl.honorarioCobranzaMoneda}Mes`] += cl.honorarioCobranza;
       }
@@ -376,6 +413,15 @@ export default function CobranzasManager({ clientes }: { clientes: ClienteCobran
           <p className="text-xs text-brand-black/50">Señas abonadas</p>
           <p className="mt-1 font-display text-lg font-bold text-brand-black">{formatArs(resumen.totalSenasArs)}</p>
         </div>
+        {(resumen.honorarios.USDFalta > 0 || resumen.honorarios.ARSFalta > 0) && (
+          <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
+            <p className="text-xs text-brand-black/50">Mis honorarios por cobrar</p>
+            <p className="mt-1 font-display text-lg font-bold text-amber-700">
+              {[resumen.honorarios.USDFalta > 0 && formatUsd(resumen.honorarios.USDFalta), resumen.honorarios.ARSFalta > 0 && formatArs(resumen.honorarios.ARSFalta)].filter(Boolean).join(" + ")}
+            </p>
+            <p className="text-[11px] text-brand-black/40">de las cuotas que faltan pagar</p>
+          </div>
+        )}
         {(resumen.honorarios.USD > 0 || resumen.honorarios.ARS > 0) && (
           <div className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
             <p className="text-xs text-brand-black/50">Mis honorarios cobrados</p>
