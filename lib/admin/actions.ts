@@ -1307,16 +1307,18 @@ async function verificarPropiedadLead(actorId: string, actorRol: Rol, leadId: st
 }
 
 /** Valida los 3 datos de un plan de financiación cargado a mano en el panel. */
-function validarPlanFinanciacion(anticipo: string, cuotas: string, valorCuota: string) {
-  const plan = { anticipoUsd: Number(anticipo), cuotas: Number(cuotas), valorCuotaUsd: Number(valorCuota) };
+function validarPlanFinanciacion(anticipo: string, cuotas: string, valorCuota: string, moneda?: string) {
+  const mon = moneda === "ARS" ? ("ARS" as const) : ("USD" as const);
+  const plan = { anticipoUsd: Number(anticipo), cuotas: Number(cuotas), valorCuotaUsd: Number(valorCuota), ...(mon === "ARS" ? { moneda: mon } : {}) };
+  const etiqueta = mon === "ARS" ? "$" : "USD";
   if (!anticipo.trim() || !Number.isFinite(plan.anticipoUsd) || plan.anticipoUsd < 0) {
-    throw new AdminActionError("Completá el anticipo (USD) del plan de financiación.");
+    throw new AdminActionError(`Completá el anticipo (${etiqueta}) del plan de financiación.`);
   }
   if (!Number.isInteger(plan.cuotas) || plan.cuotas <= 0) {
     throw new AdminActionError("La cantidad de cuotas tiene que ser un número entero mayor a 0.");
   }
   if (!Number.isFinite(plan.valorCuotaUsd) || plan.valorCuotaUsd <= 0) {
-    throw new AdminActionError("Completá el valor de cada cuota (USD).");
+    throw new AdminActionError(`Completá el valor de cada cuota (${etiqueta}).`);
   }
   return plan;
 }
@@ -1335,7 +1337,8 @@ export async function crearLeadManualAction(_prev: ActionResult | null, formData
         ? validarPlanFinanciacion(
             str(formData, "anticipoUsd"),
             str(formData, "cuotas"),
-            str(formData, "valorCuotaUsd")
+            str(formData, "valorCuotaUsd"),
+            str(formData, "monedaPlan")
           )
         : null;
     const importeSenaTxt = str(formData, "importeCobrado");
@@ -1410,7 +1413,8 @@ export async function actualizarFormaPagoLeadAction(
   formaPago: "contado" | "financiado",
   anticipoUsd: string,
   cuotas: string,
-  valorCuotaUsd: string
+  valorCuotaUsd: string,
+  moneda?: string
 ): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor", "vendedor");
@@ -1422,7 +1426,7 @@ export async function actualizarFormaPagoLeadAction(
       throw new AdminActionError("Este cliente ya tiene cuotas generadas: no se puede cambiar el plan desde acá.");
     }
 
-    const plan = formaPago === "financiado" ? validarPlanFinanciacion(anticipoUsd, cuotas, valorCuotaUsd) : null;
+    const plan = formaPago === "financiado" ? validarPlanFinanciacion(anticipoUsd, cuotas, valorCuotaUsd, moneda) : null;
     const { error } = await admin
       .from("leads")
       .update({ forma_pago: formaPago, plan_financiacion: plan, actualizado_en: new Date().toISOString() })
@@ -1432,7 +1436,7 @@ export async function actualizarFormaPagoLeadAction(
     await registrarActividad(actor, "actualizar", "lead", id, {
       ...(await contextoLead(admin, id)),
       formaPago,
-      ...(plan ? { planFinanciacion: `${plan.anticipoUsd} USD + ${plan.cuotas} x ${plan.valorCuotaUsd} USD` } : {}),
+      ...(plan ? { planFinanciacion: `${plan.anticipoUsd} ${plan.moneda ?? "USD"} + ${plan.cuotas} x ${plan.valorCuotaUsd} ${plan.moneda ?? "USD"}` } : {}),
     });
     revalidatePath("/admin/crm");
     revalidatePath("/admin/cobranzas");
@@ -2026,7 +2030,9 @@ export async function marcarCuotaPagadaAction(
   cuotaId: string,
   montoPagadoUsd: string,
   fechaPago: string,
-  medioPago?: string
+  medioPago?: string,
+  /** Solo para cuotas en dólares pagadas en pesos. */
+  pagoEnPesos?: { montoArs: string; cotizacion: string }
 ): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor");
@@ -2040,7 +2046,25 @@ export async function marcarCuotaPagadaAction(
     if (cuotaError) throw new Error(cuotaError.message);
     if (!cuota) return { ok: false, error: "La cuota no existe." };
 
-    const montoPagado = montoPagadoUsd.trim() ? Number(montoPagadoUsd) : Number(cuota.monto_usd);
+    // Acepta "500.000", "500000", "1.234,50" y "300.5".
+    const leer = (t: string) => {
+      let v = t.trim().replace(/[$\s]/g, "");
+      if (v.includes(",")) v = v.replace(/\./g, "").replace(",", ".");
+      else if (/^\d{1,3}(\.\d{3})+$/.test(v)) v = v.replace(/\./g, "");
+      return Number(v);
+    };
+    let montoPagado = montoPagadoUsd.trim() ? leer(montoPagadoUsd) : Number(cuota.monto_usd);
+    let extraPesos: { monto_pagado_ars: number; cotizacion: number } | null = null;
+    if (pagoEnPesos && (pagoEnPesos.montoArs.trim() || pagoEnPesos.cotizacion.trim())) {
+      const ars = leer(pagoEnPesos.montoArs);
+      const cot = leer(pagoEnPesos.cotizacion);
+      if (!Number.isFinite(ars) || ars <= 0 || !Number.isFinite(cot) || cot <= 0) {
+        throw new AdminActionError("Completá los pesos recibidos y el tipo de cambio.");
+      }
+      extraPesos = { monto_pagado_ars: ars, cotizacion: cot };
+      montoPagado = Math.round((ars / cot) * 100) / 100;
+    }
+    if (!Number.isFinite(montoPagado) || montoPagado < 0) throw new AdminActionError("El monto pagado no es válido.");
 
     const { error } = await admin
       .from("cuotas")
@@ -2049,9 +2073,15 @@ export async function marcarCuotaPagadaAction(
         pagado_en: new Date(`${fechaPago}T12:00:00`).toISOString(),
         monto_pagado_usd: montoPagado,
         medio_pago: medioPago || null,
+        ...(extraPesos ?? {}),
       })
       .eq("id", cuotaId);
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (/monto_pagado_ars|cotizacion/.test(error.message)) {
+        throw new AdminActionError("Falta crear las columnas: corré sql-cuotas-pesos.sql en Supabase → SQL Editor.");
+      }
+      throw new Error(error.message);
+    }
 
     await registrarActividad(actor, "actualizar", "lead", cuota.lead_id, {
       ...(await contextoLead(admin, cuota.lead_id)),
@@ -2072,7 +2102,7 @@ export async function marcarCuotaPagadaAction(
       ]);
 
       if (lead?.email) {
-        const plan = lead.plan_financiacion as { cuotas: number } | null;
+        const plan = lead.plan_financiacion as { cuotas: number; moneda?: string } | null;
         const proyectoNombre = (lead.proyectos as unknown as { nombre: string } | null)?.nombre ?? "";
         const pendientes = (cuotasLead ?? []).filter((c) => !c.pagada).sort((a, b) => a.vencimiento.localeCompare(b.vencimiento));
 
@@ -2085,6 +2115,8 @@ export async function marcarCuotaPagadaAction(
             numeroCuota: cuota.numero,
             totalCuotas: plan?.cuotas ?? cuota.numero,
             montoPagadoUsd: montoPagado,
+            moneda: plan?.moneda,
+            pagoEnPesos: extraPesos ? { montoArs: extraPesos.monto_pagado_ars, cotizacion: extraPesos.cotizacion } : null,
             cuotasRestantes: pendientes.length,
             proximoVencimiento: pendientes[0]?.vencimiento ?? null,
           })

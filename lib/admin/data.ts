@@ -455,6 +455,14 @@ export async function getClientesCobranzasAdmin(): Promise<ClienteCobranzas[]> {
     .eq("forma_pago", "financiado");
   if (error || !data) return [];
 
+  // Pagos en pesos de cuotas en dólares (consulta aparte: si no se corrió
+  // sql-cuotas-pesos.sql, Cobranzas sigue funcionando sin estos datos).
+  const pagosPesos = new Map<string, { ars: number | null; cot: number | null }>();
+  const { data: pp } = await supabase.from("cuotas").select("id, monto_pagado_ars, cotizacion").not("monto_pagado_ars", "is", null);
+  for (const p of (pp ?? []) as { id: string; monto_pagado_ars: unknown; cotizacion: unknown }[]) {
+    pagosPesos.set(p.id, { ars: numOrNull(p.monto_pagado_ars), cot: numOrNull(p.cotizacion) });
+  }
+
   // Honorarios de cobranza en una consulta aparte: si todavía no se corrió
   // sql-honorarios-cobranza.sql, Cobranzas sigue funcionando igual (sin honorarios).
   const honorarios = new Map<string, { monto: number | null; moneda: MonedaHonorario }>();
@@ -501,6 +509,9 @@ export async function getClientesCobranzasAdmin(): Promise<ClienteCobranzas[]> {
           pagadoEn: c.pagado_en ?? null,
           montoPagadoUsd: numOrNull(c.monto_pagado_usd),
           medioPago: (c.medio_pago as MedioPago | null) ?? null,
+          moneda: (l.plan_financiacion as PlanFinanciacionFijo | null)?.moneda === "ARS" ? ("ARS" as const) : ("USD" as const),
+          montoPagadoArs: pagosPesos.get(c.id)?.ars ?? null,
+          cotizacion: pagosPesos.get(c.id)?.cot ?? null,
           diasMora:
             !c.pagada && c.vencimiento < hoyIso
               ? Math.floor((Date.now() - new Date(`${c.vencimiento}T00:00:00`).getTime()) / (1000 * 60 * 60 * 24))

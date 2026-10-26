@@ -21,7 +21,7 @@ import {
   generarCuotasLeadAction,
 } from "@/lib/admin/actions";
 import { buildWhatsappClienteUrl } from "@/lib/whatsapp";
-import { formatUsd } from "@/lib/utils";
+import { formatMoneda } from "@/lib/utils";
 import type { EstadoLead, Lead, Lote, Perfil, PlanFinanciacionFijo, Proyecto, Rol } from "@/types/site";
 import PlanFinanciacionCampos, { planAEditable, type PlanEditable } from "@/components/admin/PlanFinanciacionCampos";
 
@@ -152,7 +152,7 @@ function LeadCard({
   const guardarFormaPago = (nueva: "contado" | "financiado", planAGuardar: PlanEditable) => {
     setGuardandoPlan(true);
     startTransition(() => {
-      actualizarFormaPagoLeadAction(lead.id, nueva, planAGuardar.anticipoUsd, planAGuardar.cuotas, planAGuardar.valorCuotaUsd).then(
+      actualizarFormaPagoLeadAction(lead.id, nueva, planAGuardar.anticipoUsd, planAGuardar.cuotas, planAGuardar.valorCuotaUsd, planAGuardar.moneda).then(
         (res) => {
           setGuardandoPlan(false);
           if (!res.ok) {
@@ -168,6 +168,7 @@ function LeadCard({
                     anticipoUsd: Number(planAGuardar.anticipoUsd),
                     cuotas: Number(planAGuardar.cuotas),
                     valorCuotaUsd: Number(planAGuardar.valorCuotaUsd),
+                    ...(planAGuardar.moneda === "ARS" ? { moneda: "ARS" as const } : {}),
                   }
                 : null,
           });
@@ -696,8 +697,8 @@ function LeadCard({
             <div>
               <div className="rounded-lg border border-black/10 p-2 text-xs text-brand-black/70">
                 <p>
-                  Financiado — anticipo {formatUsd(lead.planFinanciacion.anticipoUsd)}, {lead.planFinanciacion.cuotas} cuotas
-                  de {formatUsd(lead.planFinanciacion.valorCuotaUsd)}
+                  Financiado — anticipo {formatMoneda(lead.planFinanciacion.anticipoUsd, lead.planFinanciacion.moneda)}, {lead.planFinanciacion.cuotas} cuotas
+                  de {formatMoneda(lead.planFinanciacion.valorCuotaUsd, lead.planFinanciacion.moneda)}
                   {!lead.cantidadCuotas && (
                     <button
                       type="button"

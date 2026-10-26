@@ -19,3 +19,8 @@ export function formatArs(value: number) {
 export function formatNumber(value: number) {
   return new Intl.NumberFormat("es-AR").format(value);
 }
+
+/** Formatea según la moneda: "USD" → "300 USD", "ARS" → "$ 500.000". */
+export function formatMoneda(value: number, moneda?: string | null) {
+  return moneda === "ARS" ? formatArs(value) : formatUsd(value);
+}

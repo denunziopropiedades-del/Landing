@@ -29,22 +29,44 @@ const fmtHonorario = (h: NonNullable<Honorario>) => (h.moneda === "ARS" ? format
 const fmtMoneda = (monto: number, moneda: MonedaHonorario) => (moneda === "ARS" ? formatArs(monto) : formatUsd(monto));
 
 /** Lo que le queda a la desarrolladora de una cuota después de los honorarios. */
-function netoDesarrolladora(montoUsd: number, h: Honorario) {
-  if (!h) return formatUsd(montoUsd);
-  if (h.moneda === "USD") return formatUsd(Math.max(0, montoUsd - h.monto));
-  return `${formatUsd(montoUsd)} − ${formatArs(h.monto)}`;
+function netoDesarrolladora(monto: number, moneda: MonedaHonorario, h: Honorario) {
+  if (!h) return fmtMoneda(monto, moneda);
+  if (h.moneda === moneda) return fmtMoneda(Math.max(0, monto - h.monto), moneda);
+  return `${fmtMoneda(monto, moneda)} − ${fmtMoneda(h.monto, h.moneda)}`;
 }
+
+/** Suma por moneda y lo muestra como "1.200 USD + $ 500.000". */
+function sumaPorMoneda(items: { monto: number; moneda: MonedaHonorario }[]) {
+  const t = { USD: 0, ARS: 0 };
+  for (const i of items) t[i.moneda] += i.monto;
+  const partes = [t.USD || !t.ARS ? formatUsd(t.USD) : "", t.ARS ? formatArs(t.ARS) : ""].filter(Boolean);
+  return partes.join(" + ");
+}
+
+const monedaDe = (c: Cuota): MonedaHonorario => (c.moneda === "ARS" ? "ARS" : "USD");
+const montoCobrado = (c: Cuota) => c.montoPagadoUsd ?? c.montoUsd;
 
 function FilaCuota({ cuota, honorario, faltaDespues }: { cuota: Cuota; honorario: Honorario; faltaDespues: number }) {
   const [editando, setEditando] = useState(false);
   const [monto, setMonto] = useState(cuota.montoUsd.toString());
   const [fecha, setFecha] = useState(hoyIso());
   const [medioPago, setMedioPago] = useState<MedioPago | "">(cuota.medioPago ?? "");
+  const [enPesos, setEnPesos] = useState(false);
+  const [pesos, setPesos] = useState("");
+  const [cotizacion, setCotizacion] = useState("");
   const [, startTransition] = useTransition();
+  const moneda = monedaDe(cuota);
+  const leerNum = (t: string) => {
+    let v = t.trim().replace(/[$\s]/g, "");
+    if (v.includes(",")) v = v.replace(/\./g, "").replace(",", ".");
+    else if (/^\d{1,3}(\.\d{3})+$/.test(v)) v = v.replace(/\./g, "");
+    return Number(v);
+  };
+  const equivalenteUsd = enPesos && leerNum(pesos) > 0 && leerNum(cotizacion) > 0 ? leerNum(pesos) / leerNum(cotizacion) : null;
 
   const confirmarPago = () => {
     startTransition(() => {
-      marcarCuotaPagadaAction(cuota.id, monto, fecha, medioPago).then((res) => {
+      marcarCuotaPagadaAction(cuota.id, monto, fecha, medioPago, enPesos ? { montoArs: pesos, cotizacion } : undefined).then((res) => {
         if (!res.ok) alert(`No se pudo marcar la cuota como pagada: ${res.error}`);
         else setEditando(false);
       });
@@ -64,12 +86,20 @@ function FilaCuota({ cuota, honorario, faltaDespues }: { cuota: Cuota; honorario
     <tr className="border-b border-black/5 last:border-0">
       <td className="px-3 py-2 text-brand-black/70">{cuota.numero}</td>
       <td className="px-3 py-2 text-brand-black/70">{formatearFecha(cuota.vencimiento)}</td>
-      <td className="px-3 py-2 text-right text-brand-black/70">{formatUsd(cuota.pagada ? cuota.montoPagadoUsd ?? cuota.montoUsd : cuota.montoUsd)}</td>
+      <td className="whitespace-nowrap px-3 py-2 text-right text-brand-black/70">
+        {fmtMoneda(cuota.pagada ? montoCobrado(cuota) : cuota.montoUsd, moneda)}
+        {cuota.pagada && cuota.montoPagadoArs ? (
+          <span className="block text-[11px] text-brand-black/45">
+            pagó {formatArs(cuota.montoPagadoArs)}
+            {cuota.cotizacion ? ` · TC ${formatArs(cuota.cotizacion)}` : ""}
+          </span>
+        ) : null}
+      </td>
       {honorario && (
         <>
           <td className="whitespace-nowrap px-3 py-2 text-right font-medium text-brand-green-700">{fmtHonorario(honorario)}</td>
           <td className="whitespace-nowrap px-3 py-2 text-right text-brand-black/70">
-            {netoDesarrolladora(cuota.pagada ? cuota.montoPagadoUsd ?? cuota.montoUsd : cuota.montoUsd, honorario)}
+            {netoDesarrolladora(cuota.pagada ? montoCobrado(cuota) : cuota.montoUsd, moneda, honorario)}
           </td>
           <td className="whitespace-nowrap px-3 py-2 text-right text-brand-black/60">{fmtMoneda(faltaDespues, honorario.moneda)}</td>
         </>
@@ -97,12 +127,42 @@ function FilaCuota({ cuota, honorario, faltaDespues }: { cuota: Cuota; honorario
         {!cuota.pagada &&
           (editando ? (
             <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
-              <input
-                type="number"
-                value={monto}
-                onChange={(e) => setMonto(e.target.value)}
-                className="w-20 rounded-lg border border-black/10 px-1.5 py-1 text-xs"
-              />
+              {moneda === "USD" && (
+                <label className="flex items-center gap-1 text-xs text-brand-black/60">
+                  <input type="checkbox" checked={enPesos} onChange={(e) => setEnPesos(e.target.checked)} className="accent-brand-green-700" />
+                  Pagó en pesos
+                </label>
+              )}
+              {enPesos ? (
+                <>
+                  <input
+                    inputMode="decimal"
+                    placeholder="$ recibidos"
+                    value={pesos}
+                    onChange={(e) => setPesos(e.target.value)}
+                    className="w-28 rounded-lg border border-black/10 px-1.5 py-1 text-xs"
+                  />
+                  <input
+                    inputMode="decimal"
+                    placeholder="Tipo de cambio"
+                    value={cotizacion}
+                    onChange={(e) => setCotizacion(e.target.value)}
+                    className="w-24 rounded-lg border border-black/10 px-1.5 py-1 text-xs"
+                  />
+                  {equivalenteUsd !== null && <span className="text-xs text-brand-black/50">= {formatUsd(Math.round(equivalenteUsd * 100) / 100)}</span>}
+                </>
+              ) : (
+                <span className="inline-flex items-center gap-1">
+                  {moneda === "ARS" && <span className="text-xs text-brand-black/50">$</span>}
+                  <input
+                    inputMode="decimal"
+                    value={monto}
+                    onChange={(e) => setMonto(e.target.value)}
+                    className="w-24 rounded-lg border border-black/10 px-1.5 py-1 text-xs"
+                  />
+                  {moneda === "USD" && <span className="text-xs text-brand-black/50">USD</span>}
+                </span>
+              )}
               <input
                 type="date"
                 value={fecha}
@@ -194,7 +254,8 @@ function TarjetaCliente({ cliente }: { cliente: ClienteCobranzas }) {
   const proximaPendiente = cuotas.find((c) => !c.pagada);
   const nombreCompleto = `${cliente.nombre} ${cliente.apellido ?? ""}`.trim();
   const loteTexto = cliente.lotes.map((l) => `Lote ${l.numero}`).join(", ");
-  const totalCobradoUsd = cuotas.filter((c) => c.pagada).reduce((acc, c) => acc + (c.montoPagadoUsd ?? c.montoUsd), 0);
+  const monedaPlan: MonedaHonorario = cliente.planFinanciacion?.moneda === "ARS" ? "ARS" : "USD";
+  const totalCobrado = cuotas.filter((c) => c.pagada).reduce((acc, c) => acc + montoCobrado(c), 0);
 
   return (
     <div className="rounded-2xl border border-black/5 bg-white shadow-sm">
@@ -243,8 +304,9 @@ function TarjetaCliente({ cliente }: { cliente: ClienteCobranzas }) {
               <p className="font-medium text-brand-black/50">Plan elegido</p>
               {cliente.planFinanciacion ? (
                 <p className="mt-0.5 text-brand-black/80">
-                  Anticipo {formatUsd(cliente.planFinanciacion.anticipoUsd)} + {cliente.planFinanciacion.cuotas} cuotas de{" "}
-                  {formatUsd(cliente.planFinanciacion.valorCuotaUsd)}
+                  Anticipo {fmtMoneda(cliente.planFinanciacion.anticipoUsd, monedaPlan)} + {cliente.planFinanciacion.cuotas} cuotas de{" "}
+                  {fmtMoneda(cliente.planFinanciacion.valorCuotaUsd, monedaPlan)}
+                  {monedaPlan === "ARS" && <span className="ml-1 rounded bg-sky-100 px-1 text-[10px] font-semibold text-sky-800">EN PESOS</span>}
                 </p>
               ) : (
                 <p className="mt-0.5 text-brand-black/40">Sin plan cargado</p>
@@ -265,7 +327,7 @@ function TarjetaCliente({ cliente }: { cliente: ClienteCobranzas }) {
             <div>
               <p className="font-medium text-brand-black/50">Cobrado en cuotas</p>
               <p className="mt-0.5 text-brand-black/80">
-                {formatUsd(totalCobradoUsd)} de {formatUsd(cuotas.reduce((acc, c) => acc + c.montoUsd, 0))}
+                {fmtMoneda(totalCobrado, monedaPlan)} de {fmtMoneda(cuotas.reduce((acc, c) => acc + c.montoUsd, 0), monedaPlan)}
               </p>
             </div>
           </div>
@@ -351,8 +413,10 @@ export default function CobranzasManager({ clientes }: { clientes: ClienteCobran
   const cuotasTodas = useMemo(() => clientes.flatMap((c) => c.cuotas), [clientes]);
 
   const resumen = useMemo(() => {
-    const totalFinanciado = cuotasTodas.reduce((acc, c) => acc + c.montoUsd, 0);
-    const totalCobrado = cuotasTodas.filter((c) => c.pagada).reduce((acc, c) => acc + (c.montoPagadoUsd ?? c.montoUsd), 0);
+    // Totales separados por moneda (planes en dólares y planes en pesos).
+    const financiado = cuotasTodas.map((c) => ({ monto: c.montoUsd, moneda: monedaDe(c) }));
+    const cobrado = cuotasTodas.filter((c) => c.pagada).map((c) => ({ monto: montoCobrado(c), moneda: monedaDe(c) }));
+    const pendiente = cuotasTodas.filter((c) => !c.pagada).map((c) => ({ monto: c.montoUsd, moneda: monedaDe(c) }));
     const enMora = cuotasTodas.filter((c) => c.diasMora > 0);
     const mes = mesActual();
     const vencenEsteMes = cuotasTodas.filter((c) => c.vencimiento.slice(0, 7) === mes);
@@ -372,9 +436,9 @@ export default function CobranzasManager({ clientes }: { clientes: ClienteCobran
       }
     }
     return {
-      totalFinanciado,
-      totalCobrado,
-      totalPendiente: totalFinanciado - totalCobrado,
+      totalFinanciado: sumaPorMoneda(financiado),
+      totalCobrado: sumaPorMoneda(cobrado),
+      totalPendiente: sumaPorMoneda(pendiente),
       enMoraCantidad: enMora.length,
       vencenEsteMes: vencenEsteMes.length,
       cobradasEsteMes: cobradasEsteMes.length,
@@ -405,7 +469,7 @@ export default function CobranzasManager({ clientes }: { clientes: ClienteCobran
           <div key={t.label} className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
             <p className="text-xs text-brand-black/50">{t.label}</p>
             <p className={`mt-1 font-display text-lg font-bold ${t.destacado ? "text-brand-green-700" : "text-brand-black"}`}>
-              {formatUsd(t.valor)}
+              {t.valor}
             </p>
           </div>
         ))}

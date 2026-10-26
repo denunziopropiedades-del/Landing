@@ -112,9 +112,12 @@ export type Promocion = {
 };
 
 export type PlanFinanciacionFijo = {
+  /** Montos en la moneda del plan (por compatibilidad los campos se llaman "Usd"). */
   anticipoUsd: number;
   cuotas: number;
   valorCuotaUsd: number;
+  /** Moneda del plan; sin dato = USD. */
+  moneda?: MonedaHonorario;
 };
 
 export type ConfigFinanciacion = {
@@ -257,6 +260,11 @@ export type Cuota = {
   pagada: boolean;
   pagadoEn?: string | null;
   montoPagadoUsd?: number | null;
+  /** Moneda de la cuota (la del plan del cliente). */
+  moneda?: MonedaHonorario;
+  /** Cuota en dólares pagada en pesos: pesos recibidos y tipo de cambio. */
+  montoPagadoArs?: number | null;
+  cotizacion?: number | null;
   medioPago?: MedioPago | null;
   /** Días de atraso respecto de hoy; 0 si está pagada o todavía no venció. */
   diasMora: number;

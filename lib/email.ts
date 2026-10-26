@@ -13,6 +13,13 @@ const FIRMA_HTML = `
   </div>
 `;
 
+
+/** "USD 300" o "$ 500.000" según la moneda. */
+function montoTexto(n: number, moneda?: string | null) {
+  const v = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 }).format(n);
+  return moneda === "ARS" ? `$ ${v}` : `USD ${v}`;
+}
+
 export const NOTA_COORDINACION_VISITA_HTML = `
   <div style="margin-top: 20px; padding: 16px; border: 1px solid #f5c6cb; background: #fff5f5; border-radius: 8px;">
     <p style="margin: 0 0 8px; font-weight: bold; color: #c0392b;">Importante &ndash; Coordinación de visitas</p>
@@ -67,14 +74,14 @@ export function armarMailBienvenidaReserva(datos: {
   manzana: string;
   lotes: { numero: string; superficieM2: number }[];
   linkPago?: string | null;
-  planFinanciacion?: { anticipoUsd: number; cuotas: number; valorCuotaUsd: number } | null;
+  planFinanciacion?: { anticipoUsd: number; cuotas: number; valorCuotaUsd: number; moneda?: string } | null;
 }) {
   const filasLotes = datos.lotes
     .map((l) => `<li>Lote ${l.numero} &ndash; ${l.superficieM2} m²</li>`)
     .join("");
 
   const formaPagoHtml = datos.planFinanciacion
-    ? `<p style="margin: 0 0 4px; color: #333;"><b>FORMA DE PAGO:</b> Financiado — anticipo USD ${datos.planFinanciacion.anticipoUsd}, en ${datos.planFinanciacion.cuotas} cuotas de USD ${datos.planFinanciacion.valorCuotaUsd} c/u. Nuestro equipo se va a comunicar para acordar la fecha de la primera cuota.</p>`
+    ? `<p style="margin: 0 0 4px; color: #333;"><b>FORMA DE PAGO:</b> Financiado — anticipo ${montoTexto(datos.planFinanciacion.anticipoUsd, datos.planFinanciacion.moneda)}, en ${datos.planFinanciacion.cuotas} cuotas de ${montoTexto(datos.planFinanciacion.valorCuotaUsd, datos.planFinanciacion.moneda)} c/u. Nuestro equipo se va a comunicar para acordar la fecha de la primera cuota.</p>`
     : `<p style="margin: 0 0 4px; color: #333;"><b>FORMA DE PAGO:</b> Contado</p>`;
 
   const botonPago = datos.linkPago
@@ -118,6 +125,7 @@ export function armarMailRecordatorioCuota(datos: {
   numeroCuota: number;
   totalCuotas: number;
   montoUsd: number;
+  moneda?: string;
   vencimiento: string;
 }) {
   const fecha = new Date(`${datos.vencimiento}T12:00:00`).toLocaleDateString("es-AR", {
@@ -131,7 +139,7 @@ export function armarMailRecordatorioCuota(datos: {
     <p style="color: #333;">Hola ${datos.nombre}, te recordamos que en una semana vence tu próxima cuota de ${datos.proyectoNombre}:</p>
     <div style="margin: 20px 0; padding: 16px; border: 1px solid #f0d999; background: #fffbeb; border-radius: 8px;">
       <p style="margin: 0 0 4px; color: #333;"><b>Cuota:</b> ${datos.numeroCuota} de ${datos.totalCuotas}</p>
-      <p style="margin: 0 0 4px; color: #333;"><b>Monto:</b> USD ${datos.montoUsd}</p>
+      <p style="margin: 0 0 4px; color: #333;"><b>Monto:</b> ${montoTexto(datos.montoUsd, datos.moneda)}</p>
       <p style="margin: 0; color: #333;"><b>Vencimiento:</b> ${fecha}</p>
     </div>
     <p style="margin: 0; color: #333;">
@@ -147,6 +155,8 @@ export function armarMailConfirmacionCuotaPagada(datos: {
   numeroCuota: number;
   totalCuotas: number;
   montoPagadoUsd: number;
+  moneda?: string;
+  pagoEnPesos?: { montoArs: number; cotizacion: number } | null;
   cuotasRestantes: number;
   proximoVencimiento: string | null;
 }) {
@@ -163,7 +173,11 @@ export function armarMailConfirmacionCuotaPagada(datos: {
     <p style="color: #333;">Te confirmamos que registramos el pago de tu cuota de ${datos.proyectoNombre}:</p>
     <div style="margin: 20px 0; padding: 16px; border: 1px solid #b3e0c6; background: #f0faf3; border-radius: 8px;">
       <p style="margin: 0 0 4px; color: #333;"><b>Cuota:</b> ${datos.numeroCuota} de ${datos.totalCuotas}</p>
-      <p style="margin: 0; color: #333;"><b>Monto pagado:</b> USD ${datos.montoPagadoUsd}</p>
+      <p style="margin: 0; color: #333;"><b>Monto pagado:</b> ${
+        datos.pagoEnPesos
+          ? `${montoTexto(datos.pagoEnPesos.montoArs, "ARS")} (equivalente a ${montoTexto(datos.montoPagadoUsd, "USD")}, tipo de cambio ${montoTexto(datos.pagoEnPesos.cotizacion, "ARS")})`
+          : montoTexto(datos.montoPagadoUsd, datos.moneda)
+      }</p>
     </div>
     ${
       datos.cuotasRestantes > 0

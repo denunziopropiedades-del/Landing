@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     const lead = cuota.leads as unknown as {
       nombre: string;
       email: string;
-      plan_financiacion: { cuotas: number } | null;
+      plan_financiacion: { cuotas: number; moneda?: string } | null;
       proyectos: { nombre: string } | null;
     } | null;
     if (!lead?.email) continue;
@@ -57,6 +57,7 @@ export async function GET(request: Request) {
           numeroCuota: cuota.numero,
           totalCuotas: lead.plan_financiacion?.cuotas ?? cuota.numero,
           montoUsd: Number(cuota.monto_usd),
+          moneda: lead.plan_financiacion?.moneda,
           vencimiento: cuota.vencimiento,
         })
       );
