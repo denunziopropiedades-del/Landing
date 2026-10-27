@@ -2576,3 +2576,144 @@ export async function guardarHonorarioCobranzaAction(leadId: string, monto: stri
     return fail(err);
   }
 }
+
+/* ── Edición manual de cuotas (Cobranzas) ─────────────────────────────── */
+
+/** Lee montos escritos a mano: "500.000", "1.234,50", "300.5". */
+function leerMonto(t: string) {
+  let v = t.trim().replace(/[$\s]/g, "");
+  if (v.includes(",")) v = v.replace(/\./g, "").replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(v)) v = v.replace(/\./g, "");
+  return Number(v);
+}
+
+/** Deja la cantidad de cuotas del plan igual a las cuotas reales (para los mails "cuota X de Y"). */
+async function sincronizarTotalCuotas(admin: AdminClient, leadId: string) {
+  const [{ count }, { data: lead }] = await Promise.all([
+    admin.from("cuotas").select("id", { count: "exact", head: true }).eq("lead_id", leadId),
+    admin.from("leads").select("plan_financiacion").eq("id", leadId).maybeSingle(),
+  ]);
+  const plan = lead?.plan_financiacion as Record<string, unknown> | null;
+  if (plan && typeof count === "number" && plan.cuotas !== count) {
+    await admin.from("leads").update({ plan_financiacion: { ...plan, cuotas: count } }).eq("id", leadId);
+  }
+}
+
+/** Cambia el monto y/o el vencimiento de una cuota todavía no pagada. */
+export async function editarCuotaAction(cuotaId: string, monto: string, vencimiento: string): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+    const { data: cuota, error: e1 } = await admin
+      .from("cuotas")
+      .select("lead_id, numero, monto_usd, vencimiento, pagada")
+      .eq("id", cuotaId)
+      .maybeSingle();
+    if (e1) throw new Error(e1.message);
+    if (!cuota) return { ok: false, error: "La cuota no existe." };
+    if (cuota.pagada) return { ok: false, error: "La cuota ya está pagada: deshacé el pago para modificarla." };
+
+    const valor = leerMonto(monto);
+    if (!Number.isFinite(valor) || valor <= 0) return { ok: false, error: "El monto no es válido." };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(vencimiento)) return { ok: false, error: "Elegí la fecha de vencimiento." };
+
+    const cambiaFecha = vencimiento !== cuota.vencimiento;
+    const { error } = await admin
+      .from("cuotas")
+      .update({ monto_usd: valor, vencimiento, ...(cambiaFecha ? { recordatorio_enviado_en: null } : {}) })
+      .eq("id", cuotaId);
+    if (error) throw new Error(error.message);
+
+    await registrarActividad(actor, "actualizar", "lead", cuota.lead_id, {
+      ...(await contextoLead(admin, cuota.lead_id)),
+      cuotaEditada: cuota.numero,
+      ...(Number(cuota.monto_usd) !== valor ? { montoAnterior: Number(cuota.monto_usd), montoNuevo: valor } : {}),
+      ...(cambiaFecha ? { vencimientoAnterior: cuota.vencimiento, vencimientoNuevo: vencimiento } : {}),
+    });
+    revalidatePath("/admin/cobranzas");
+    revalidatePath("/admin/crm");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/** Agrega una cuota al final del plan de un cliente. */
+export async function agregarCuotaAction(leadId: string, monto: string, vencimiento: string): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+    const valor = leerMonto(monto);
+    if (!Number.isFinite(valor) || valor <= 0) return { ok: false, error: "El monto no es válido." };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(vencimiento)) return { ok: false, error: "Elegí la fecha de vencimiento." };
+
+    const { data: ultima } = await admin
+      .from("cuotas")
+      .select("numero")
+      .eq("lead_id", leadId)
+      .order("numero", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const numero = (ultima?.numero ?? 0) + 1;
+
+    const { error } = await admin.from("cuotas").insert({ lead_id: leadId, numero, monto_usd: valor, vencimiento });
+    if (error) throw new Error(error.message);
+    await sincronizarTotalCuotas(admin, leadId);
+
+    await registrarActividad(actor, "actualizar", "lead", leadId, {
+      ...(await contextoLead(admin, leadId)),
+      cuotaAgregada: numero,
+      monto: valor,
+      vencimiento,
+    });
+    revalidatePath("/admin/cobranzas");
+    revalidatePath("/admin/crm");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/** Borra una cuota no pagada y corre la numeración de las siguientes. */
+export async function eliminarCuotaAction(cuotaId: string): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+    const { data: cuota, error: e1 } = await admin
+      .from("cuotas")
+      .select("lead_id, numero, monto_usd, vencimiento, pagada")
+      .eq("id", cuotaId)
+      .maybeSingle();
+    if (e1) throw new Error(e1.message);
+    if (!cuota) return { ok: false, error: "La cuota no existe." };
+    if (cuota.pagada) return { ok: false, error: "No se puede borrar una cuota pagada: deshacé el pago primero." };
+
+    const { error } = await admin.from("cuotas").delete().eq("id", cuotaId);
+    if (error) throw new Error(error.message);
+
+    // Renumerar las siguientes de a una, en orden, para no chocar con (lead_id, numero) único.
+    const { data: siguientes } = await admin
+      .from("cuotas")
+      .select("id, numero")
+      .eq("lead_id", cuota.lead_id)
+      .gt("numero", cuota.numero)
+      .order("numero", { ascending: true });
+    for (const s of siguientes ?? []) {
+      const { error: e2 } = await admin.from("cuotas").update({ numero: s.numero - 1 }).eq("id", s.id);
+      if (e2) throw new Error(e2.message);
+    }
+    await sincronizarTotalCuotas(admin, cuota.lead_id);
+
+    await registrarActividad(actor, "actualizar", "lead", cuota.lead_id, {
+      ...(await contextoLead(admin, cuota.lead_id)),
+      cuotaEliminada: cuota.numero,
+      monto: Number(cuota.monto_usd),
+      vencimiento: cuota.vencimiento,
+    });
+    revalidatePath("/admin/cobranzas");
+    revalidatePath("/admin/crm");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}

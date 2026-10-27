@@ -1,8 +1,15 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { desmarcarCuotaPagadaAction, guardarHonorarioCobranzaAction, marcarCuotaPagadaAction } from "@/lib/admin/actions";
+import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  agregarCuotaAction,
+  desmarcarCuotaPagadaAction,
+  editarCuotaAction,
+  eliminarCuotaAction,
+  guardarHonorarioCobranzaAction,
+  marcarCuotaPagadaAction,
+} from "@/lib/admin/actions";
 import { formatArs, formatUsd } from "@/lib/utils";
 import type { ClienteCobranzas, Cuota, MedioPago, MonedaHonorario } from "@/types/site";
 
@@ -54,8 +61,29 @@ function FilaCuota({ cuota, honorario, faltaDespues }: { cuota: Cuota; honorario
   const [enPesos, setEnPesos] = useState(false);
   const [pesos, setPesos] = useState("");
   const [cotizacion, setCotizacion] = useState("");
+  const [modificando, setModificando] = useState(false);
+  const [nuevoMonto, setNuevoMonto] = useState(cuota.montoUsd.toString());
+  const [nuevaFecha, setNuevaFecha] = useState(cuota.vencimiento);
   const [, startTransition] = useTransition();
   const moneda = monedaDe(cuota);
+
+  const guardarCambios = () => {
+    startTransition(() => {
+      editarCuotaAction(cuota.id, nuevoMonto, nuevaFecha).then((res) => {
+        if (!res.ok) alert(`No se pudo modificar la cuota: ${res.error}`);
+        else setModificando(false);
+      });
+    });
+  };
+
+  const borrar = () => {
+    if (!confirm(`¿Borrar la cuota ${cuota.numero}? Las siguientes se renumeran.`)) return;
+    startTransition(() => {
+      eliminarCuotaAction(cuota.id).then((res) => {
+        if (!res.ok) alert(`No se pudo borrar la cuota: ${res.error}`);
+      });
+    });
+  };
   const leerNum = (t: string) => {
     let v = t.trim().replace(/[$\s]/g, "");
     if (v.includes(",")) v = v.replace(/\./g, "").replace(",", ".");
@@ -85,9 +113,33 @@ function FilaCuota({ cuota, honorario, faltaDespues }: { cuota: Cuota; honorario
   return (
     <tr className="border-b border-black/5 last:border-0">
       <td className="px-3 py-2 text-brand-black/70">{cuota.numero}</td>
-      <td className="px-3 py-2 text-brand-black/70">{formatearFecha(cuota.vencimiento)}</td>
+      <td className="px-3 py-2 text-brand-black/70">
+        {modificando ? (
+          <input
+            type="date"
+            value={nuevaFecha}
+            onChange={(e) => setNuevaFecha(e.target.value)}
+            className="rounded-lg border border-black/10 px-1.5 py-1 text-xs"
+          />
+        ) : (
+          formatearFecha(cuota.vencimiento)
+        )}
+      </td>
       <td className="whitespace-nowrap px-3 py-2 text-right text-brand-black/70">
-        {fmtMoneda(cuota.pagada ? montoCobrado(cuota) : cuota.montoUsd, moneda)}
+        {modificando ? (
+          <span className="inline-flex items-center gap-1">
+            {moneda === "ARS" && <span className="text-xs text-brand-black/50">$</span>}
+            <input
+              inputMode="decimal"
+              value={nuevoMonto}
+              onChange={(e) => setNuevoMonto(e.target.value)}
+              className="w-24 rounded-lg border border-black/10 px-1.5 py-1 text-right text-xs"
+            />
+            {moneda === "USD" && <span className="text-xs text-brand-black/50">USD</span>}
+          </span>
+        ) : (
+          fmtMoneda(cuota.pagada ? montoCobrado(cuota) : cuota.montoUsd, moneda)
+        )}
         {cuota.pagada && cuota.montoPagadoArs ? (
           <span className="block text-[11px] text-brand-black/45">
             pagó {formatArs(cuota.montoPagadoArs)}
@@ -124,7 +176,22 @@ function FilaCuota({ cuota, honorario, faltaDespues }: { cuota: Cuota; honorario
         )}
       </td>
       <td className="px-3 py-2 text-right">
+        {!cuota.pagada && modificando && (
+          <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
+            <button type="button" onClick={guardarCambios} className="rounded-full bg-brand-green-700 px-2.5 py-1 text-xs font-semibold text-white">
+              Guardar
+            </button>
+            <button
+              type="button"
+              onClick={() => { setModificando(false); setNuevoMonto(cuota.montoUsd.toString()); setNuevaFecha(cuota.vencimiento); }}
+              className="text-xs text-brand-black/40"
+            >
+              Cancelar
+            </button>
+          </span>
+        )}
         {!cuota.pagada &&
+          !modificando &&
           (editando ? (
             <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
               {moneda === "USD" && (
@@ -190,16 +257,67 @@ function FilaCuota({ cuota, honorario, faltaDespues }: { cuota: Cuota; honorario
               </button>
             </span>
           ) : (
-            <button
-              type="button"
-              onClick={() => setEditando(true)}
-              className="rounded-full border border-brand-green-600/40 px-3 py-1 text-xs font-medium text-brand-green-700 hover:bg-brand-green-700/5"
-            >
-              Marcar pagada
-            </button>
+            <span className="inline-flex items-center justify-end gap-1">
+              <button
+                type="button"
+                onClick={() => setEditando(true)}
+                className="whitespace-nowrap rounded-full border border-brand-green-600/40 px-3 py-1 text-xs font-medium text-brand-green-700 hover:bg-brand-green-700/5"
+              >
+                Marcar pagada
+              </button>
+              <button type="button" onClick={() => setModificando(true)} className="rounded-lg p-1.5 text-brand-black/50 hover:bg-black/5" aria-label="Modificar cuota" title="Modificar monto o vencimiento">
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+              <button type="button" onClick={borrar} className="rounded-lg p-1.5 text-red-600/70 hover:bg-red-50" aria-label="Borrar cuota" title="Borrar cuota">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </span>
           ))}
       </td>
     </tr>
+  );
+}
+
+function AgregarCuota({ cliente }: { cliente: ClienteCobranzas }) {
+  const ultima = cliente.cuotas[cliente.cuotas.length - 1];
+  const moneda: MonedaHonorario = cliente.planFinanciacion?.moneda === "ARS" ? "ARS" : "USD";
+  const sugerida = () => {
+    if (!ultima) return hoyIso();
+    const [a, m, d] = ultima.vencimiento.split("-").map(Number);
+    const f = new Date(Date.UTC(a, m, 1));
+    const dia = Math.min(d, new Date(Date.UTC(f.getUTCFullYear(), f.getUTCMonth() + 1, 0)).getUTCDate());
+    return `${f.getUTCFullYear()}-${String(f.getUTCMonth() + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+  };
+  const [abierto, setAbierto] = useState(false);
+  const [monto, setMonto] = useState(ultima?.montoUsd.toString() ?? cliente.planFinanciacion?.valorCuotaUsd.toString() ?? "");
+  const [fecha, setFecha] = useState(sugerida);
+  const [pend, start] = useTransition();
+  const agregar = () =>
+    start(async () => {
+      const r = await agregarCuotaAction(cliente.leadId, monto, fecha);
+      if (!r.ok) alert(`No se pudo agregar la cuota: ${r.error}`);
+      else setAbierto(false);
+    });
+  if (!abierto)
+    return (
+      <button type="button" onClick={() => { setFecha(sugerida()); setAbierto(true); }} className="inline-flex items-center gap-1 text-xs font-semibold text-brand-green-700 hover:underline">
+        <Plus className="h-3.5 w-3.5" /> Agregar cuota
+      </button>
+    );
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1.5 text-xs">
+      <span className="text-brand-black/50">Nueva cuota:</span>
+      {moneda === "ARS" && <span className="text-brand-black/50">$</span>}
+      <input inputMode="decimal" value={monto} onChange={(e) => setMonto(e.target.value)} className="w-24 rounded-lg border border-black/10 px-1.5 py-1" />
+      {moneda === "USD" && <span className="text-brand-black/50">USD</span>}
+      <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="rounded-lg border border-black/10 px-1.5 py-1" />
+      <button type="button" onClick={agregar} disabled={pend} className="rounded-full bg-brand-green-700 px-2.5 py-1 font-semibold text-white disabled:opacity-60">
+        Agregar
+      </button>
+      <button type="button" onClick={() => setAbierto(false)} className="text-brand-black/40">
+        Cancelar
+      </button>
+    </span>
   );
 }
 
@@ -390,6 +508,9 @@ function TarjetaCliente({ cliente }: { cliente: ClienteCobranzas }) {
                   ))}
                 </tbody>
               </table>
+              <div className="border-t border-black/5 px-3 py-2.5">
+                <AgregarCuota cliente={cliente} />
+              </div>
             </div>
           ) : (
             <p className="border-t border-black/5 p-4 text-xs text-brand-black/60">
