@@ -450,6 +450,40 @@ function TarjetaCliente({ cliente }: { cliente: ClienteCobranzas }) {
             </div>
           </div>
 
+          {cuotas.length > 0 && (() => {
+            const total = cuotas.reduce((acc, c) => acc + c.montoUsd, 0);
+            const pendientes = cuotas.filter((c) => !c.pagada);
+            const falta = pendientes.reduce((acc, c) => acc + c.montoUsd, 0);
+            const pesosRecibidos = cuotas.reduce((acc, c) => acc + (c.pagada && c.montoPagadoArs ? c.montoPagadoArs : 0), 0);
+            return (
+              <div className="border-t border-black/5 px-4 pt-4">
+                <p className="text-xs font-medium text-brand-black/50">
+                  Cuotas del cliente {monedaPlan === "ARS" ? "(en pesos)" : "(en dólares)"}
+                </p>
+                <div className="mt-1.5 grid grid-cols-3 gap-3 text-xs">
+                  <div className="rounded-xl bg-brand-black/[0.03] p-3">
+                    <p className="text-brand-black/50">Total del plan</p>
+                    <p className="mt-0.5 font-display text-base font-bold text-brand-black">{fmtMoneda(total, monedaPlan)}</p>
+                    <p className="text-[11px] text-brand-black/40">{cuotas.length} cuotas</p>
+                  </div>
+                  <div className="rounded-xl bg-brand-green-700/5 p-3">
+                    <p className="text-brand-black/50">Ya cobrado</p>
+                    <p className="mt-0.5 font-display text-base font-bold text-brand-green-700">{fmtMoneda(totalCobrado, monedaPlan)}</p>
+                    <p className="text-[11px] text-brand-black/40">
+                      {pagadas} cuotas pagas
+                      {pesosRecibidos > 0 ? ` · ${formatArs(pesosRecibidos)} recibidos en pesos` : ""}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-amber-500/5 p-3">
+                    <p className="text-brand-black/50">Me falta cobrar</p>
+                    <p className="mt-0.5 font-display text-base font-bold text-amber-700">{fmtMoneda(falta, monedaPlan)}</p>
+                    <p className="text-[11px] text-brand-black/40">{pendientes.length} cuotas pendientes</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           <HonorariosCobranza cliente={cliente} />
 
           {honorario && cuotas.length > 0 && (
