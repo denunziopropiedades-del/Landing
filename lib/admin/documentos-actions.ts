@@ -51,6 +51,17 @@ export async function getDatosDocumentos(): Promise<{
       .limit(300),
   ]);
 
+  // Datos para contratos que el cliente cargó desde matulotes.app/alta (consulta aparte:
+  // si no se corrió sql-alta-clientes.sql, los contratos siguen funcionando igual).
+  const datosContrato = new Map<string, Record<string, string | null>>();
+  const ids = (l.data ?? []).map((x) => x.id as string);
+  if (ids.length) {
+    const { data: dc } = await supabase.from("leads").select("id, datos_contrato").in("id", ids).not("datos_contrato", "is", null);
+    for (const r of (dc ?? []) as { id: string; datos_contrato: Record<string, string | null> | null }[]) {
+      if (r.datos_contrato) datosContrato.set(r.id, r.datos_contrato);
+    }
+  }
+
   const propios: Modelo[] = (m.data ?? []).map((x) => ({
     id: x.id as string,
     nombre: x.nombre as string,
@@ -99,6 +110,22 @@ export async function getDatosDocumentos(): Promise<{
       "Domicilio de la escribanía": proyecto?.escribania_direccion ?? "",
       "Fecha de firma": x.fecha_firma_escribania ?? "",
     };
+    // Domicilio, nacionalidad, estado civil, etc. con los nombres de campo que usan los modelos.
+    const dc = datosContrato.get(x.id as string);
+    if (dc) {
+      const conRoles = (sufijos: string[], valor: string | null | undefined) => {
+        for (const sfx of sufijos) if (valor) datos[sfx] = valor;
+      };
+      const roles = (campo: string) => [`${campo} del cliente`, `${campo} del cesionario`, `${campo} del comprador`, `${campo} del locatario`];
+      conRoles(roles("Domicilio"), dc.domicilio);
+      conRoles(roles("Localidad"), dc.localidad);
+      conRoles(roles("Partido"), dc.partido);
+      conRoles(roles("Provincia"), dc.provincia);
+      conRoles(roles("Nacionalidad"), dc.nacionalidad);
+      conRoles(roles("Estado civil"), dc.estadoCivil);
+      conRoles([...roles("CUIT"), ...roles("CUIL")], dc.cuit);
+      if (dc.domicilio) datos.Domicilio = [dc.domicilio, dc.localidad, dc.partido].filter(Boolean).join(", ");
+    }
     for (const k of Object.keys(datos)) if (!datos[k]) delete datos[k];
     return {
       id: x.id,

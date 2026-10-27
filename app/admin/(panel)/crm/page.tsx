@@ -1,6 +1,7 @@
 import ImportarLeadsMetaForm from "@/components/admin/ImportarLeadsMetaForm";
 import KanbanBoard from "@/components/admin/KanbanBoard";
 import NuevoClienteForm from "@/components/admin/NuevoClienteForm";
+import LinkAltaCliente from "@/components/admin/LinkAltaCliente";
 import { getFinanciacionAdmin, getLeads, getLotesAdminTodos, getPerfiles, getProyectosAdmin } from "@/lib/admin/data";
 import { getPerfilActual } from "@/lib/admin/auth";
 import { getPropiedadesAdmin } from "@/lib/admin/propiedades-actions";
@@ -36,7 +37,11 @@ export default async function AdminCrmPage() {
         Arrastrá cada tarjeta entre columnas para actualizar el estado del lead.
       </p>
 
-      <div className="mt-8">
+      <div className="mt-6">
+        <LinkAltaCliente />
+      </div>
+
+      <div className="mt-4">
         <NuevoClienteForm proyectos={proyectos} propiedades={propiedades} lotes={lotes} vendedores={vendedores} planesPorProyecto={planesPorProyecto} rolActual={actual?.rol ?? "vendedor"} />
       </div>
 

@@ -75,3 +75,24 @@ export const visitaSchema = z.object({
 });
 
 export type VisitaInput = z.infer<typeof visitaSchema>;
+
+/** Alta de cliente por link: datos personales y para contratos. */
+export const altaClienteSchema = z.object({
+  nombre: z.string().trim().min(2, "Ingresá tu nombre"),
+  apellido: z.string().trim().min(2, "Ingresá tu apellido"),
+  dni: z.string().trim().min(6, "Ingresá tu DNI").max(15),
+  cuit: z.string().trim().max(20).optional().default(""),
+  email: z.string().trim().email("Email inválido"),
+  telefono: z.string().trim().min(6, "Teléfono inválido"),
+  nacionalidad: z.string().trim().min(3, "Ingresá tu nacionalidad").max(40),
+  estadoCivil: z.string().trim().min(3, "Elegí tu estado civil").max(40),
+  domicilio: z.string().trim().min(4, "Ingresá calle y número").max(120),
+  localidad: z.string().trim().min(2, "Ingresá tu localidad").max(60),
+  partido: z.string().trim().min(2, "Ingresá tu partido").max(60),
+  provincia: z.string().trim().min(2).max(40).default("Buenos Aires"),
+  interes: z.string().trim().max(200).optional().default(""),
+  /** Campo trampa para bots: tiene que llegar vacío. */
+  web: z.string().max(0).optional().default(""),
+});
+
+export type AltaClienteInput = z.infer<typeof altaClienteSchema>;
