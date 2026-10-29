@@ -2,8 +2,9 @@
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, BadgeCheck, Eye, EyeOff, Loader2, Pencil, Plus, Star, Trash2, UploadCloud, X } from "lucide-react";
+import { ArrowDown, ArrowUp, BadgeCheck, Copy, Eye, EyeOff, Loader2, Pencil, Plus, Star, Trash2, UploadCloud, X } from "lucide-react";
 import {
+  duplicarPropiedadAction,
   eliminarPropiedadAction,
   marcarVendidaAction,
   publicarPropiedadAction,
@@ -456,6 +457,20 @@ export default function PropiedadesManager({ propiedades, error }: { propiedades
                   className={`rounded-lg p-2 hover:bg-red-50 ${p.vendido ? "bg-red-600 text-white hover:bg-red-700" : "text-red-600"}`}
                 >
                   <BadgeCheck className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  title="Duplicar"
+                  onClick={() =>
+                    startTransition(async () => {
+                      const r = await duplicarPropiedadAction(p.id);
+                      if (!r.ok) alert(r.error);
+                      else if (r.id) setEditando(r.id);
+                    })
+                  }
+                  className="rounded-lg p-2 text-brand-black/60 hover:bg-black/5"
+                >
+                  <Copy className="h-4 w-4" />
                 </button>
                 <button type="button" title="Editar" onClick={() => setEditando(p.id)} className="rounded-lg p-2 text-brand-black/60 hover:bg-black/5">
                   <Pencil className="h-4 w-4" />

@@ -175,6 +175,35 @@ export async function marcarVendidaAction(id: string, vendido: boolean): Promise
   }
 }
 
+/** Copia una propiedad (fotos y datos incluidos) como borrador oculto, para editarla y publicarla. */
+export async function duplicarPropiedadAction(id: string): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    const admin = (await getSupabaseAdminClient())!;
+    const { data: original, error: errLeer } = await admin.from("propiedades").select("*").eq("id", id).single();
+    if (errLeer || !original) throw new Error(errLeer ? errorDb(errLeer.message) : "No se encontró la propiedad.");
+
+    const resto: Record<string, unknown> = { ...original };
+    for (const k of ["id", "slug", "creado_en", "actualizado_en"]) delete resto[k];
+    const titulo = `${String(original.titulo)} (copia)`;
+    const partido = getPartido(String(original.partido));
+    const base = slugify(`${titulo} ${partido?.nombre ?? original.partido}`);
+    let slug = base;
+    const { data: existe } = await admin.from("propiedades").select("id").eq("slug", slug).maybeSingle();
+    if (existe) slug = `${base}-${Math.random().toString(36).slice(2, 6)}`;
+
+    const copia: Record<string, unknown> = { ...resto, titulo, slug, publicado: false, destacado: false };
+    if ("vendido" in copia) copia.vendido = false;
+    const { data, error } = await admin.from("propiedades").insert(copia).select("id").single();
+    if (error) throw new Error(errorDb(error.message));
+    await registrarActividad(actor, "duplicar", "propiedad", data.id, { origen: id, titulo });
+    revalidatePath("/admin/propiedades");
+    return { ok: true, id: data.id };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function eliminarPropiedadAction(id: string): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor");
