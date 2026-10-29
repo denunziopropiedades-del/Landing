@@ -42,6 +42,8 @@ const MENSAJE_SIN_TABLA =
   "Falta crear la tabla de propiedades: corré el archivo sql-propiedades.sql en Supabase → SQL Editor.";
 
 function errorDb(message: string) {
+  if (/vendido/i.test(message))
+    return "Falta la columna 'vendido': corré sql-propiedades-vendido.sql en Supabase → SQL Editor.";
   if (/financiacion_directa|situacion_dominial|tipo_barrio|anticipo|precio_contado/i.test(message))
     return "Faltan las columnas nuevas (financiación, escritura o posesión, barrio, anticipo o valor de contado): corré sql-propiedades-actualizacion.sql en Supabase → SQL Editor.";
   return /relation .*propiedades.* does not exist|Could not find the table/i.test(message) ? MENSAJE_SIN_TABLA : message;
@@ -115,6 +117,7 @@ export async function upsertPropiedadAction(_prev: ActionResult | null, fd: Form
       fotos,
       destacado: fd.get("destacado") === "on",
       publicado: fd.get("publicado") === "on",
+      vendido: fd.get("vendido") === "on",
       actualizado_en: new Date().toISOString(),
     };
 
@@ -151,6 +154,20 @@ export async function publicarPropiedadAction(id: string, publicado: boolean): P
     const { data, error } = await admin.from("propiedades").update({ publicado }).eq("id", id).select("slug").single();
     if (error) throw new Error(errorDb(error.message));
     await registrarActividad(actor, publicado ? "publicar" : "despublicar", "propiedad", id);
+    revalidarPortal(data.slug);
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function marcarVendidaAction(id: string, vendido: boolean): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    const admin = (await getSupabaseAdminClient())!;
+    const { data, error } = await admin.from("propiedades").update({ vendido, actualizado_en: new Date().toISOString() }).eq("id", id).select("slug").single();
+    if (error) throw new Error(errorDb(error.message));
+    await registrarActividad(actor, vendido ? "marcar_vendida" : "desmarcar_vendida", "propiedad", id);
     revalidarPortal(data.slug);
     return { ok: true };
   } catch (err) {

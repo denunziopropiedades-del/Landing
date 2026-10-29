@@ -48,7 +48,9 @@ export async function getPropiedades(filtros: FiltrosPropiedades = {}): Promise<
     if (error.code !== "42P01" && error.code !== "PGRST205") console.error("Error leyendo propiedades", error.message);
     return [];
   }
-  return (data ?? []).map(mapPropiedad);
+  const lista = (data ?? []).map(mapPropiedad);
+  // Las vendidas/alquiladas van al final, manteniendo el orden del resto.
+  return [...lista.filter((p) => !p.vendido), ...lista.filter((p) => p.vendido)];
 }
 
 export async function getPropiedadBySlug(slug: string): Promise<Propiedad | null> {

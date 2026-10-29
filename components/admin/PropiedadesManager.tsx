@@ -2,14 +2,15 @@
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Eye, EyeOff, Loader2, Pencil, Plus, Star, Trash2, UploadCloud, X } from "lucide-react";
+import { ArrowDown, ArrowUp, BadgeCheck, Eye, EyeOff, Loader2, Pencil, Plus, Star, Trash2, UploadCloud, X } from "lucide-react";
 import {
   eliminarPropiedadAction,
+  marcarVendidaAction,
   publicarPropiedadAction,
   upsertPropiedadAction,
 } from "@/lib/admin/propiedades-actions";
 import { isCloudinaryConfigured, uploadToCloudinary } from "@/lib/cloudinary-client";
-import { BARRIOS, esRural, formatearPrecio, labelTipo, SITUACIONES, TIPOS, TIPOS_SIN_AMBIENTES, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
+import { BARRIOS, esRural, labelVendido, formatearPrecio, labelTipo, SITUACIONES, TIPOS, TIPOS_SIN_AMBIENTES, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
 import { ZONAS } from "@/lib/zonas";
 import EditorTexto from "@/components/admin/EditorTexto";
 
@@ -335,6 +336,9 @@ function PropiedadForm({ propiedad, onDone }: { propiedad?: Propiedad; onDone: (
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="destacado" defaultChecked={propiedad?.destacado} /> Destacada en el inicio
         </label>
+        <label className="flex items-center gap-2 text-sm font-semibold text-red-700">
+          <input type="checkbox" name="vendido" defaultChecked={propiedad?.vendido} /> Vendida / alquilada (cartel rojo)
+        </label>
         <div className="ml-auto flex gap-2">
           <button type="button" onClick={onDone} className="rounded-lg px-4 py-2 text-sm font-semibold text-brand-black/60 hover:bg-black/5">
             Cancelar
@@ -425,6 +429,9 @@ export default function PropiedadesManager({ propiedades, error }: { propiedades
                   {formatearPrecio(p)}
                 </p>
               </div>
+              {p.vendido && (
+                <span className="rounded-full bg-red-600 px-2.5 py-1 text-xs font-bold uppercase text-white">{labelVendido(p)}</span>
+              )}
               <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${p.publicado ? "bg-green-100 text-green-800" : "bg-black/5 text-black/50"}`}>
                 {p.publicado ? "Publicada" : "Oculta"}
               </span>
@@ -441,6 +448,14 @@ export default function PropiedadesManager({ propiedades, error }: { propiedades
                   className="rounded-lg p-2 text-brand-black/60 hover:bg-black/5"
                 >
                   {p.publicado ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+                <button
+                  type="button"
+                  title={p.vendido ? `Quitar "${labelVendido(p)}"` : `Marcar como ${labelVendido(p).toLowerCase()}`}
+                  onClick={() => accion(() => marcarVendidaAction(p.id, !p.vendido))}
+                  className={`rounded-lg p-2 hover:bg-red-50 ${p.vendido ? "bg-red-600 text-white hover:bg-red-700" : "text-red-600"}`}
+                >
+                  <BadgeCheck className="h-4 w-4" />
                 </button>
                 <button type="button" title="Editar" onClick={() => setEditando(p.id)} className="rounded-lg p-2 text-brand-black/60 hover:bg-black/5">
                   <Pencil className="h-4 w-4" />

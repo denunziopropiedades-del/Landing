@@ -55,6 +55,8 @@ export type Propiedad = {
   fotos: string[];
   publicado: boolean;
   destacado: boolean;
+  /** Vendida (o alquilada): sigue publicada con el cartel rojo. */
+  vendido: boolean;
   orden: number;
   creadoEn: string;
 };
@@ -116,6 +118,7 @@ export function mapPropiedad(p: Record<string, unknown>): Propiedad {
     fotos: (p.fotos as string[]) ?? [],
     publicado: Boolean(p.publicado),
     destacado: Boolean(p.destacado),
+    vendido: Boolean(p.vendido),
     orden: (p.orden as number) ?? 0,
     creadoEn: (p.creado_en as string) ?? "",
   };
@@ -149,4 +152,9 @@ export function slugify(texto: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 70);
+}
+
+/** Texto del cartel: "Vendido" en venta, "Alquilado" en alquiler/arriendo. */
+export function labelVendido(p: Pick<Propiedad, "operacion">) {
+  return p.operacion === "venta" ? "Vendido" : "Alquilado";
 }

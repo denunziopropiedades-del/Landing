@@ -6,7 +6,7 @@ import { Bath, BedDouble, Check, Droplets, MapPin, Maximize2, MessageCircle, Rul
 import PaginaPortal from "@/components/propiedades/PaginaPortal";
 import ConsultaForm from "@/components/propiedades/ConsultaForm";
 import { getSiteTextos } from "@/lib/content";
-import { esRural, formatearMonto, formatearPrecio, getPropiedadBySlug, labelBarrio, labelSituacion, labelTipo, SITUACIONES, ubicacionTexto } from "@/lib/propiedades";
+import { esRural, formatearMonto, formatearPrecio, getPropiedadBySlug, labelBarrio, labelSituacion, labelTipo, labelVendido, SITUACIONES, ubicacionTexto } from "@/lib/propiedades";
 import { getPartido } from "@/lib/zonas";
 import { esHtml, sanitizarHtml } from "@/lib/texto-enriquecido";
 import { buildWhatsappUrl } from "@/lib/whatsapp";
@@ -79,7 +79,14 @@ export default async function PropiedadPage({ params }: { params: Promise<Params
 
       <div className="mt-4 grid gap-8 lg:grid-cols-[1.6fr_1fr]">
         <div>
-          <Galeria fotos={p.fotos} titulo={p.titulo} />
+          {p.vendido && (
+            <div className="mb-3 rounded-2xl bg-red-600 py-3 text-center text-2xl font-black uppercase tracking-[0.3em] text-white shadow-md">
+              {labelVendido(p)}
+            </div>
+          )}
+          <div className={p.vendido ? "grayscale-[60%]" : undefined}>
+            <Galeria fotos={p.fotos} titulo={p.titulo} />
+          </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-brand-black px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
@@ -185,13 +192,18 @@ export default async function PropiedadPage({ params }: { params: Promise<Params
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <div className="rounded-3xl bg-brand-black p-6 text-white">
             <p className="text-sm text-white/60">{p.operacion === "venta" ? "Precio" : rural ? "Arrendamiento" : "Alquiler"}</p>
-            <p className="text-3xl font-extrabold">{formatearPrecio(p)}</p>
+            <p className={`text-3xl font-extrabold ${p.vendido ? "text-white/40 line-through" : ""}`}>{formatearPrecio(p)}</p>
+            {p.vendido && (
+              <p className="mt-3 rounded-xl bg-red-600 px-4 py-3 text-center font-bold uppercase tracking-wide">
+                Esta propiedad ya fue {p.operacion === "venta" ? "vendida" : "alquilada"}
+              </p>
+            )}
             {rural && p.hectareas && p.precio && p.precioUnidad === "ha" && p.operacion === "venta" && (
               <p className="mt-1 text-sm text-white/60">
                 Total aprox.: {p.moneda} {fmt(p.precio * p.hectareas)}
               </p>
             )}
-            {(p.anticipo || p.precioContado) && (
+            {!p.vendido && (p.anticipo || p.precioContado) && (
               <div className="mt-4 grid gap-2 border-t border-white/15 pt-4 text-sm">
                 {p.anticipo && (
                   <p className="flex justify-between gap-3">
@@ -207,26 +219,39 @@ export default async function PropiedadPage({ params }: { params: Promise<Params
                 )}
               </div>
             )}
-            <a
-              href={buildWhatsappUrl(mensajeWa, textos.whatsappNumero)}
-              target="_blank"
-              rel="noopener"
-              className="mt-5 flex h-[52px] items-center justify-center gap-2 rounded-full bg-[#25D366] font-bold text-white"
-            >
-              <MessageCircle className="h-5 w-5" />
-              Consultar por WhatsApp
-            </a>
-            <Link
-              href={`/visitas?propiedad=${p.slug}`}
-              className="mt-2 flex h-[52px] items-center justify-center rounded-full border border-white/25 font-semibold text-white hover:bg-white/10"
-            >
-              Coordinar una visita
-            </Link>
+            {p.vendido ? (
+              <Link
+                href={p.operacion === "venta" ? (rural ? "/campos" : "/comprar") : rural ? "/campos" : "/alquilar"}
+                className="mt-5 flex h-[52px] items-center justify-center rounded-full bg-brand-gold-500 font-bold text-brand-black"
+              >
+                Ver propiedades disponibles
+              </Link>
+            ) : (
+              <>
+              <a
+                href={buildWhatsappUrl(mensajeWa, textos.whatsappNumero)}
+                target="_blank"
+                rel="noopener"
+                className="mt-5 flex h-[52px] items-center justify-center gap-2 rounded-full bg-[#25D366] font-bold text-white"
+              >
+                <MessageCircle className="h-5 w-5" />
+                Consultar por WhatsApp
+              </a>
+              <Link
+                href={`/visitas?propiedad=${p.slug}`}
+                className="mt-2 flex h-[52px] items-center justify-center rounded-full border border-white/25 font-semibold text-white hover:bg-white/10"
+              >
+                Coordinar una visita
+              </Link>
+              </>
+            )}
           </div>
-          <div className="mt-4 rounded-3xl bg-white p-5">
-            <p className="mb-3 font-display text-lg font-bold text-brand-black">Dejanos tu consulta</p>
-            <ConsultaForm modo="propiedad" propiedadId={p.id} mensajeInicial={`Me interesa esta propiedad: ${p.titulo}.`} />
-          </div>
+          {!p.vendido && (
+            <div className="mt-4 rounded-3xl bg-white p-5">
+              <p className="mb-3 font-display text-lg font-bold text-brand-black">Dejanos tu consulta</p>
+              <ConsultaForm modo="propiedad" propiedadId={p.id} mensajeInicial={`Me interesa esta propiedad: ${p.titulo}.`} />
+            </div>
+          )}
           <p className="mt-4 px-2 text-center text-[11px] uppercase tracking-wide text-brand-black/45">
             Inmobiliaria De Nunzio Negocios Inmobiliarios · Matías De Nunzio, Martillero Público
           </p>

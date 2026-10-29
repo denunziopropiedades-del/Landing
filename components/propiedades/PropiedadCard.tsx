@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Bath, BedDouble, Droplets, House, MapPin, Maximize2, Wheat, Zap } from "lucide-react";
-import { esRural, formatearMonto, formatearPrecio, labelBarrio, labelSituacion, labelTipo, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
+import { esRural, formatearMonto, formatearPrecio, labelBarrio, labelSituacion, labelTipo, labelVendido, ubicacionTexto, type Propiedad } from "@/lib/propiedades-base";
 
 export default function PropiedadCard({ propiedad: p }: { propiedad: Propiedad }) {
   const rural = esRural(p.tipo);
@@ -10,7 +10,8 @@ export default function PropiedadCard({ propiedad: p }: { propiedad: Propiedad }
     : p.operacion === "venta"
       ? "Venta"
       : "Alquiler";
-  const colorOp = rural ? "bg-[#7a5a1c]" : p.operacion === "venta" ? "bg-brand-green-700" : "bg-[#2f5d8a]";
+  const vendido = p.vendido;
+  const colorOp = vendido ? "bg-red-600" : rural ? "bg-[#7a5a1c]" : p.operacion === "venta" ? "bg-brand-green-700" : "bg-[#2f5d8a]";
   const etiquetaFoto = p.etiquetas[0];
   const condiciones = [
     p.situacion ? { t: labelSituacion(p.situacion)!, c: p.situacion === "escritura" ? "bg-brand-green-700/10 text-brand-green-700" : "bg-amber-100 text-amber-900" } : null,
@@ -31,7 +32,7 @@ export default function PropiedadCard({ propiedad: p }: { propiedad: Propiedad }
             alt={p.titulo}
             fill
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-            className="object-cover transition duration-500 group-hover:scale-105"
+            className={`object-cover transition duration-500 group-hover:scale-105 ${vendido ? "brightness-90 grayscale" : ""}`}
           />
         ) : (
           <div className="flex h-full items-center justify-center text-brand-black/20">
@@ -39,8 +40,15 @@ export default function PropiedadCard({ propiedad: p }: { propiedad: Propiedad }
           </div>
         )}
         <span className={`absolute left-3 top-3 rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-wide text-white ${colorOp}`}>
-          {etiquetaOp}
+          {vendido ? labelVendido(p) : etiquetaOp}
         </span>
+        {vendido && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-label={labelVendido(p)}>
+            <div className="w-[150%] -rotate-[14deg] border-y-2 border-white bg-red-600 py-1.5 text-center text-2xl font-black uppercase tracking-[0.3em] text-white shadow-lg">
+              {labelVendido(p)}
+            </div>
+          </div>
+        )}
         {etiquetaFoto && (
           <span className="absolute bottom-3 left-3 rounded-md bg-black/75 px-2.5 py-1 text-[11px] font-semibold text-white">
             {etiquetaFoto}
@@ -52,12 +60,12 @@ export default function PropiedadCard({ propiedad: p }: { propiedad: Propiedad }
         {rural && p.hectareas ? (
           <p className="flex items-baseline gap-2">
             <span className="text-xl font-extrabold text-brand-black">{fmt(p.hectareas)} ha</span>
-            <span className="text-sm font-bold text-[#6b5a2a]">{formatearPrecio(p)}</span>
+            <span className={`text-sm font-bold ${vendido ? "text-brand-black/40 line-through" : "text-[#6b5a2a]"}`}>{formatearPrecio(p)}</span>
           </p>
         ) : (
-          <p className="text-xl font-extrabold text-brand-black">{formatearPrecio(p)}</p>
+          <p className={`text-xl font-extrabold ${vendido ? "text-brand-black/40 line-through" : "text-brand-black"}`}>{formatearPrecio(p)}</p>
         )}
-        {(p.anticipo || p.precioContado) && (
+        {!vendido && (p.anticipo || p.precioContado) && (
           <p className="mt-0.5 text-[13px] font-semibold text-brand-green-700">
             {[p.anticipo ? `Anticipo ${formatearMonto(p.anticipo, p.moneda)}` : null, p.precioContado ? `Contado ${formatearMonto(p.precioContado, p.moneda)}` : null]
               .filter(Boolean)
