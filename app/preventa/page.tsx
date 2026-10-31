@@ -14,11 +14,11 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "¡Próximamente Preventa! Terrenos 20×30 con escritura",
   description:
-    "Terrenos de 20×30 (600 m²) con escritura. Valor de preventa USD 12.000. Excelente zona y accesos: autopista, tren y Ruta 210. Anotate con anticipación para el mejor precio de lanzamiento.",
+    "Terrenos de 20×30 (600 m²) con escritura. Excelente zona y accesos: autopista, tren y Ruta 210. Anotate con anticipación para el mejor precio de lanzamiento.",
   alternates: { canonical: "/preventa" },
   openGraph: {
     title: "¡Próximamente Preventa! Terrenos 20×30 con escritura",
-    description: "Valor de preventa USD 12.000. Anotate con anticipación para acceder al mejor precio de lanzamiento.",
+    description: "Anotate con anticipación para acceder al mejor precio de lanzamiento.",
     images: [{ url: "/preventa/flyer.jpg", width: 600, height: 1066 }],
   },
 };
@@ -59,7 +59,7 @@ export default function PreventaPage() {
       <header className="hero">
         <div className="wrap hero-grid">
           <div>
-            <span className="tag">TERRENOS CON ESCRITURA · USD 12.000</span>
+            <span className="tag">TERRENOS CON ESCRITURA</span>
             <h1>¡Próximamente <span className="verde">preventa!</span></h1>
             <p className="bajada">Tu próximo terreno en una <b>ubicación estratégica</b>. Excelente zona y accesos.</p>
             <div className="accesos">
@@ -99,9 +99,7 @@ export default function PreventaPage() {
             <div className="big"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0E1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7" /><path d="M8 8h6" /><path d="M8 12h8" /><path d="M8 16h3" /><circle cx="18" cy="17" r="4" fill="#7AD63B" stroke="#0E1A2E" /><path d="M16.3 17l1.2 1.2 2.2-2.4" /></svg>Con escritura</div>
           </div>
           <div className="dato">
-            <small>VALOR DE PREVENTA</small>
-            <div className="precio">USD 12.000</div>
-            <span className="chip-lima">Precio de lanzamiento</span>
+            <div className="big"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0E1A2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 11l14-6v14L3 13z" /><path d="M7 13v5h3v-4" /><path d="M20 9v6" /></svg>Mejor precio de lanzamiento</div>
           </div>
         </div>
       </section>
@@ -110,7 +108,7 @@ export default function PreventaPage() {
         <div className="wrap form-grid">
           <div className="anotate">
             <h2><span>Anotate</span> con anticipación</h2>
-            <p>Registrá tu interés y asegurá el valor de preventa de <b>USD 12.000</b> por terreno antes de que abra la venta al público.</p>
+            <p>Registrá tu interés y accedé al mejor precio de lanzamiento antes de que abra la venta al público.</p>
             <ul className="beneficios">
               <li><Check />Prioridad para elegir tu lote</li>
               <li><Check />Precio y condiciones de preventa</li>
