@@ -36,6 +36,8 @@
 .pv .dato small { font-weight: 800; letter-spacing: 1.5px; font-size: 13px; color: var(--gris); }
 .pv .medida { font-weight: 900; font-size: clamp(44px, 6vw, 64px); line-height: 1; letter-spacing: -2px; }
 .pv .chip-lima { display: inline-block; background: var(--lima); color: var(--navy); font-weight: 800; padding: 4px 10px; border-radius: 4px; margin-top: 8px; font-size: 15px; align-self: flex-start; }
+.pv .precio { font-weight: 900; font-size: clamp(36px, 4.4vw, 46px); line-height: 1; letter-spacing: -1px; color: var(--navy); }
+.pv .anotate p b { color: var(--texto); }
 .pv .dato .big { font-weight: 900; font-size: 24px; line-height: 1.1; display: flex; align-items: center; gap: 12px; }
 
 .pv .seccion-form { padding: 56px 0 24px; }
