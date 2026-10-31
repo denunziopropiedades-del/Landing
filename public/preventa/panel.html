@@ -61,11 +61,11 @@
       <div class="stats">
         <div class="stat"><b id="s-total">0</b><span>Inscriptos</span></div>
         <div class="stat"><b id="s-hoy">0</b><span>Hoy</span></div>
-        <div class="stat"><b id="s-dup">0</b><span>DNI repetidos</span></div>
+        <div class="stat"><b id="s-dup">0</b><span>Teléfonos repetidos</span></div>
       </div>
       <div class="acciones">
         <label for="buscar" class="hidden">Buscar</label>
-        <input id="buscar" type="search" placeholder="Buscar nombre, DNI, email…" aria-label="Buscar">
+        <input id="buscar" type="search" placeholder="Buscar por teléfono, nombre o email…" aria-label="Buscar">
         <button class="sec" id="btn-refrescar" type="button">Actualizar</button>
         <button id="btn-excel" type="button">Descargar Excel</button>
       </div>
@@ -93,10 +93,24 @@ async function cargar(){
   render();
 }
 
+function telNorm(v){
+  let d = String(v ?? '').replace(/\D/g, '');
+  if (d.startsWith('54') && d.length >= 12) d = d.slice(2);
+  if (d.startsWith('9') && d.length === 11) d = d.slice(1);
+  if (d.startsWith('0')) d = d.slice(1);
+  if (d.length === 12) { for (const i of [2, 3, 4]) { if (d.substr(i, 2) === '15') { d = d.slice(0, i) + d.slice(i + 2); break; } } }
+  return d.length > 10 ? d.slice(-10) : d;
+}
+
 function render(){
   const q = document.getElementById('buscar').value.trim().toLowerCase();
-  const filtradas = q ? rows.filter(r => r.join(' ').toLowerCase().includes(q)) : rows;
-  const dupIdx = headers.indexOf('Duplicado (DNI)');
+  const telIdx = headers.indexOf('WhatsApp');
+  const qTel = telNorm(q);
+  // Si la búsqueda tiene números, compara también contra el teléfono normalizado
+  // (así "11 2742-4512", "+54 9 11 27424512" o "011 15 2742 4512" encuentran al mismo inscripto).
+  const filtradas = q ? rows.filter(r => r.join(' ').toLowerCase().includes(q) ||
+    (qTel.length >= 4 && telIdx !== -1 && telNorm(r[telIdx]).includes(qTel))) : rows;
+  const dupIdx = headers.findIndex(h => String(h).startsWith('Duplicado'));
   const hoy = new Date().toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric'});
   document.getElementById('s-total').textContent = rows.length;
   document.getElementById('s-hoy').textContent = rows.filter(r => String(r[0]).startsWith(hoy)).length;

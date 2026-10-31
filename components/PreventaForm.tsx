@@ -9,7 +9,7 @@ const PREVENTA = "Preventa terrenos 20x30 - Ruta 210";
 // Las consultas por WhatsApp se reparten al azar entre los dos números.
 const WHATSAPPS = ["5491127424512", "5491161365523"];
 
-type Campo = "nombre" | "apellido" | "dni" | "whatsapp" | "email" | "acepto";
+type Campo = "nombre" | "apellido" | "whatsapp" | "email" | "acepto";
 type Errores = Partial<Record<Campo, string>>;
 
 function validar(fd: FormData): Errores {
@@ -17,7 +17,6 @@ function validar(fd: FormData): Errores {
   const e: Errores = {};
   if (!v("nombre")) e.nombre = "Ingresá tu nombre";
   if (!v("apellido")) e.apellido = "Ingresá tu apellido";
-  if (!/^\d{7,8}$/.test(v("dni").replace(/\D/g, ""))) e.dni = "Ingresá un DNI válido (7 u 8 números)";
   if (v("whatsapp").replace(/\D/g, "").length < 8) e.whatsapp = "Ingresá un número de WhatsApp válido";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v("email"))) e.email = "Ingresá un email válido";
   if (!fd.get("acepto")) e.acepto = "Tenés que aceptar para inscribirte";
@@ -46,7 +45,6 @@ export default function PreventaForm() {
     const qs = new URLSearchParams(window.location.search);
     const data = new URLSearchParams();
     fd.forEach((val, key) => data.set(key, String(val)));
-    data.set("dni", String(fd.get("dni")).replace(/\D/g, ""));
     data.set("preventa", PREVENTA);
     data.set("pagina", window.location.href);
     ["utm_source", "utm_medium", "utm_campaign"].forEach((k) => data.set(k, qs.get(k) ?? ""));
@@ -104,11 +102,6 @@ export default function PreventaForm() {
           {err("apellido")}
         </div>
         <div>
-          <label htmlFor="dni">DNI <span className="req">*</span></label>
-          <input id="dni" name="dni" inputMode="numeric" placeholder="Sin puntos" className={cls("dni")} aria-invalid={!!errores.dni} aria-describedby={desc("dni")} />
-          {err("dni")}
-        </div>
-        <div>
           <label htmlFor="whatsapp">WhatsApp <span className="req">*</span></label>
           <input id="whatsapp" name="whatsapp" type="tel" inputMode="tel" autoComplete="tel" placeholder="Ej: 11 2345 6789" className={cls("whatsapp")} aria-invalid={!!errores.whatsapp} aria-describedby={desc("whatsapp")} />
           {err("whatsapp")}
@@ -117,10 +110,6 @@ export default function PreventaForm() {
           <label htmlFor="email">Email <span className="req">*</span></label>
           <input id="email" name="email" type="email" autoComplete="email" className={cls("email")} aria-invalid={!!errores.email} aria-describedby={desc("email")} />
           {err("email")}
-        </div>
-        <div>
-          <label htmlFor="localidad">Localidad</label>
-          <input id="localidad" name="localidad" autoComplete="address-level2" />
         </div>
         <div>
           <label htmlFor="lotes">¿Cuántos lotes te interesan?</label>
@@ -137,6 +126,10 @@ export default function PreventaForm() {
             <option value="Contado">Contado</option>
             <option value="A definir">A definir</option>
           </select>
+        </div>
+        <div className="full">
+          <label htmlFor="localidad">Localidad</label>
+          <input id="localidad" name="localidad" autoComplete="address-level2" />
         </div>
         <div className="full">
           <label htmlFor="comentarios">Comentarios</label>
