@@ -32,7 +32,7 @@ export default async function VisitasPage({ searchParams }: { searchParams: Prom
   const lista = elegido ? [elegido] : proyectos;
   const inicial = elegido ?? proyectos.find((p) => p.destacado) ?? proyectos[0];
 
-  // Todo lo visitable, ordenado por grupo: barrios, casas, campos y otras propiedades.
+  // Todo lo visitable, ordenado por grupo: barrios, casas, campos, terrenos y locales/galpones.
   // Dentro de cada grupo se respeta el orden del panel (destacadas primero). Las vendidas no se muestran.
   const disponibles = propiedades.filter((p) => !p.vendido);
   const deProp = (p: Propiedad, grupo: OpcionVisita["grupo"]): OpcionVisita => ({
@@ -47,9 +47,8 @@ export default async function VisitasPage({ searchParams }: { searchParams: Prom
     ...lista.map((p) => ({ clave: `proyecto:${p.id}`, tipo: "proyecto" as const, id: p.id, grupo: "barrios" as const, nombre: p.nombre, ubicacion: p.ubicacion })),
     ...disponibles.filter((p) => ["casa", "departamento", "ph"].includes(p.tipo)).map((p) => deProp(p, "casas")),
     ...disponibles.filter((p) => esRural(p.tipo)).map((p) => deProp(p, "campos")),
-    ...disponibles
-      .filter((p) => !esRural(p.tipo) && !["casa", "departamento", "ph"].includes(p.tipo))
-      .map((p) => deProp(p, "otras")),
+    ...disponibles.filter((p) => ["terreno", "lote_comercial"].includes(p.tipo)).map((p) => deProp(p, "terrenos")),
+    ...disponibles.filter((p) => ["local", "galpon"].includes(p.tipo)).map((p) => deProp(p, "comerciales")),
   ];
 
   return (

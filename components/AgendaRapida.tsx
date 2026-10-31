@@ -9,16 +9,17 @@ export type OpcionVisita = {
   clave: string;
   tipo: "proyecto" | "propiedad";
   id: string;
-  grupo: "barrios" | "casas" | "campos" | "otras";
+  grupo: "barrios" | "casas" | "campos" | "terrenos" | "comerciales";
   nombre: string;
   ubicacion: string;
 };
 
 const GRUPOS: { value: OpcionVisita["grupo"]; label: string }[] = [
   { value: "barrios", label: "Barrios y lotes" },
-  { value: "casas", label: "Casas" },
+  { value: "casas", label: "Casas y deptos" },
   { value: "campos", label: "Campos" },
-  { value: "otras", label: "Otras" },
+  { value: "terrenos", label: "Terrenos" },
+  { value: "comerciales", label: "Locales y galpones" },
 ];
 
 const TZ = "America/Argentina/Buenos_Aires";
