@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Panel de inscripciones · Preventa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{--verde:#0E1A2E;--trigo:#7AD63B;--crema:#F2F5EF;--texto:#0E1A2E;--gris:#5B6B60;--borde:#D5DCD3;--error:#B3261E}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Montserrat',system-ui,sans-serif;background:var(--crema);color:var(--texto)}
+  header{background:var(--verde);color:var(--crema);padding:18px 20px}
+  .wrap{max-width:1280px;margin:0 auto}
+  header .wrap{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  .logo{font-weight:900;font-size:20px;letter-spacing:1px}
+  .logo span{color:var(--trigo)}
+  main{padding:28px 20px}
+  .login{max-width:420px;margin:60px auto;background:#fff;border-radius:16px;padding:28px;box-shadow:0 10px 30px rgba(21,48,31,.1)}
+  .login h1{margin:0 0 16px;font-size:22px}
+  label{display:block;font-weight:700;font-size:14px;margin-bottom:6px}
+  input{width:100%;font:inherit;font-size:16px;padding:12px 14px;border:1.5px solid var(--borde);border-radius:10px;min-height:46px}
+  input:focus{outline:3px solid rgba(232,184,74,.45);border-color:var(--verde)}
+  button{font:inherit;font-weight:800;border:0;border-radius:10px;padding:12px 18px;min-height:46px;cursor:pointer;background:var(--trigo);color:var(--verde)}
+  button.sec{background:#fff;color:var(--verde);border:1.5px solid var(--verde)}
+  button:hover{filter:brightness(1.1)}
+  .login button{width:100%;margin-top:14px}
+  .err{color:var(--error);font-weight:600;margin-top:10px;min-height:1em}
+  .bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .stats{display:flex;gap:12px;flex-wrap:wrap}
+  .stat{background:#fff;border-radius:12px;padding:12px 18px;min-width:140px}
+  .stat b{display:block;font-size:30px;font-weight:900}
+  .stat span{color:var(--gris);font-size:13px;font-weight:600}
+  .acciones{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .acciones input{width:260px}
+  .tabla{background:#fff;border-radius:14px;overflow-x:auto}
+  table{border-collapse:collapse;width:100%;font-size:14px;white-space:nowrap}
+  th,td{padding:10px 12px;border-bottom:1px solid #ECEFEA;text-align:left}
+  th{background:#F7F5EF;position:sticky;top:0;font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:var(--gris)}
+  tr.dup td{background:#FFF6E0}
+  .vacio{padding:40px;text-align:center;color:var(--gris)}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<header><div class="wrap"><div class="logo">DE <span>NUNZIO</span> · Panel preventa</div><div id="titulo" style="font-weight:700"></div></div></header>
+
+<main class="wrap">
+  <form class="login" id="login">
+    <h1>Ingresar al panel</h1>
+    <label for="clave">Clave de administrador</label>
+    <input id="clave" type="password" autocomplete="current-password" required>
+    <button type="submit">Ver inscripciones</button>
+    <div class="err" id="login-err" role="alert"></div>
+  </form>
+
+  <section id="panel" class="hidden">
+    <div class="bar">
+      <div class="stats">
+        <div class="stat"><b id="s-total">0</b><span>Inscriptos</span></div>
+        <div class="stat"><b id="s-hoy">0</b><span>Hoy</span></div>
+        <div class="stat"><b id="s-dup">0</b><span>DNI repetidos</span></div>
+      </div>
+      <div class="acciones">
+        <label for="buscar" class="hidden">Buscar</label>
+        <input id="buscar" type="search" placeholder="Buscar nombre, DNI, email…" aria-label="Buscar">
+        <button class="sec" id="btn-refrescar" type="button">Actualizar</button>
+        <button id="btn-excel" type="button">Descargar Excel</button>
+      </div>
+    </div>
+    <div class="tabla"><table id="tabla"><thead></thead><tbody></tbody></table></div>
+  </section>
+</main>
+
+<script>
+/* ===== CONFIGURACIÓN ===== */
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyMhW9G4gXNZuP4H9oQ9mQTV7-tMpukxmnez-DlX4-aBcGsWkDqRfjisqflEpnfPhBt/exec';   // la misma de index.html
+const PREVENTA   = 'Preventa terrenos 20x30 - Ruta 210';
+/* ========================= */
+
+document.getElementById('titulo').textContent = PREVENTA;
+let headers = [], rows = [], clave = '';
+
+function ss(k, v){ try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch(e){ return null; } }
+
+async function cargar(){
+  const res = await fetch(SCRIPT_URL + '?key=' + encodeURIComponent(clave));
+  const out = await res.json();
+  if (!out.ok) throw new Error(out.error || 'Error');
+  headers = out.headers; rows = out.rows.reverse(); // más nuevas arriba
+  render();
+}
+
+function render(){
+  const q = document.getElementById('buscar').value.trim().toLowerCase();
+  const filtradas = q ? rows.filter(r => r.join(' ').toLowerCase().includes(q)) : rows;
+  const dupIdx = headers.indexOf('Duplicado (DNI)');
+  const hoy = new Date().toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric'});
+  document.getElementById('s-total').textContent = rows.length;
+  document.getElementById('s-hoy').textContent = rows.filter(r => String(r[0]).startsWith(hoy)).length;
+  document.getElementById('s-dup').textContent = rows.filter(r => r[dupIdx] === 'SÍ').length;
+
+  const thead = document.querySelector('#tabla thead');
+  const tbody = document.querySelector('#tabla tbody');
+  thead.innerHTML = ''; tbody.innerHTML = '';
+  const trh = document.createElement('tr');
+  headers.forEach(h => { const th = document.createElement('th'); th.textContent = h; trh.appendChild(th); });
+  thead.appendChild(trh);
+  if (!filtradas.length){
+    const tr = document.createElement('tr'); const td = document.createElement('td');
+    td.colSpan = headers.length; td.className = 'vacio'; td.textContent = rows.length ? 'Sin resultados para la búsqueda.' : 'Todavía no hay inscripciones.';
+    tr.appendChild(td); tbody.appendChild(tr); return;
+  }
+  filtradas.forEach(r => {
+    const tr = document.createElement('tr');
+    if (r[dupIdx] === 'SÍ') tr.className = 'dup';
+    r.forEach(c => { const td = document.createElement('td'); td.textContent = c; tr.appendChild(td); });
+    tbody.appendChild(tr);
+  });
+}
+
+/* ---- Exportación a Excel (.xlsx) sin librerías externas ---- */
+const CRC = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b){ let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function zip(files){ // files: [{name, data(Uint8Array)}], sin compresión
+  const enc = new TextEncoder(), partes = [], central = []; let off = 0;
+  const u16 = v => [v & 255, (v >> 8) & 255], u32 = v => [v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >>> 24) & 255];
+  files.forEach(f => {
+    const nm = enc.encode(f.name), crc = crc32(f.data), sz = f.data.length;
+    const loc = new Uint8Array([...u32(0x04034b50), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(sz), ...u32(sz), ...u16(nm.length), ...u16(0)]);
+    partes.push(loc, nm, f.data);
+    central.push(new Uint8Array([...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(sz), ...u32(sz), ...u16(nm.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), nm);
+    off += loc.length + nm.length + sz;
+  });
+  const cdSize = central.reduce((a, x) => a + x.length, 0);
+  const fin = new Uint8Array([...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(cdSize), ...u32(off), ...u16(0)]);
+  return new Blob([...partes, ...central, fin], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+function xmlEsc(v){ return String(v ?? '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function colRef(i){ let s = ''; i++; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+function excel(){
+  const data = [headers, ...rows], enc = new TextEncoder();
+  const anchos = headers.map((h, i) => Math.min(45, Math.max(...data.map(r => String(r[i] ?? '').length)) + 2));
+  const filas = data.map((r, ri) => '<row r="' + (ri + 1) + '">' + headers.map((_, ci) =>
+    '<c r="' + colRef(ci) + (ri + 1) + '" t="inlineStr"' + (ri === 0 ? ' s="1"' : '') + '><is><t xml:space="preserve">' + xmlEsc(r[ci]) + '</t></is></c>').join('') + '</row>').join('');
+  const ultimo = colRef(headers.length - 1) + data.length;
+  const sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>' +
+    anchos.map((w, i) => '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + w + '" customWidth="1"/>').join('') + '</cols><sheetData>' + filas + '</sheetData><autoFilter ref="A1:' + ultimo + '"/></worksheet>';
+  const files = [
+    ['[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'],
+    ['_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+    ['xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Inscripciones" sheetId="1" r:id="rId1"/></sheets><definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">Inscripciones!$A$1:$' + colRef(headers.length - 1) + '$' + data.length + '</definedName></definedNames></workbook>'],
+    ['xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'],
+    ['xl/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FF0E1A2E"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF7AD63B"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>'],
+    ['xl/worksheets/sheet1.xml', sheet]
+  ].map(([name, txt]) => ({ name, data: enc.encode(txt) }));
+  const fecha = new Date().toISOString().slice(0,10);
+  const nombre = PREVENTA.normalize('NFD').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_') || 'Preventa';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(zip(files));
+  a.download = 'Inscripciones_' + nombre + '_' + fecha + '.xlsx';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+document.getElementById('login').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clave = document.getElementById('clave').value;
+  const err = document.getElementById('login-err'); err.textContent = '';
+  try {
+    await cargar(); ss('pv_key', clave);
+    document.getElementById('login').classList.add('hidden');
+    document.getElementById('panel').classList.remove('hidden');
+  } catch(ex){ err.textContent = 'Clave incorrecta o no se pudo conectar.'; }
+});
+document.getElementById('buscar').addEventListener('input', render);
+document.getElementById('btn-excel').addEventListener('click', excel);
+document.getElementById('btn-refrescar').addEventListener('click', () => cargar().catch(() => alert('No se pudo actualizar')));
+
+const guardada = ss('pv_key');
+if (guardada){ document.getElementById('clave').value = guardada; document.getElementById('login').requestSubmit(); }
+</script>
+</body>
+</html>

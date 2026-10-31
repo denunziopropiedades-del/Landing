@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
       { source: "/proyectos/:slug", destination: "/desarrollos/:slug", permanent: true },
     ];
   },
+  // Panel de inscripciones de la preventa (página estática en public/preventa/panel.html, con clave propia).
+  async rewrites() {
+    return [{ source: "/preventa/panel", destination: "/preventa/panel.html" }];
+  },
   // pdfkit lee sus fuentes (.afm) desde node_modules: no se empaqueta para que encuentre esos archivos.
   serverExternalPackages: ["pdfkit"],
   outputFileTracingIncludes: {
