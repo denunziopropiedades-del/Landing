@@ -4,7 +4,22 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarCheck, Loader2, MapPin } from "lucide-react";
 import { HORARIOS_VISITA } from "@/lib/agenda";
 
-type ProyectoOpcion = { id: string; nombre: string; ubicacion: string };
+export type OpcionVisita = {
+  /** Identificador único en la lista ("proyecto:<id>" o "propiedad:<id>"). */
+  clave: string;
+  tipo: "proyecto" | "propiedad";
+  id: string;
+  grupo: "barrios" | "casas" | "campos" | "otras";
+  nombre: string;
+  ubicacion: string;
+};
+
+const GRUPOS: { value: OpcionVisita["grupo"]; label: string }[] = [
+  { value: "barrios", label: "Barrios y lotes" },
+  { value: "casas", label: "Casas" },
+  { value: "campos", label: "Campos" },
+  { value: "otras", label: "Otras" },
+];
 
 const TZ = "America/Argentina/Buenos_Aires";
 const DIAS_A_MOSTRAR = 14;
@@ -44,13 +59,13 @@ function proximosDias(desde: string) {
 const aMin = (h: string) => Number(h.slice(0, 2)) * 60 + Number(h.slice(3, 5));
 
 export default function AgendaRapida({
-  proyectos,
-  proyectoInicialId,
+  opciones,
+  opcionInicial,
   whatsappNumero,
   propiedad,
 }: {
-  proyectos: ProyectoOpcion[];
-  proyectoInicialId?: string;
+  opciones: OpcionVisita[];
+  opcionInicial?: string;
   whatsappNumero: string;
   /** Si viene desde la ficha de una propiedad: la visita es a esa propiedad (no se elige barrio). */
   propiedad?: { id: string; titulo: string; ubicacion: string };
@@ -58,7 +73,11 @@ export default function AgendaRapida({
   const ahora = useMemo(ahoraBuenosAires, []);
   const dias = useMemo(() => proximosDias(ahora.fecha), [ahora.fecha]);
 
-  const [proyectoId, setProyectoId] = useState(proyectoInicialId ?? proyectos[0]?.id ?? "");
+  const [clave, setClave] = useState(opcionInicial ?? opciones[0]?.clave ?? "");
+  const gruposConOpciones = GRUPOS.filter((g) => opciones.some((o) => o.grupo === g.value));
+  const [grupo, setGrupo] = useState<OpcionVisita["grupo"]>(
+    opciones.find((o) => o.clave === (opcionInicial ?? opciones[0]?.clave))?.grupo ?? gruposConOpciones[0]?.value ?? "barrios"
+  );
   const [fecha, setFecha] = useState("");
   const [horario, setHorario] = useState("");
   const [ocupados, setOcupados] = useState<string[]>([]);
@@ -91,7 +110,7 @@ export default function AgendaRapida({
   const manana = libres.filter((h) => aMin(h) < 13 * 60);
   const tarde = libres.filter((h) => aMin(h) >= 13 * 60);
 
-  const proyectoElegido = proyectos.find((p) => p.id === proyectoId);
+  const proyectoElegido = opciones.find((o) => o.clave === clave);
   const proyecto = propiedad ? { nombre: propiedad.titulo, ubicacion: propiedad.ubicacion } : proyectoElegido;
   const dia = dias.find((d) => d.iso === fecha);
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
@@ -107,8 +126,8 @@ export default function AgendaRapida({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          proyectoId: propiedad ? undefined : proyectoId || undefined,
-          propiedadId: propiedad?.id,
+          proyectoId: propiedad || proyectoElegido?.tipo !== "proyecto" ? undefined : proyectoElegido.id,
+          propiedadId: propiedad?.id ?? (proyectoElegido?.tipo === "propiedad" ? proyectoElegido.id : undefined),
           nombre,
           telefono,
           email,
@@ -191,28 +210,51 @@ export default function AgendaRapida({
         </div>
       )}
 
-      {!propiedad && proyectos.length > 1 && (
-        <Paso numero={1} titulo="¿Qué barrio querés conocer?">
+      {!propiedad && opciones.length > 1 && (
+        <Paso numero={1} titulo="¿Qué querés visitar?">
+          {gruposConOpciones.length > 1 && (
+            <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1">
+              {gruposConOpciones.map((g) => {
+                const cantidad = opciones.filter((o) => o.grupo === g.value).length;
+                return (
+                  <button
+                    key={g.value}
+                    type="button"
+                    onClick={() => setGrupo(g.value)}
+                    className={`shrink-0 rounded-full border-2 px-4 py-2 text-sm font-semibold transition ${
+                      grupo === g.value
+                        ? "border-brand-black bg-brand-black text-white"
+                        : "border-black/10 bg-white text-brand-black"
+                    }`}
+                  >
+                    {g.label} <span className="opacity-60">({cantidad})</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <div className="grid gap-2">
-            {proyectos.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setProyectoId(p.id)}
-                className={`${chip(proyectoId === p.id)} flex items-center gap-3 px-4 py-3 text-left`}
-              >
-                <MapPin className="h-5 w-5 shrink-0" />
-                <span>
-                  <span className="block font-bold">{p.nombre}</span>
-                  <span className={`text-xs ${proyectoId === p.id ? "text-white/80" : "text-brand-black/60"}`}>{p.ubicacion}</span>
-                </span>
-              </button>
-            ))}
+            {opciones
+              .filter((o) => gruposConOpciones.length <= 1 || o.grupo === grupo)
+              .map((p) => (
+                <button
+                  key={p.clave}
+                  type="button"
+                  onClick={() => setClave(p.clave)}
+                  className={`${chip(clave === p.clave)} flex items-center gap-3 px-4 py-3 text-left`}
+                >
+                  <MapPin className="h-5 w-5 shrink-0" />
+                  <span>
+                    <span className="block font-bold">{p.nombre}</span>
+                    <span className={`text-xs ${clave === p.clave ? "text-white/80" : "text-brand-black/60"}`}>{p.ubicacion}</span>
+                  </span>
+                </button>
+              ))}
           </div>
         </Paso>
       )}
 
-      <Paso numero={proyectos.length > 1 ? 2 : 1} titulo="Elegí el día">
+      <Paso numero={opciones.length > 1 ? 2 : 1} titulo="Elegí el día">
         <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
           {dias.map((d) => (
             <button
@@ -230,7 +272,7 @@ export default function AgendaRapida({
       </Paso>
 
       {fecha && (
-        <Paso numero={proyectos.length > 1 ? 3 : 2} titulo="Elegí el horario">
+        <Paso numero={opciones.length > 1 ? 3 : 2} titulo="Elegí el horario">
           {cargando ? (
             <p className="flex items-center gap-2 text-sm text-brand-black/60">
               <Loader2 className="h-4 w-4 animate-spin" /> Buscando horarios libres…
@@ -269,7 +311,7 @@ export default function AgendaRapida({
       )}
 
       {horario && (
-        <Paso numero={proyectos.length > 1 ? 4 : 3} titulo="Tus datos">
+        <Paso numero={opciones.length > 1 ? 4 : 3} titulo="Tus datos">
           <div className="space-y-3">
             <input
               value={nombre}
