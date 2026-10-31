@@ -9,7 +9,7 @@ const PREVENTA = "Preventa terrenos 20x30 - Ruta 210";
 // Las consultas por WhatsApp se reparten al azar entre los dos números.
 const WHATSAPPS = ["5491127424512", "5491161365523"];
 
-type Campo = "nombre" | "apellido" | "whatsapp" | "email" | "acepto";
+type Campo = "nombre" | "apellido" | "anticipo" | "whatsapp" | "email" | "acepto";
 type Errores = Partial<Record<Campo, string>>;
 
 function validar(fd: FormData): Errores {
@@ -17,6 +17,7 @@ function validar(fd: FormData): Errores {
   const e: Errores = {};
   if (!v("nombre")) e.nombre = "Ingresá tu nombre";
   if (!v("apellido")) e.apellido = "Ingresá tu apellido";
+  if (!v("anticipo")) e.anticipo = "Elegí una opción";
   if (v("whatsapp").replace(/\D/g, "").length < 8) e.whatsapp = "Ingresá un número de WhatsApp válido";
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v("email"))) e.email = "Ingresá un email válido";
   if (!fd.get("acepto")) e.acepto = "Tenés que aceptar para inscribirte";
@@ -102,6 +103,15 @@ export default function PreventaForm() {
           {err("apellido")}
         </div>
         <div>
+          <label htmlFor="anticipo">¿Contás con anticipo? <span className="req">*</span></label>
+          <select id="anticipo" name="anticipo" defaultValue="" className={cls("anticipo")} aria-invalid={!!errores.anticipo} aria-describedby={desc("anticipo")}>
+            <option value="" disabled>Elegí una opción</option>
+            <option value="Sí">Sí</option>
+            <option value="No">No</option>
+          </select>
+          {err("anticipo")}
+        </div>
+        <div>
           <label htmlFor="whatsapp">WhatsApp <span className="req">*</span></label>
           <input id="whatsapp" name="whatsapp" type="tel" inputMode="tel" autoComplete="tel" placeholder="Ej: 11 2345 6789" className={cls("whatsapp")} aria-invalid={!!errores.whatsapp} aria-describedby={desc("whatsapp")} />
           {err("whatsapp")}
@@ -110,6 +120,10 @@ export default function PreventaForm() {
           <label htmlFor="email">Email <span className="req">*</span></label>
           <input id="email" name="email" type="email" autoComplete="email" className={cls("email")} aria-invalid={!!errores.email} aria-describedby={desc("email")} />
           {err("email")}
+        </div>
+        <div>
+          <label htmlFor="localidad">Localidad</label>
+          <input id="localidad" name="localidad" autoComplete="address-level2" />
         </div>
         <div>
           <label htmlFor="lotes">¿Cuántos lotes te interesan?</label>
@@ -126,10 +140,6 @@ export default function PreventaForm() {
             <option value="Contado">Contado</option>
             <option value="A definir">A definir</option>
           </select>
-        </div>
-        <div className="full">
-          <label htmlFor="localidad">Localidad</label>
-          <input id="localidad" name="localidad" autoComplete="address-level2" />
         </div>
         <div className="full">
           <label htmlFor="comentarios">Comentarios</label>
