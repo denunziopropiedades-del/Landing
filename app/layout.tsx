@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Poppins } from "next/font/google";
+import { Inter, Montserrat } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { getSiteTextos } from "@/lib/content";
@@ -11,10 +11,10 @@ const inter = Inter({
   display: "swap",
 });
 
-const poppins = Poppins({
+const montserrat = Montserrat({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["600", "700", "800", "900"],
   display: "swap",
 });
 
@@ -90,7 +90,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const textos = await getSiteTextos();
 
   return (
-    <html lang="es-AR" className={`${inter.variable} ${poppins.variable} h-full antialiased`}>
+    <html lang="es-AR" className={`${inter.variable} ${montserrat.variable} h-full antialiased`}>
       <head>
         <script
           type="application/ld+json"

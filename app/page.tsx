@@ -46,12 +46,14 @@ export default async function PortalHome() {
           <div className="absolute inset-0 bg-gradient-to-r from-brand-black via-brand-black/80 to-brand-black/30" aria-hidden />
           <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-transparent" aria-hidden />
           <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-28 sm:px-6 sm:pb-20 sm:pt-36 lg:px-8">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-gold-400">Inmobiliaria · Departamento Judicial La Plata</p>
-            <h1 className="mt-4 max-w-3xl font-display text-4xl font-bold leading-[1.05] text-white sm:text-6xl">
-              Tu próxima propiedad, en tu zona.
+            <p className="inline-block -skew-x-6 bg-brand-gold-500 px-3 py-1 text-xs font-extrabold uppercase italic tracking-[0.2em] text-brand-black">
+              <span className="inline-block skew-x-6">Inmobiliaria · Departamento Judicial La Plata</span>
+            </p>
+            <h1 className="mt-4 max-w-3xl font-display text-4xl font-extrabold leading-[1.05] text-white sm:text-6xl">
+              Tu próxima propiedad, <span className="text-brand-gold-500">en tu zona.</span>
             </h1>
             <p className="mt-4 max-w-2xl text-lg text-white/75">
-              ¿Querés comprar, vender o alquilar? Consultanos sin compromiso.
+              ¿Querés comprar, vender o alquilar? <span className="font-semibold text-brand-gold-400">Consultanos sin compromiso.</span>
             </p>
             <div className="mt-8 max-w-5xl">
               <BuscadorPropiedades />

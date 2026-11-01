@@ -11,7 +11,7 @@ import type { CategoriaPunto, PuntoMapa } from "@/lib/mapa";
 
 export const CATEGORIAS: { value: CategoriaPunto; label: string; color: string }[] = [
   { value: "desarrollo", label: "Desarrollos", color: "#c9a14a" },
-  { value: "venta", label: "En venta", color: "#154a2e" },
+  { value: "venta", label: "En venta", color: "#16294f" },
   { value: "alquiler", label: "En alquiler", color: "#2f5d8a" },
   { value: "campo", label: "Campos", color: "#8a5a1c" },
 ];
@@ -103,16 +103,16 @@ export default function MapaPuntos({ puntos, alto = 520, compacto = false }: { p
         className: "",
         iconSize: grande ? [34, 34] : [24, 24],
         iconAnchor: grande ? [17, 17] : [12, 12],
-        html: `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:999px;background:${cat.color};border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);${p.aproximado ? "outline:2px dashed " + cat.color + ";outline-offset:3px;" : ""}">${grande ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0b0f0d" stroke-width="2.4"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>' : ""}</span>`,
+        html: `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:999px;background:${cat.color};border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);${p.aproximado ? "outline:2px dashed " + cat.color + ";outline-offset:3px;" : ""}">${grande ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0f1e3d" stroke-width="2.4"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>' : ""}</span>`,
       });
       const foto = p.foto ? `<img src="${esc(p.foto)}" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:10px;margin-bottom:8px" loading="lazy">` : "";
       const html = `<div style="width:220px;font-family:inherit">${foto}
         <span style="display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#fff;background:${cat.color};border-radius:999px;padding:2px 8px">${cat.label.replace(/^En /, "")}</span>
-        <div style="margin-top:6px;font-weight:700;font-size:14px;line-height:1.25;color:#0b0f0d">${esc(p.titulo)}</div>
+        <div style="margin-top:6px;font-weight:700;font-size:14px;line-height:1.25;color:#0f1e3d">${esc(p.titulo)}</div>
         <div style="margin-top:2px;font-size:12px;color:#555">${esc(p.detalle)}</div>
-        ${p.precio ? `<div style="margin-top:4px;font-weight:800;font-size:14px;color:#0b0f0d">${esc(p.precio)}</div>` : ""}
+        ${p.precio ? `<div style="margin-top:4px;font-weight:800;font-size:14px;color:#0f1e3d">${esc(p.precio)}</div>` : ""}
         ${p.aproximado ? '<div style="margin-top:4px;font-size:11px;color:#8a5a1c">Ubicación aproximada (zona)</div>' : ""}
-        <a href="${esc(p.href)}" style="display:block;margin-top:8px;text-align:center;background:#0b0f0d;color:#fff;border-radius:999px;padding:7px 0;font-size:12px;font-weight:700;text-decoration:none">Ver publicación</a></div>`;
+        <a href="${esc(p.href)}" style="display:block;margin-top:8px;text-align:center;background:#0f1e3d;color:#fff;border-radius:999px;padding:7px 0;font-size:12px;font-weight:700;text-decoration:none">Ver publicación</a></div>`;
       L.marker([p.lat, p.lng], { icon: icono, title: p.titulo, riseOnHover: true }).bindPopup(html, { maxWidth: 240 }).addTo(capa.current);
     }
     if (visibles.length) {

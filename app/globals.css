@@ -2,7 +2,7 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #0a0a0a;
+  --foreground: #0f1e3d;
 }
 
 @theme inline {
@@ -11,22 +11,24 @@
 
   --font-sans: var(--font-inter);
 
-  /* Institutional palette */
-  --color-brand-black: #0b0f0d;
-  --color-brand-black-soft: #161b18;
-  --color-brand-green-950: #06120c;
-  --color-brand-green-900: #0a2318;
-  --color-brand-green-800: #0f3823;
-  --color-brand-green-700: #154a2e;
-  --color-brand-green-600: #1c5c39;
-  --color-brand-green-500: #237046;
-  --color-brand-gold-100: #faf1d9;
-  --color-brand-gold-300: #eed49a;
-  --color-brand-gold-400: #e2bd6c;
-  --color-brand-gold-500: #d4af37;
-  --color-brand-gold-600: #b8912a;
-  --color-brand-gold-700: #96741f;
-  --color-brand-cream: #f7f5f0;
+  /* Paleta institucional: azul marino + verde lima (estética PREVENTA).
+     Los nombres green/gold se mantienen por compatibilidad: green = escala marino, gold = escala lima. */
+  --color-brand-black: #0f1e3d;
+  --color-brand-black-soft: #192c4e;
+  --color-brand-green-50: #eef2f9;
+  --color-brand-green-950: #070f20;
+  --color-brand-green-900: #0b1630;
+  --color-brand-green-800: #0f1e3d;
+  --color-brand-green-700: #16294f;
+  --color-brand-green-600: #1f3a68;
+  --color-brand-green-500: #2b4c86;
+  --color-brand-gold-100: #ecfadf;
+  --color-brand-gold-300: #b5ef8e;
+  --color-brand-gold-400: #8de25f;
+  --color-brand-gold-500: #7bd43c;
+  --color-brand-gold-600: #5fb526;
+  --color-brand-gold-700: #3f7f15;
+  --color-brand-cream: #f3f5f9;
 
   --animate-fade-up: fade-up 0.7s ease-out both;
   --animate-marquee: marquee 30s linear infinite;
@@ -63,7 +65,8 @@ html {
 }
 
 .font-display {
-  font-family: var(--font-display), Georgia, serif;
+  font-family: var(--font-display), Arial, sans-serif;
+  letter-spacing: -0.01em;
 }
 
 ::selection {

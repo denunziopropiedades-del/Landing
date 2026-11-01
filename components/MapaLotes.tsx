@@ -178,7 +178,7 @@ export default function MapaLotes({
           backgroundColor: COLOR_ESTADO[lote.estado],
           opacity: seleccionado?.id === lote.id || enReserva ? 0.9 : 0.6,
           borderColor: enReserva
-            ? "#154a2e"
+            ? "#16294f"
             : seleccionado?.id === lote.id
               ? "#fff"
               : "color-mix(in srgb, " + COLOR_ESTADO[lote.estado] + " 70%, black)",
