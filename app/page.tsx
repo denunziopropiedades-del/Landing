@@ -18,7 +18,7 @@ import MapaPuntos from "@/components/mapa/MapaPuntos";
 
 export const revalidate = 60;
 
-const IMAGEN_HERO = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2400&auto=format&fit=crop";
+const IMAGEN_HERO = "https://images.unsplash.com/photo-1758518730083-4c12527b6742?q=80&w=2400&auto=format&fit=crop";
 
 export default async function PortalHome() {
   // Portada limpia: solo lo marcado como destacado. El resto está en Comprar, Alquilar, Campos y Desarrollos.

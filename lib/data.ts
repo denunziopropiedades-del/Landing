@@ -142,30 +142,30 @@ export const faqsSeed: FaqItem[] = [
   {
     id: "demo-f1",
     proyectoId: null,
-    pregunta: "¿Tiene escritura?",
+    pregunta: "¿Mi operación es segura?",
     respuesta:
-      "Sí, todos nuestros lotes se entregan con escritura garantizada, brindando plena seguridad jurídica a la inversión.",
+      "Sí, 100%. Cada operación la realiza y la acompaña un profesional: Martillero Público y Corredor Inmobiliario matriculado (COL 7886). Tenés total seguridad jurídica de principio a fin: vos elegís tu propiedad y nosotros nos ocupamos de que todo esté en regla.",
   },
   {
     id: "demo-f2",
     proyectoId: null,
     pregunta: "¿Cómo es la financiación?",
     respuesta:
-      "Ofrecemos planes de financiación propia con anticipo y cuotas fijas. Usá la calculadora de cada proyecto para simular tu plan.",
+      "Tenemos varios planes y los ajustamos a tu bolsillo. Contanos cuánto podés pagar y llegamos juntos a un número que nos sirva a ambos. Consultanos sin compromiso: siempre hay una forma de empezar.",
   },
   {
     id: "demo-f3",
     proyectoId: null,
-    pregunta: "¿Puedo visitar el proyecto?",
+    pregunta: "¿Cuándo puedo visitar?",
     respuesta:
-      "Sí, coordinamos visitas guiadas todos los días. Podés agendar tu visita desde la web o directamente por WhatsApp.",
+      "¡Todos los días! Elegí el día y el horario que más te convenga en nuestro calendario online y reservá tu visita en menos de un minuto. Te esperamos para que lo conozcas en persona.",
   },
   {
     id: "demo-f4",
     proyectoId: null,
-    pregunta: "¿Cómo se reserva un lote?",
+    pregunta: "¿Cómo reservo mi lote?",
     respuesta:
-      "Podés reservar online seleccionando manzana y lote, o coordinar con nuestro equipo comercial vía WhatsApp.",
+      "Es muy simple: elegí manzana y lote en la web y reservalo online, o escribinos por WhatsApp y te ayudamos a asegurarlo. Los mejores lotes se reservan primero, no te quedes afuera.",
   },
 ];
 
