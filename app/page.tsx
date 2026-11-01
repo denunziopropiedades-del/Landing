@@ -51,8 +51,7 @@ export default async function PortalHome() {
               Tu próxima propiedad, en tu zona.
             </h1>
             <p className="mt-4 max-w-2xl text-lg text-white/75">
-              Casas, departamentos y campos en venta y alquiler, y lotes en desarrollos con escritura. 14 partidos, un solo martillero
-              público.
+              ¿Querés comprar, vender o alquilar? Consultanos sin compromiso.
             </p>
             <div className="mt-8 max-w-5xl">
               <BuscadorPropiedades />
