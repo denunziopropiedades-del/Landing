@@ -13,6 +13,7 @@ export const PUESTOS = [
   { value: "martillero", label: "Martillero/a Público/a", grupo: "Profesionales" },
   { value: "albanil", label: "Albañil", grupo: "Construcción" },
   { value: "pintor", label: "Pintor/a", grupo: "Construcción" },
+  { value: "ayudante", label: "Ayudante de construcción", grupo: "Construcción" },
   { value: "otro", label: "Otro / candidatura espontánea", grupo: "Otros" },
 ] as const;
 
