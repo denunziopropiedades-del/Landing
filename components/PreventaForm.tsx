@@ -59,7 +59,10 @@ export default function PreventaForm() {
     // Compatibilidad con el script publicado en Google (versión que exige DNI):
     // el teléfono normalizado va como "dni" (sirve para detectar repetidos por teléfono)
     // y la respuesta de anticipo se agrega al principio de los comentarios.
-    data.set("dni", telControl(String(fd.get("whatsapp") ?? "")));
+    const tel = telControl(String(fd.get("whatsapp") ?? ""));
+    data.set("dni", tel);
+    // Sin "+" adelante: Google Sheets lo tomaría como fórmula (#ERROR!).
+    data.set("whatsapp", tel);
     const coment = String(fd.get("comentarios") ?? "").trim();
     data.set("comentarios", `Anticipo: ${String(fd.get("anticipo") ?? "")}${coment ? " · " + coment : ""}`);
     data.set("preventa", PREVENTA);
