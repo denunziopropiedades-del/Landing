@@ -16,7 +16,7 @@ const PUNTOS = [
   { icono: HandCoins, titulo: "Comisiones competitivas", texto: "Ganás por cada operación que cerrás, con liquidación clara y en término." },
   { icono: GraduationCap, titulo: "Capacitación", texto: "Te formamos en ventas, tasaciones y el día a día de la inmobiliaria." },
   { icono: MapPinned, titulo: "Desarrollos propios", texto: "Lotes, casas y campos en San Vicente, Guernica, Brandsen, Cañuelas y más." },
-  { icono: TrendingUp, titulo: "Leads todos los días", texto: "Trabajás con consultas reales que llegan desde la web y las redes." },
+  { icono: TrendingUp, titulo: "Consultas todos los días", texto: "Trabajás con consultas reales que llegan desde la web y las redes." },
 ];
 
 export default async function PostulantesPage({ searchParams }: { searchParams: Promise<{ puesto?: string }> }) {
