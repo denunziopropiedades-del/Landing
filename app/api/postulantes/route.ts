@@ -41,6 +41,7 @@ export async function POST(request: Request) {
     experiencia: texto("experiencia"),
     disponibilidad: texto("disponibilidad"),
     movilidad: form.get("movilidad") === "si",
+    matricula: texto("matricula"),
     linkedin: texto("linkedin"),
     mensaje: texto("mensaje"),
   });
@@ -86,6 +87,7 @@ export async function POST(request: Request) {
       experiencia: data.experiencia,
       disponibilidad: data.disponibilidad,
       movilidad: data.movilidad,
+      matricula: data.matricula ?? null,
       linkedin: data.linkedin ?? null,
       mensaje: data.mensaje ?? null,
       cv_path: cvPath,
@@ -110,6 +112,7 @@ export async function POST(request: Request) {
          <li><b>Experiencia:</b> ${esc(labelDe(EXPERIENCIAS, data.experiencia))}</li>
          <li><b>Disponibilidad:</b> ${esc(labelDe(DISPONIBILIDADES, data.disponibilidad))}</li>
          <li><b>Movilidad propia:</b> ${data.movilidad ? "Sí" : "No"}</li>
+         ${data.matricula ? `<li><b>Matrícula:</b> ${esc(data.matricula)}</li>` : ""}
          ${data.linkedin ? `<li><b>LinkedIn:</b> ${esc(data.linkedin)}</li>` : ""}
          <li><b>CV:</b> ${cvPath ? "adjuntado (descargalo desde el panel)" : "no adjuntó"}</li>
        </ul>

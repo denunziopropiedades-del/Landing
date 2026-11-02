@@ -2,13 +2,20 @@ import { z } from "zod";
 
 /** Puestos que se ofrecen en "Trabajá con nosotros". */
 export const PUESTOS = [
-  { value: "asesor-comercial", label: "Asesor/a comercial inmobiliario/a" },
-  { value: "vendedor-lotes", label: "Vendedor/a de lotes (desarrollos)" },
-  { value: "captador", label: "Captador/a de propiedades" },
-  { value: "marketing", label: "Marketing digital / redes" },
-  { value: "administrativo", label: "Administración y cobranzas" },
-  { value: "otro", label: "Otro / candidatura espontánea" },
+  { value: "asesor-comercial", label: "Asesor/a comercial inmobiliario/a", grupo: "Equipo comercial" },
+  { value: "vendedor-lotes", label: "Vendedor/a de lotes (desarrollos)", grupo: "Equipo comercial" },
+  { value: "captador", label: "Captador/a de propiedades", grupo: "Equipo comercial" },
+  { value: "marketing", label: "Marketing digital / redes", grupo: "Equipo comercial" },
+  { value: "administrativo", label: "Administración y cobranzas", grupo: "Equipo comercial" },
+  { value: "abogado", label: "Abogado/a", grupo: "Profesionales y oficios" },
+  { value: "agrimensor", label: "Agrimensor/a", grupo: "Profesionales y oficios" },
+  { value: "martillero", label: "Martillero/a Público/a", grupo: "Profesionales y oficios" },
+  { value: "albanil", label: "Albañil", grupo: "Profesionales y oficios" },
+  { value: "pintor", label: "Pintor/a", grupo: "Profesionales y oficios" },
+  { value: "otro", label: "Otro / candidatura espontánea", grupo: "Otros" },
 ] as const;
+
+export const GRUPOS_PUESTOS = ["Equipo comercial", "Profesionales y oficios", "Otros"] as const;
 
 export const DISPONIBILIDADES = [
   { value: "completa", label: "Jornada completa" },
@@ -19,9 +26,9 @@ export const DISPONIBILIDADES = [
 
 export const EXPERIENCIAS = [
   { value: "sin-experiencia", label: "Sin experiencia (con ganas de aprender)" },
-  { value: "ventas", label: "Experiencia en ventas en general" },
-  { value: "inmobiliaria-1", label: "Experiencia inmobiliaria (menos de 2 años)" },
-  { value: "inmobiliaria-2", label: "Experiencia inmobiliaria (2 años o más)" },
+  { value: "menos-2", label: "Menos de 2 años" },
+  { value: "2-5", label: "De 2 a 5 años" },
+  { value: "mas-5", label: "Más de 5 años" },
 ] as const;
 
 export const ESTADOS_POSTULANTE = [
@@ -31,6 +38,9 @@ export const ESTADOS_POSTULANTE = [
   { value: "incorporado", label: "Incorporado" },
   { value: "descartado", label: "Descartado" },
 ] as const;
+
+/** Puestos que piden matrícula profesional. */
+export const PUESTOS_CON_MATRICULA = ["abogado", "agrimensor", "martillero"];
 
 export type EstadoPostulante = (typeof ESTADOS_POSTULANTE)[number]["value"];
 
@@ -49,6 +59,7 @@ export const postulanteSchema = z.object({
   experiencia: z.enum(valores(EXPERIENCIAS)),
   disponibilidad: z.enum(valores(DISPONIBILIDADES)),
   movilidad: z.boolean(),
+  matricula: z.string().trim().max(120).optional(),
   linkedin: z.string().trim().max(300).optional(),
   mensaje: z.string().trim().max(2000).optional(),
 });
@@ -73,6 +84,7 @@ export type Postulante = {
   experiencia: string | null;
   disponibilidad: string | null;
   movilidad: boolean | null;
+  matricula: string | null;
   linkedin: string | null;
   mensaje: string | null;
   cvPath: string | null;
@@ -94,6 +106,7 @@ export function mapPostulante(r: any): Postulante {
     experiencia: r.experiencia,
     disponibilidad: r.disponibilidad,
     movilidad: r.movilidad,
+    matricula: r.matricula ?? null,
     linkedin: r.linkedin,
     mensaje: r.mensaje,
     cvPath: r.cv_path,

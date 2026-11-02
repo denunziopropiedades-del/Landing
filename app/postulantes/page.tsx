@@ -3,12 +3,12 @@ import { GraduationCap, HandCoins, MapPinned, TrendingUp } from "lucide-react";
 import PaginaPortal from "@/components/propiedades/PaginaPortal";
 import PostulanteForm from "@/components/PostulanteForm";
 import { getSiteTextos } from "@/lib/content";
-import { PUESTOS } from "@/lib/postulantes";
+import { GRUPOS_PUESTOS, PUESTOS } from "@/lib/postulantes";
 
 export const metadata: Metadata = {
   title: "Trabajá con nosotros",
   description:
-    "Sumate al equipo de De Nunzio Negocios Inmobiliarios: asesores comerciales, venta de lotes, captación, marketing y administración en Zona Sur.",
+    "Sumate al equipo de De Nunzio Negocios Inmobiliarios: asesores comerciales, venta de lotes, abogados, agrimensores, martilleros y oficios en Zona Sur.",
   alternates: { canonical: "/postulantes" },
 };
 
@@ -30,8 +30,9 @@ export default async function PostulantesPage({ searchParams }: { searchParams: 
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-green-700">Trabajá con nosotros</p>
           <h1 className="mt-2 font-display text-3xl font-bold text-brand-black sm:text-5xl">Sumate a nuestro equipo</h1>
           <p className="mt-3 max-w-xl text-lg text-brand-black/65">
-            Buscamos personas con ganas de crecer en el rubro inmobiliario. Completá el formulario, adjuntá tu CV y te
-            contactamos si tu perfil coincide con lo que buscamos.
+            Buscamos personas con ganas de crecer en el rubro inmobiliario, y profesionales y oficios para trabajar en
+            nuestras operaciones y desarrollos. Completá el formulario, adjuntá tu CV y te contactamos si tu perfil
+            coincide con lo que buscamos.
           </p>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -50,21 +51,26 @@ export default async function PostulantesPage({ searchParams }: { searchParams: 
 
           <div className="mt-8">
             <p className="font-display text-lg font-bold text-brand-black">Puestos</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {PUESTOS.map((p) => (
-                <a
-                  key={p.value}
-                  href={`/postulantes?puesto=${p.value}#formulario`}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    p.value === puestoInicial
-                      ? "bg-brand-green-700 text-white"
-                      : "bg-white text-brand-black/75 hover:bg-brand-green-700/10 hover:text-brand-green-700"
-                  }`}
-                >
-                  {p.label}
-                </a>
-              ))}
-            </div>
+            {GRUPOS_PUESTOS.map((g) => (
+              <div key={g} className="mt-3">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-black/50">{g}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {PUESTOS.filter((p) => p.grupo === g).map((p) => (
+                    <a
+                      key={p.value}
+                      href={`/postulantes?puesto=${p.value}#formulario`}
+                      className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                        p.value === puestoInicial
+                          ? "bg-brand-green-700 text-white"
+                          : "bg-white text-brand-black/75 hover:bg-brand-green-700/10 hover:text-brand-green-700"
+                      }`}
+                    >
+                      {p.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

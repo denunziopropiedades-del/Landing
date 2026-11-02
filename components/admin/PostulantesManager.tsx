@@ -7,6 +7,7 @@ import {
   DISPONIBILIDADES,
   ESTADOS_POSTULANTE,
   EXPERIENCIAS,
+  GRUPOS_PUESTOS,
   PUESTOS,
   labelDe,
   type EstadoPostulante,
@@ -106,10 +107,14 @@ export default function PostulantesManager({ postulantes, puedeEliminar }: { pos
           className="h-10 rounded-lg border border-black/10 bg-white px-3 text-sm"
         >
           <option value="">Todos los puestos</option>
-          {PUESTOS.map((p) => (
-            <option key={p.value} value={p.value}>
-              {p.label}
-            </option>
+          {GRUPOS_PUESTOS.map((g) => (
+            <optgroup key={g} label={g}>
+              {PUESTOS.filter((p) => p.grupo === g).map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </div>
@@ -185,6 +190,9 @@ export default function PostulantesManager({ postulantes, puedeEliminar }: { pos
                         <Car className="h-4 w-4" />
                         <span>{p.movilidad ? "Tiene movilidad propia" : "Sin movilidad propia"}</span>
                       </div>
+                      {p.matricula && (
+                        <div><dt className="inline font-semibold">Matrícula: </dt><dd className="inline">{p.matricula}</dd></div>
+                      )}
                       {p.linkedin && (
                         <div>
                           <dt className="inline font-semibold">Perfil: </dt>

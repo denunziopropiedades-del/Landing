@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { CheckCircle2, FileUp, Loader2, X } from "lucide-react";
-import { CV_MAX_BYTES, DISPONIBILIDADES, EXPERIENCIAS, PUESTOS } from "@/lib/postulantes";
+import { CV_MAX_BYTES, DISPONIBILIDADES, EXPERIENCIAS, GRUPOS_PUESTOS, PUESTOS, PUESTOS_CON_MATRICULA } from "@/lib/postulantes";
 
 const input =
   "h-12 w-full rounded-xl border border-black/10 bg-white px-4 text-[15px] focus:border-brand-green-600 focus:outline-none";
@@ -13,6 +13,7 @@ export default function PostulanteForm({ puestoInicial = "" }: { puestoInicial?:
   const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [cv, setCv] = useState<File | null>(null);
+  const [puesto, setPuesto] = useState(puestoInicial);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const elegirCv = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,14 +69,18 @@ export default function PostulanteForm({ puestoInicial = "" }: { puestoInicial?:
 
       <div>
         <span className={label}>Puesto que te interesa</span>
-        <select name="puesto" required defaultValue={puestoInicial} className={input}>
+        <select name="puesto" required value={puesto} onChange={(e) => setPuesto(e.target.value)} className={input}>
           <option value="" disabled>
             Elegí un puesto…
           </option>
-          {PUESTOS.map((p) => (
-            <option key={p.value} value={p.value}>
-              {p.label}
-            </option>
+          {GRUPOS_PUESTOS.map((g) => (
+            <optgroup key={g} label={g}>
+              {PUESTOS.filter((p) => p.grupo === g).map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </div>
@@ -127,6 +132,9 @@ export default function PostulanteForm({ puestoInicial = "" }: { puestoInicial?:
         </label>
       </fieldset>
 
+      {PUESTOS_CON_MATRICULA.includes(puesto) && (
+        <input name="matricula" required placeholder="Matrícula (n.º y colegio / departamento judicial)" className={input} />
+      )}
       <input name="linkedin" placeholder="LinkedIn o Instagram profesional (opcional)" className={input} />
       <textarea
         name="mensaje"
