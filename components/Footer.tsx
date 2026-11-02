@@ -15,6 +15,7 @@ export default function Footer({ textos }: { textos: SiteTextos }) {
             ["/zonas", "Zonas"],
             ["/tasaciones", "Tasaciones"],
             ["/visitas", "Agendar visita"],
+            ["/postulantes", "Trabajá con nosotros"],
           ].map(([href, label]) => (
             <Link key={href} href={href} className="hover:text-white">
               {label}

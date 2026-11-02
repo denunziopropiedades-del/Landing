@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   Activity,
   BarChart3,
+  Briefcase,
   Building2,
   House as HomeIcon,
   Calculator,
@@ -55,6 +56,7 @@ const nav: { href: string; label: string; icon: typeof LayoutDashboard; roles?: 
   { href: "/admin/faqs", label: "Preguntas frecuentes", icon: HelpCircle, roles: ["administrador", "supervisor"] },
   { href: "/admin/novedades", label: "Novedades", icon: Newspaper, roles: ["administrador", "supervisor"] },
   { href: "/admin/newsletter", label: "Newsletter", icon: Mail, roles: ["administrador", "supervisor"] },
+  { href: "/admin/postulantes", label: "Postulantes (RR.HH.)", icon: Briefcase, roles: ["administrador", "supervisor"] },
   { href: "/admin/propiedades", label: "Propiedades y campos", icon: HomeIcon },
   { href: "/admin/proyectos", label: "Desarrollos", icon: Building2, roles: ["administrador", "supervisor"] },
   { href: "/admin/usuarios", label: "Usuarios y roles", icon: Users, roles: ["administrador"] },
