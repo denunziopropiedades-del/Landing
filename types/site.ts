@@ -248,6 +248,21 @@ export type Lead = {
   proximoVencimientoCuota?: string | null;
   /** Link de pago de la seña (Mercado Pago) generado al reservar, para reenviarlo por WhatsApp. */
   linkPagoSena?: string | null;
+  /** Canal por el que llegó (meta, instagram, google, preventa…) y campaña. */
+  origen?: string | null;
+  utmCampaign?: string | null;
+  /** Cuántas consultas repetidas de esta persona se sumaron a esta ficha. */
+  consultasUnificadas?: number;
+  /** Qué busca el cliente, para cruzarlo con los lotes disponibles. */
+  busqueda?: BusquedaLead;
+};
+
+export type BusquedaLead = {
+  presupuestoUsd: number | null;
+  zona: string | null;
+  pago: "contado" | "cuotas" | "ambas" | null;
+  anticipo: "si" | "no" | null;
+  notas: string | null;
 };
 
 /** Una cuota del cuotario de un cliente financiado. */

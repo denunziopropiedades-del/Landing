@@ -24,6 +24,7 @@ import { buildWhatsappClienteUrl } from "@/lib/whatsapp";
 import { formatMoneda } from "@/lib/utils";
 import type { EstadoLead, Lead, Lote, Perfil, PlanFinanciacionFijo, Proyecto, Rol } from "@/types/site";
 import PlanFinanciacionCampos, { planAEditable, type PlanEditable } from "@/components/admin/PlanFinanciacionCampos";
+import PerfilBusquedaLead, { EtiquetasOrigen } from "@/components/admin/PerfilBusquedaLead";
 
 /** Propiedades (venta, alquiler, campos…) para elegir qué le interesa a cada lead. */
 export type OpcionPropiedad = { id: string; titulo: string; grupo: "venta" | "alquiler" | "campo" };
@@ -363,6 +364,7 @@ function LeadCard({
         {lead.manzana && <p>Manzana: {lead.manzana}</p>}
         {lead.loteNumero && <p>Lote: {lead.loteNumero}</p>}
       </div>
+      <EtiquetasOrigen lead={lead} />
 
       {/* Alternativa a arrastrar la tarjeta: en el celular no se puede arrastrar
           (el drag-and-drop nativo no funciona por touch), así que este selector
@@ -905,6 +907,8 @@ function LeadCard({
               </div>
             </div>
           )}
+
+          <PerfilBusquedaLead lead={lead} onActualizado={onActualizado} />
 
           <textarea
             value={observaciones}

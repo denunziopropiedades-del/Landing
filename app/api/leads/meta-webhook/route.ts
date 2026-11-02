@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardarLeadUnificado } from "@/lib/leads";
 import { enviarEtapaCrm } from "@/lib/meta-capi";
 import crypto from "node:crypto";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
@@ -98,8 +99,9 @@ export async function POST(request: Request) {
       const telefono = extraerCampo(campos, "phone_number", "teléfono", "telefono") ?? "";
 
       if (supabase) {
-        await supabase.from("leads").insert({
+        await guardarLeadUnificado(supabase, {
           tipo: "meta",
+          origen: "meta_lead_ads",
           external_id: leadgenId,
           nombre,
           email,

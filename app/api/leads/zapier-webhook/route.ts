@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardarLeadUnificado } from "@/lib/leads";
 import { enviarEtapaCrm } from "@/lib/meta-capi";
 import crypto from "node:crypto";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
@@ -112,8 +113,10 @@ export async function POST(request: Request) {
   if (conocidos.ciudad) detalles.push(`Ciudad: ${conocidos.ciudad}`);
   detalles.push(...extra);
 
-  const { error: insertError } = await supabase.from("leads").insert({
+  const { error: insertErrorMsg } = await guardarLeadUnificado(supabase, {
     tipo: "meta",
+    origen: "meta_lead_ads",
+    utm_campaign: conocidos.campana ?? null,
     external_id: leadId ?? null,
     nombre,
     email: email || "sin-email@matulotes.app",
@@ -121,6 +124,7 @@ export async function POST(request: Request) {
     estado: "nuevo",
     observaciones: ["Lead recibido desde Zapier (formulario de Meta Ads).", ...detalles].join("\n"),
   });
+  const insertError = insertErrorMsg ? { message: insertErrorMsg } : null;
 
   if (insertError) {
     console.error("zapier-webhook: no se pudo insertar el lead", insertError);

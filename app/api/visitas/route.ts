@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardarLeadUnificado, origenDesdeRequest } from "@/lib/leads";
 import { visitaSchema } from "@/lib/schemas";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { NOTA_COORDINACION_VISITA_HTML, NOTA_RESERVA_LOTE_HTML, sendEmail, sendNotificationEmail } from "@/lib/email";
@@ -72,13 +73,16 @@ export async function POST(request: Request) {
         .join("\n"),
       estado: "visita_programada",
     };
-    let { data: lead, error: errorLead } = await supabase
-      .from("leads")
-      .insert(data.propiedadId && propiedadTexto ? { ...filaLead, propiedad_id: data.propiedadId } : filaLead)
-      .select("id")
-      .single();
+    const origen = origenDesdeRequest(request);
+    let resLead = await guardarLeadUnificado(
+      supabase,
+      data.propiedadId && propiedadTexto ? { ...filaLead, propiedad_id: data.propiedadId } : filaLead,
+      origen
+    );
     // Si todavía no existe la columna propiedad_id, se guarda igual (el dato queda en observaciones).
-    if (errorLead && data.propiedadId) ({ data: lead, error: errorLead } = await supabase.from("leads").insert(filaLead).select("id").single());
+    if (resLead.error && data.propiedadId) resLead = await guardarLeadUnificado(supabase, filaLead, origen);
+    const lead = resLead.id ? { id: resLead.id } : null;
+    const errorLead = resLead.error ? { message: resLead.error } : null;
     if (errorLead || !lead) {
       return NextResponse.json({ error: errorLead?.message ?? "No se pudo registrar la visita." }, { status: 500 });
     }

@@ -69,10 +69,23 @@ export default function PreventaForm() {
     data.set("pagina", window.location.href);
     ["utm_source", "utm_medium", "utm_campaign"].forEach((k) => data.set(k, qs.get(k) ?? ""));
 
+    // 1) CRM (principal). 2) Copia en la planilla de Google (si falla, no importa).
+    const crm = new FormData();
+    fd.forEach((val, key) => crm.set(key, String(val)));
+    crm.set("preventa", PREVENTA);
+    crm.set("pagina", window.location.href);
+    ["utm_source", "utm_medium", "utm_campaign"].forEach((k) => crm.set(k, qs.get(k) ?? ""));
+
+    const enviarCrm = fetch("/api/preventa", { method: "POST", body: crm })
+      .then(async (r) => r.ok && ((await r.json()) as { ok?: boolean }).ok === true)
+      .catch(() => false);
+    const enviarPlanilla = fetch(SCRIPT_URL, { method: "POST", body: data })
+      .then(async (r) => ((await r.json()) as { ok?: boolean }).ok === true)
+      .catch(() => false);
+
     try {
-      const res = await fetch(SCRIPT_URL, { method: "POST", body: data });
-      const out = (await res.json()) as { ok: boolean };
-      if (!out.ok) throw new Error("rechazado");
+      const [okCrm, okPlanilla] = await Promise.all([enviarCrm, enviarPlanilla]);
+      if (!okCrm && !okPlanilla) throw new Error("rechazado");
       const numero = WHATSAPPS[Math.floor(Math.random() * WHATSAPPS.length)];
       const texto = `Hola! Me anoté a la preventa de terrenos 20x30. Te escribo desde: ${window.location.href}`;
       setWaHref(`https://wa.me/${numero}?text=${encodeURIComponent(texto)}`);

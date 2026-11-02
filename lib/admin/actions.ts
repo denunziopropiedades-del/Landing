@@ -2717,3 +2717,49 @@ export async function eliminarCuotaAction(cuotaId: string): Promise<ActionResult
     return fail(err);
   }
 }
+
+
+/** Perfil de búsqueda del cliente (presupuesto, zona, forma de pago, anticipo) y su origen. */
+export async function actualizarBusquedaLeadAction(
+  id: string,
+  datos: {
+    presupuestoUsd: string;
+    zona: string;
+    pago: string;
+    anticipo: string;
+    notas: string;
+    origen?: string;
+  }
+): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    await verificarPropiedadLead(actor.id, actor.rol, id);
+    const presupuesto = datos.presupuestoUsd.trim() ? Number(datos.presupuestoUsd.replace(/[^\d.]/g, "")) : null;
+    if (presupuesto !== null && (!Number.isFinite(presupuesto) || presupuesto < 0)) {
+      throw new AdminActionError("El presupuesto tiene que ser un número en dólares.");
+    }
+    const fila: Record<string, unknown> = {
+      busqueda_presupuesto_usd: presupuesto,
+      busqueda_zona: datos.zona.trim().slice(0, 120) || null,
+      busqueda_pago: ["contado", "cuotas", "ambas"].includes(datos.pago) ? datos.pago : null,
+      busqueda_anticipo: ["si", "no"].includes(datos.anticipo) ? datos.anticipo : null,
+      busqueda_notas: datos.notas.trim().slice(0, 1000) || null,
+      actualizado_en: new Date().toISOString(),
+    };
+    if (datos.origen !== undefined) fila.origen = datos.origen.trim().slice(0, 40) || null;
+    const admin = (await getSupabaseAdminClient())!;
+    const { error } = await admin.from("leads").update(fila).eq("id", id);
+    if (error) {
+      if (/column|schema cache/i.test(error.message)) {
+        throw new AdminActionError("Falta correr sql-crm-mejoras.sql en Supabase para guardar el perfil de búsqueda.");
+      }
+      throw new Error(error.message);
+    }
+    await registrarActividad(actor, "actualizar", "lead", id, { busqueda: true, ...(await contextoLead(admin, id)) });
+    revalidatePath("/admin/crm");
+    revalidatePath("/admin/coincidencias");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}

@@ -3,6 +3,7 @@ import { consultaPropiedadSchema } from "@/lib/schemas";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { guardarLeadUnificado, origenDesdeRequest } from "@/lib/leads";
 import { formatearPrecio, labelTipo, mapPropiedad, ubicacionTexto, type TipoPropiedad } from "@/lib/propiedades";
 import { nombrePartido } from "@/lib/zonas";
 
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
   }
 
   if (supabase) {
-    const fila: Record<string, string> = {
+    const fila: Record<string, unknown> = {
       tipo: "contacto",
       nombre: data.nombre,
       email: data.email,
@@ -52,12 +53,11 @@ export async function POST(request: Request) {
       observaciones: [resumen, data.mensaje ? `Mensaje: ${data.mensaje}` : null].filter(Boolean).join("\n"),
       estado: "nuevo",
     };
-    let { error } = await supabase
-      .from("leads")
-      .insert(data.propiedadId ? { ...fila, propiedad_id: data.propiedadId } : fila);
+    const origen = origenDesdeRequest(request);
+    let { error } = await guardarLeadUnificado(supabase, data.propiedadId ? { ...fila, propiedad_id: data.propiedadId } : fila, origen);
     // Si todavía no se corrió sql-propiedades.sql, la columna propiedad_id no existe: se guarda sin ella.
-    if (error && data.propiedadId) ({ error } = await supabase.from("leads").insert(fila));
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error && data.propiedadId) ({ error } = await guardarLeadUnificado(supabase, fila, origen));
+    if (error) return NextResponse.json({ error }, { status: 500 });
   }
 
   try {

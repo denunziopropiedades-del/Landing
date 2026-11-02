@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import { getSiteTextos } from "@/lib/content";
 import FloatingWidgets from "@/components/FloatingWidgets";
+import OrigenTracker from "@/components/OrigenTracker";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -116,6 +117,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');${META_PIXEL_IDS.map((id) => `fbq('init', '${id}');`).join("")}fbq('track', 'PageView');`}
           </Script>
         )}
+        <OrigenTracker />
         {children}
         <FloatingWidgets mensaje={textos.whatsappMensajeDefault} numero={textos.whatsappNumero} />
       </body>

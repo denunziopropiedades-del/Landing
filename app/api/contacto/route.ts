@@ -3,6 +3,7 @@ import { contactoSchema } from "@/lib/schemas";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { guardarLeadUnificado, origenDesdeRequest } from "@/lib/leads";
 
 export async function POST(request: Request) {
   const rate = await checkRateLimit(request, "contacto");
@@ -21,20 +22,24 @@ export async function POST(request: Request) {
 
   const supabase = await getSupabaseAdminClient();
   if (supabase) {
-    const { error } = await supabase.from("leads").insert({
-      tipo: "contacto",
-      nombre: data.nombre,
-      email: data.email,
-      telefono: data.telefono,
-      mensaje: data.mensaje,
-      // El tablero de leads muestra "observaciones", así que el mensaje va ahí también.
-      observaciones: [data.quiereVisita ? "✅ Quiere agendar una visita." : null, `Mensaje: ${data.mensaje}`]
-        .filter(Boolean)
-        .join("\n"),
-      estado: "nuevo",
-    });
+    const { error } = await guardarLeadUnificado(
+      supabase,
+      {
+        tipo: "contacto",
+        nombre: data.nombre,
+        email: data.email,
+        telefono: data.telefono,
+        mensaje: data.mensaje,
+        // El tablero de leads muestra "observaciones", así que el mensaje va ahí también.
+        observaciones: [data.quiereVisita ? "✅ Quiere agendar una visita." : null, `Mensaje: ${data.mensaje}`]
+          .filter(Boolean)
+          .join("\n"),
+        estado: "nuevo",
+      },
+      origenDesdeRequest(request)
+    );
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error }, { status: 500 });
     }
   }
 
