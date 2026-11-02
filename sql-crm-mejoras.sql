@@ -49,3 +49,47 @@ create index if not exists leads_telefono_norm_idx on leads (telefono_norm);
 
 -- Origen de los leads que ya existían (lo que se puede deducir con seguridad).
 update leads set origen = 'meta_lead_ads' where origen is null and tipo = 'meta';
+
+-- Unificar las fichas repetidas que ya existían: SOLO consultas (ninguna con venta, reserva, lote, DNI ni cuotas).
+-- Queda la ficha más avanzada (o la más nueva) con las observaciones de las demás; las visitas pasan a esa ficha.
+do $$
+declare
+  g record;
+  queda uuid;
+  otras uuid[];
+  textos text;
+begin
+  for g in
+    select l.telefono_norm
+    from leads l
+    where l.telefono_norm is not null and length(l.telefono_norm) >= 8
+    group by l.telefono_norm
+    having count(*) > 1
+       and bool_and(l.estado in ('nuevo', 'contactado', 'visita_programada', 'visita_realizada', 'descartado'))
+       and bool_and(l.lote_id is null and l.dni is null)
+       and not exists (select 1 from cuotas c join leads x on x.id = c.lead_id where x.telefono_norm = l.telefono_norm)
+       and not exists (select 1 from lead_lotes ll join leads x on x.id = ll.lead_id where x.telefono_norm = l.telefono_norm)
+  loop
+    select id into queda from leads
+    where telefono_norm = g.telefono_norm
+    order by array_position(array['descartado', 'nuevo', 'contactado', 'visita_programada', 'visita_realizada'], estado) desc, creado_en desc
+    limit 1;
+
+    select array_agg(id), string_agg(
+      '🔁 Consulta anterior (' || to_char(creado_en at time zone 'America/Argentina/Buenos_Aires', 'DD/MM/YYYY') || ', ' || tipo || ', ' || estado || '):' || chr(10) || coalesce(observaciones, ''),
+      chr(10) || chr(10) order by creado_en)
+    into otras, textos
+    from leads where telefono_norm = g.telefono_norm and id <> queda;
+
+    update leads set
+      observaciones = concat_ws(chr(10) || chr(10), observaciones, textos),
+      consultas_unificadas = consultas_unificadas + coalesce(array_length(otras, 1), 0),
+      asignado_a = coalesce(asignado_a, (select asignado_a from leads where id = any(otras) and asignado_a is not null limit 1)),
+      actualizado_en = now()
+    where id = queda;
+
+    update visitas set lead_id = queda where lead_id = any(otras);
+    update documentos_generados set lead_id = queda where lead_id = any(otras);
+    delete from leads where id = any(otras);
+  end loop;
+end $$;
