@@ -7,6 +7,7 @@ export const PUESTOS = [
   { value: "captador", label: "Captador/a de propiedades", grupo: "Equipo comercial" },
   { value: "marketing", label: "Marketing digital / redes", grupo: "Equipo comercial" },
   { value: "administrativo", label: "Administración y cobranzas", grupo: "Equipo comercial" },
+  { value: "recepcionista", label: "Recepcionista", grupo: "Equipo comercial" },
   { value: "abogado", label: "Abogado/a", grupo: "Profesionales" },
   { value: "agrimensor", label: "Agrimensor/a", grupo: "Profesionales" },
   { value: "martillero", label: "Martillero/a Público/a", grupo: "Profesionales" },
