@@ -8,7 +8,7 @@ import { GRUPOS_PUESTOS, PUESTOS } from "@/lib/postulantes";
 export const metadata: Metadata = {
   title: "Trabajá con nosotros",
   description:
-    "Sumate al equipo de De Nunzio Negocios Inmobiliarios: asesores comerciales, venta de lotes, abogados, agrimensores, martilleros y oficios en Zona Sur.",
+    "Sumate al equipo de De Nunzio Negocios Inmobiliarios: asesores comerciales, venta de lotes, abogados, agrimensores, martilleros, albañiles y pintores en Zona Sur.",
   alternates: { canonical: "/postulantes" },
 };
 
@@ -30,8 +30,8 @@ export default async function PostulantesPage({ searchParams }: { searchParams: 
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-green-700">Trabajá con nosotros</p>
           <h1 className="mt-2 font-display text-3xl font-bold text-brand-black sm:text-5xl">Sumate a nuestro equipo</h1>
           <p className="mt-3 max-w-xl text-lg text-brand-black/65">
-            Buscamos personas con ganas de crecer en el rubro inmobiliario, y profesionales y oficios para trabajar en
-            nuestras operaciones y desarrollos. Completá el formulario, adjuntá tu CV y te contactamos si tu perfil
+            Buscamos personas con ganas de crecer en el rubro inmobiliario, profesionales para nuestras operaciones y
+            gente de construcción para nuestros desarrollos. Completá el formulario, adjuntá tu CV y te contactamos si tu perfil
             coincide con lo que buscamos.
           </p>
 

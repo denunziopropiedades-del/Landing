@@ -7,15 +7,15 @@ export const PUESTOS = [
   { value: "captador", label: "Captador/a de propiedades", grupo: "Equipo comercial" },
   { value: "marketing", label: "Marketing digital / redes", grupo: "Equipo comercial" },
   { value: "administrativo", label: "Administración y cobranzas", grupo: "Equipo comercial" },
-  { value: "abogado", label: "Abogado/a", grupo: "Profesionales y oficios" },
-  { value: "agrimensor", label: "Agrimensor/a", grupo: "Profesionales y oficios" },
-  { value: "martillero", label: "Martillero/a Público/a", grupo: "Profesionales y oficios" },
-  { value: "albanil", label: "Albañil", grupo: "Profesionales y oficios" },
-  { value: "pintor", label: "Pintor/a", grupo: "Profesionales y oficios" },
+  { value: "abogado", label: "Abogado/a", grupo: "Profesionales" },
+  { value: "agrimensor", label: "Agrimensor/a", grupo: "Profesionales" },
+  { value: "martillero", label: "Martillero/a Público/a", grupo: "Profesionales" },
+  { value: "albanil", label: "Albañil", grupo: "Construcción" },
+  { value: "pintor", label: "Pintor/a", grupo: "Construcción" },
   { value: "otro", label: "Otro / candidatura espontánea", grupo: "Otros" },
 ] as const;
 
-export const GRUPOS_PUESTOS = ["Equipo comercial", "Profesionales y oficios", "Otros"] as const;
+export const GRUPOS_PUESTOS = ["Equipo comercial", "Profesionales", "Construcción", "Otros"] as const;
 
 export const DISPONIBILIDADES = [
   { value: "completa", label: "Jornada completa" },
