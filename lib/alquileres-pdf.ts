@@ -33,6 +33,7 @@ function fila(doc: PDFKit.PDFDocument, etiqueta: string, valor: string, negrita 
   doc.fontSize(10.5).fillColor("#333333").font("Helvetica").text(etiqueta, 50, y, { width: 330 });
   doc.font(negrita ? "Helvetica-Bold" : "Helvetica").text(valor, 380, y, { width: 165, align: "right" });
   doc.moveDown(0.35);
+  doc.x = 50;
 }
 
 /** Recibo de pago del alquiler de un mes. */
@@ -95,8 +96,8 @@ export async function generarLiquidacionPdf(d: {
   doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor("#dddddd").lineWidth(1).stroke();
   doc.moveDown(0.4);
   fila(doc, "Total cobrado", formatoMonto(l.cobrado, m));
-  fila(doc, `Comisión de administración (${contrato.comisionAdminPct}%)`, `− ${formatoMonto(l.comision, m)}`);
-  if (l.gastos) fila(doc, `Gastos${l.gastosDetalle ? `: ${l.gastosDetalle}` : ""}`, `− ${formatoMonto(l.gastos, m)}`);
+  fila(doc, `Comisión de administración (${contrato.comisionAdminPct}%)`, `- ${formatoMonto(l.comision, m)}`);
+  if (l.gastos) fila(doc, `Gastos${l.gastosDetalle ? `: ${l.gastosDetalle}` : ""}`, `- ${formatoMonto(l.gastos, m)}`);
   doc.moveDown(0.3);
   fila(doc, "NETO A RENDIR AL PROPIETARIO", formatoMonto(l.neto, m), true);
   doc.moveDown(0.8);
