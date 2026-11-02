@@ -9,6 +9,16 @@ const PREVENTA = "Preventa terrenos 20x30 - Ruta 210";
 // Las consultas por WhatsApp se reparten al azar entre los dos números.
 const WHATSAPPS = ["5491127424512", "5491161365523"];
 
+// Deja el celular en 10 dígitos (ej. 1127424512) aunque lo escriban con +54 9, 0 o 15.
+function telControl(v: string): string {
+  let d = v.replace(/\D/g, "");
+  if (d.startsWith("54")) d = d.slice(2);
+  if (d.startsWith("9")) d = d.slice(1);
+  if (d.startsWith("0")) d = d.slice(1);
+  if (d.length === 12 && d.slice(2, 4) === "15") d = d.slice(0, 2) + d.slice(4);
+  return d.slice(-10);
+}
+
 type Campo = "nombre" | "apellido" | "anticipo" | "whatsapp" | "email" | "acepto";
 type Errores = Partial<Record<Campo, string>>;
 
@@ -46,6 +56,12 @@ export default function PreventaForm() {
     const qs = new URLSearchParams(window.location.search);
     const data = new URLSearchParams();
     fd.forEach((val, key) => data.set(key, String(val)));
+    // Compatibilidad con el script publicado en Google (versión que exige DNI):
+    // el teléfono normalizado va como "dni" (sirve para detectar repetidos por teléfono)
+    // y la respuesta de anticipo se agrega al principio de los comentarios.
+    data.set("dni", telControl(String(fd.get("whatsapp") ?? "")));
+    const coment = String(fd.get("comentarios") ?? "").trim();
+    data.set("comentarios", `Anticipo: ${String(fd.get("anticipo") ?? "")}${coment ? " · " + coment : ""}`);
     data.set("preventa", PREVENTA);
     data.set("pagina", window.location.href);
     ["utm_source", "utm_medium", "utm_campaign"].forEach((k) => data.set(k, qs.get(k) ?? ""));
