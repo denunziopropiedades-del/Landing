@@ -79,6 +79,12 @@ export async function POST(request: Request) {
     const leadId = payment.external_reference;
     if (!leadId) return NextResponse.json({ ok: true });
 
+    // Pago de un alquiler (administración de alquileres): external_reference = "alq:<id del mes>".
+    if (leadId.startsWith("alq:")) {
+      await registrarPagoAlquilerMp(leadId.slice(4), String(payment.id ?? dataId), Number(payment.transaction_amount ?? 0));
+      return NextResponse.json({ ok: true });
+    }
+
     const supabase = await getSupabaseAdminClient();
     if (!supabase) return NextResponse.json({ ok: true });
 
@@ -188,5 +194,52 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("Error procesando webhook de Mercado Pago", err);
     return NextResponse.json({ ok: true });
+  }
+}
+
+
+/** Registra (una sola vez) el pago de un mes de alquiler hecho por Mercado Pago y avisa por mail. */
+async function registrarPagoAlquilerMp(cuotaId: string, pagoId: string, monto: number) {
+  const supabase = await getSupabaseAdminClient();
+  if (!supabase) return;
+  const { data: cuota } = await supabase
+    .from("alq_cuotas")
+    .select("id, periodo, pagado_en, recibo_numero, mp_pago_id, alq_contratos(direccion, inquilino:alq_personas!alq_contratos_inquilino_id_fkey(nombre, email, token))")
+    .eq("id", cuotaId)
+    .maybeSingle();
+  if (!cuota || cuota.pagado_en || cuota.mp_pago_id === pagoId) return;
+
+  let recibo = cuota.recibo_numero as number | null;
+  if (!recibo) {
+    const { data: nro } = await supabase.rpc("alq_siguiente_recibo");
+    recibo = nro ? Number(nro) : null;
+  }
+  const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date());
+  await supabase
+    .from("alq_cuotas")
+    .update({ pagado_en: hoy, pagado_monto: monto, medio_pago: "mercadopago", mp_pago_id: pagoId, recibo_numero: recibo })
+    .eq("id", cuotaId)
+    .is("pagado_en", null);
+  await registrarActividadSistema("cobrar", "alquiler_cuota", cuotaId, { monto, medio: "mercadopago", pagoId });
+
+  const contrato = cuota.alq_contratos as unknown as { direccion: string; inquilino: { nombre: string; email: string | null; token: string } } | null;
+  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://matulotes.app").replace(/\/+$/, "");
+  const periodo = String(cuota.periodo).slice(0, 7);
+  try {
+    await sendNotificationEmail(
+      `Alquiler cobrado por Mercado Pago: ${contrato?.direccion ?? ""} (${periodo})`,
+      `<p>${contrato?.inquilino?.nombre ?? "El inquilino"} pagó el alquiler de ${periodo} de <b>${contrato?.direccion ?? ""}</b> por Mercado Pago: $ ${monto.toLocaleString("es-AR")}.</p>
+       <p><a href="${site}/admin/alquileres">Ver en el panel → Administración de alquileres</a></p>`
+    );
+    if (contrato?.inquilino?.email) {
+      await sendEmail(
+        contrato.inquilino.email,
+        `Recibimos tu pago del alquiler (${periodo})`,
+        `<p>Hola ${contrato.inquilino.nombre}, recibimos tu pago del alquiler de ${periodo} de ${contrato.direccion}: $ ${monto.toLocaleString("es-AR")}.</p>
+         <p><a href="${site}/api/alquileres/recibo/${cuotaId}?t=${contrato.inquilino.token}">Descargar recibo</a> · <a href="${site}/mi-alquiler/${contrato.inquilino.token}">Ver mi cuenta</a></p>`
+      );
+    }
+  } catch (err) {
+    console.error("No se pudo avisar el pago del alquiler", err);
   }
 }

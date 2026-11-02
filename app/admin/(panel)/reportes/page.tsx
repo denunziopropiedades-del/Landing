@@ -1,6 +1,7 @@
 import { Download, FileText, Users } from "lucide-react";
 import { getLeads, getProyectosAdmin } from "@/lib/admin/data";
 import ReportesCharts from "@/components/admin/ReportesCharts";
+import ReporteOrigen from "@/components/admin/ReporteOrigen";
 
 const ESTADOS = [
   "nuevo",
@@ -29,6 +30,8 @@ export default async function AdminReportesPage() {
       <div className="mt-8">
         <ReportesCharts leads={leads} proyectos={proyectos} />
       </div>
+
+      <ReporteOrigen leads={leads} />
 
       <form
         action="/api/leads/exportar"

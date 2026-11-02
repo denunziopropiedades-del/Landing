@@ -26,6 +26,8 @@ const nextConfig: NextConfig = {
     "/api/mercadopago/webhook": ["./node_modules/pdfkit/js/data/**/*"],
     "/api/leads/exportar-pdf": ["./node_modules/pdfkit/js/data/**/*"],
     "/api/documentos/pdf": ["./node_modules/pdfkit/js/data/**/*"],
+    "/api/alquileres/recibo/[id]": ["./node_modules/pdfkit/js/data/**/*"],
+    "/api/alquileres/liquidacion/[id]": ["./node_modules/pdfkit/js/data/**/*"],
   },
 };
 

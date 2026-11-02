@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/recordatorio-cuotas",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/alquileres",
+      "schedule": "0 13 * * *"
     }
   ]
 }
