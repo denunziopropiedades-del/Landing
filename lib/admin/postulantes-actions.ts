@@ -85,8 +85,8 @@ export async function linksImagenesAction(
     return {
       ok: true,
       imagenes: data
-        .map((d, i) => ({ nombre: lista[i]?.nombre ?? "imagen", url: d.signedUrl }))
-        .filter((d) => !!d.url),
+        .map((d, i) => ({ nombre: lista[i]?.nombre ?? "imagen", url: d.signedUrl ?? "" }))
+        .filter((d) => d.url !== ""),
     };
   } catch (err) {
     return fail(err);
