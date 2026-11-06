@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Car, Download, Loader2, Mail, MessageCircle, Search, Trash2 } from "lucide-react";
+import { Car, Download, Image as ImageIcon, Loader2, Mail, MessageCircle, Search, Trash2 } from "lucide-react";
 import {
   DISPONIBILIDADES,
   ESTADOS_POSTULANTE,
@@ -13,7 +13,12 @@ import {
   type EstadoPostulante,
   type Postulante,
 } from "@/lib/postulantes";
-import { actualizarPostulanteAction, eliminarPostulanteAction, linkCvAction } from "@/lib/admin/postulantes-actions";
+import {
+  actualizarPostulanteAction,
+  eliminarPostulanteAction,
+  linkCvAction,
+  linksImagenesAction,
+} from "@/lib/admin/postulantes-actions";
 import { buildWhatsappClienteUrl } from "@/lib/whatsapp";
 
 const COLOR_ESTADO: Record<EstadoPostulante, string> = {
@@ -154,6 +159,15 @@ export default function PostulantesManager({ postulantes, puedeEliminar }: { pos
                     <a href={`mailto:${p.email}`} title="Mail" className="rounded-lg bg-black/5 p-2 text-brand-black/70 hover:bg-black/10">
                       <Mail className="h-4 w-4" />
                     </a>
+                    {p.imagenes.length > 0 && (
+                      <button
+                        onClick={() => setAbierto(p.id)}
+                        title="Ver imágenes"
+                        className="flex items-center gap-1 rounded-lg bg-black/5 px-2.5 py-2 text-xs font-bold text-brand-black/70 hover:bg-black/10"
+                      >
+                        <ImageIcon className="h-4 w-4" /> {p.imagenes.length}
+                      </button>
+                    )}
                     {p.cvPath && (
                       <button
                         onClick={() => descargarCv(p.id)}
@@ -208,6 +222,7 @@ export default function PostulantesManager({ postulantes, puedeEliminar }: { pos
                         </div>
                       )}
                       {p.mensaje && <p className="whitespace-pre-line rounded-lg bg-brand-cream p-3 text-brand-black/80">{p.mensaje}</p>}
+                      {p.imagenes.length > 0 && <ImagenesPostulante id={p.id} cantidad={p.imagenes.length} />}
                     </dl>
                     <NotasPostulante
                       inicial={p.notas ?? ""}
@@ -228,6 +243,48 @@ export default function PostulantesManager({ postulantes, puedeEliminar }: { pos
             );
           })}
         </ul>
+      )}
+    </div>
+  );
+}
+
+function ImagenesPostulante({ id, cantidad }: { id: string; cantidad: number }) {
+  const [imgs, setImgs] = useState<{ nombre: string; url: string }[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let vivo = true;
+    linksImagenesAction(id).then((r) => {
+      if (!vivo) return;
+      if (r.ok) setImgs(r.imagenes);
+      else setError(r.error);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [id]);
+
+  return (
+    <div className="pt-2">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-black/55">Imágenes adjuntas ({cantidad})</p>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+      {!imgs && !error && <Loader2 className="h-4 w-4 animate-spin text-brand-black/40" />}
+      {imgs && (
+        <div className="grid grid-cols-3 gap-2">
+          {imgs.map((img) => (
+            <a
+              key={img.url}
+              href={img.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={img.nombre}
+              className="block aspect-square overflow-hidden rounded-lg border border-black/10 bg-brand-cream"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={img.url} alt={img.nombre} className="h-full w-full object-cover transition hover:scale-105" />
+            </a>
+          ))}
+        </div>
       )}
     </div>
   );

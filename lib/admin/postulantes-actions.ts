@@ -67,12 +67,42 @@ export async function linkCvAction(id: string): Promise<Resultado<{ url: string 
   }
 }
 
+/** Links temporales (10 min) para ver las imágenes adjuntas de una postulación. */
+export async function linksImagenesAction(
+  id: string
+): Promise<Resultado<{ imagenes: { nombre: string; url: string }[] }>> {
+  try {
+    await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+    const { data: fila } = await admin.from("postulantes").select("imagenes").eq("id", id).maybeSingle();
+    const lista: { path: string; nombre: string }[] = Array.isArray(fila?.imagenes) ? fila.imagenes : [];
+    if (!lista.length) return { ok: true, imagenes: [] };
+    const { data, error } = await admin.storage.from("cvs").createSignedUrls(
+      lista.map((i) => i.path),
+      600
+    );
+    if (error || !data) throw new AdminActionError("No se pudieron generar los links de las imágenes.");
+    return {
+      ok: true,
+      imagenes: data
+        .map((d, i) => ({ nombre: lista[i]?.nombre ?? "imagen", url: d.signedUrl }))
+        .filter((d) => !!d.url),
+    };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function eliminarPostulanteAction(id: string): Promise<Resultado> {
   try {
     const perfil = await requireRole("administrador");
     const admin = (await getSupabaseAdminClient())!;
-    const { data: fila } = await admin.from("postulantes").select("nombre, cv_path").eq("id", id).maybeSingle();
-    if (fila?.cv_path) await admin.storage.from("cvs").remove([fila.cv_path]);
+    const { data: fila } = await admin.from("postulantes").select("nombre, cv_path, imagenes").eq("id", id).maybeSingle();
+    const archivos = [
+      ...(fila?.cv_path ? [fila.cv_path as string] : []),
+      ...(Array.isArray(fila?.imagenes) ? (fila.imagenes as { path: string }[]).map((i) => i.path) : []),
+    ];
+    if (archivos.length) await admin.storage.from("cvs").remove(archivos);
     const { error } = await admin.from("postulantes").delete().eq("id", id);
     if (error) throw error;
     await registrarActividad(perfil, "eliminar", "postulante", id, { nombre: fila?.nombre });

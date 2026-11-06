@@ -30,6 +30,8 @@ create table if not exists postulantes (
 
 -- Si la tabla ya existía de antes:
 alter table postulantes add column if not exists matricula text;
+-- Imágenes / capturas adjuntas (lista de {path, nombre} en el bucket "cvs").
+alter table postulantes add column if not exists imagenes jsonb not null default '[]'::jsonb;
 
 create index if not exists postulantes_creado_en_idx on postulantes (creado_en desc);
 

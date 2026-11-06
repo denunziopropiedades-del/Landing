@@ -7,6 +7,9 @@ import {
   CV_TIPOS,
   DISPONIBILIDADES,
   EXPERIENCIAS,
+  IMG_MAX_BYTES,
+  IMG_MAX_CANTIDAD,
+  IMG_TIPOS,
   PUESTOS,
   labelDe,
   postulanteSchema,
@@ -62,8 +65,22 @@ export async function POST(request: Request) {
     }
   }
 
+  const imagenesArchivos = form.getAll("imagenes").filter((v): v is File => v instanceof File && v.size > 0);
+  if (imagenesArchivos.length > IMG_MAX_CANTIDAD) {
+    return NextResponse.json({ error: `Podés adjuntar hasta ${IMG_MAX_CANTIDAD} imágenes.` }, { status: 400 });
+  }
+  for (const img of imagenesArchivos) {
+    if (!IMG_TIPOS[img.type]) {
+      return NextResponse.json({ error: "Las imágenes tienen que ser JPG, PNG o WEBP." }, { status: 400 });
+    }
+    if (img.size > IMG_MAX_BYTES) {
+      return NextResponse.json({ error: "Una de las imágenes pesa más de 3 MB." }, { status: 400 });
+    }
+  }
+
   const supabase = await getSupabaseAdminClient();
   let cvPath: string | null = null;
+  const imagenes: { path: string; nombre: string }[] = [];
 
   if (supabase) {
     if (archivo) {
@@ -76,6 +93,16 @@ export async function POST(request: Request) {
         console.error("No se pudo subir el CV", errSubida);
         cvPath = null; // la postulación igual se guarda, sin CV
       }
+    }
+
+    const carpeta = new Date().toISOString().slice(0, 7);
+    for (const img of imagenesArchivos) {
+      const path = `${carpeta}/${crypto.randomUUID()}.${IMG_TIPOS[img.type]}`;
+      const { error: errImg } = await supabase.storage
+        .from("cvs")
+        .upload(path, Buffer.from(await img.arrayBuffer()), { contentType: img.type, upsert: false });
+      if (errImg) console.error("No se pudo subir una imagen de postulante", errImg);
+      else imagenes.push({ path, nombre: img.name.slice(0, 200) });
     }
 
     const { error } = await supabase.from("postulantes").insert({
@@ -92,6 +119,7 @@ export async function POST(request: Request) {
       mensaje: data.mensaje ?? null,
       cv_path: cvPath,
       cv_nombre: cvPath && archivo ? archivo.name.slice(0, 200) : null,
+      imagenes,
     });
     if (error) {
       console.error("No se pudo guardar la postulación", error);
@@ -115,6 +143,7 @@ export async function POST(request: Request) {
          ${data.matricula ? `<li><b>Matrícula:</b> ${esc(data.matricula)}</li>` : ""}
          ${data.linkedin ? `<li><b>LinkedIn:</b> ${esc(data.linkedin)}</li>` : ""}
          <li><b>CV:</b> ${cvPath ? "adjuntado (descargalo desde el panel)" : "no adjuntó"}</li>
+         <li><b>Imágenes:</b> ${imagenes.length ? `${imagenes.length} adjunta(s) (miralas desde el panel)` : "no adjuntó"}</li>
        </ul>
        ${data.mensaje ? `<p><b>Mensaje:</b> ${esc(data.mensaje)}</p>` : ""}
        <p><a href="${SITE_URL}/admin/postulantes">Ver en el panel → Postulantes</a></p>`

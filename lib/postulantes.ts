@@ -75,6 +75,19 @@ export const CV_TIPOS: Record<string, string> = {
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
 };
 
+/** Imágenes / capturas de pantalla que se pueden adjuntar además del CV. */
+export const IMG_MAX_CANTIDAD = 5;
+export const IMG_MAX_BYTES = 3 * 1024 * 1024; // por imagen, ya comprimida en el navegador
+export const IMG_TIPOS: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+/** Tope de todo el envío (CV + imágenes): Vercel corta los pedidos de más de 4,5 MB. */
+export const ENVIO_MAX_BYTES = 4.3 * 1024 * 1024;
+
+export type ArchivoAdjunto = { path: string; nombre: string };
+
 export type Postulante = {
   id: string;
   creadoEn: string;
@@ -91,6 +104,7 @@ export type Postulante = {
   mensaje: string | null;
   cvPath: string | null;
   cvNombre: string | null;
+  imagenes: ArchivoAdjunto[];
   estado: EstadoPostulante;
   notas: string | null;
 };
@@ -113,6 +127,7 @@ export function mapPostulante(r: any): Postulante {
     mensaje: r.mensaje,
     cvPath: r.cv_path,
     cvNombre: r.cv_nombre,
+    imagenes: Array.isArray(r.imagenes) ? r.imagenes : [],
     estado: r.estado,
     notas: r.notas,
   };
