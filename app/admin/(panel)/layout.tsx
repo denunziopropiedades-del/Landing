@@ -22,6 +22,7 @@ import {
   MessageSquareText,
   Newspaper,
   Receipt,
+  ShieldCheck,
   Star,
   Users,
 } from "lucide-react";
@@ -38,6 +39,7 @@ const nav: { href: string; label: string; icon: typeof LayoutDashboard; roles?: 
   { href: "/admin/coincidencias", label: "Coincidencias", icon: Target },
   { href: "/admin/reportes", label: "Reportes", icon: FileText },
   { href: "/admin/documentos", label: "Contratos y escritos", icon: FileSignature },
+  { href: "/admin/documentos-clientes", label: "Reservas y certificados", icon: ShieldCheck, roles: ["administrador", "supervisor"] },
   {
     href: "/admin/facturacion",
     label: "Facturación",
