@@ -3,7 +3,8 @@ import { contactoSchema } from "@/lib/schemas";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { guardarLeadUnificado, origenDesdeRequest } from "@/lib/leads";
+import { origenDesdeRequest } from "@/lib/leads";
+import { guardarLeadYContacto } from "@/lib/leads-servidor";
 
 export async function POST(request: Request) {
   const rate = await checkRateLimit(request, "contacto");
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
 
   const supabase = await getSupabaseAdminClient();
   if (supabase) {
-    const { error } = await guardarLeadUnificado(
+    const { error } = await guardarLeadYContacto(
       supabase,
       {
         tipo: "contacto",

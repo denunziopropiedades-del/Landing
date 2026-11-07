@@ -6,8 +6,24 @@ import { getFinanciacionAdmin, getLeads, getLotesAdminTodos, getPerfiles, getPro
 import { getPerfilActual } from "@/lib/admin/auth";
 import { getPropiedadesAdmin } from "@/lib/admin/propiedades-actions";
 import { esRural } from "@/lib/propiedades-base";
+import GoogleContactosCard, { type EstadoContactos } from "@/components/admin/GoogleContactosCard";
+import { oauthConfigurado } from "@/lib/google-contactos";
+import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
-export default async function AdminCrmPage() {
+async function estadoContactos(resultado: string | null): Promise<EstadoContactos> {
+  const base: EstadoContactos = { configurado: oauthConfigurado(), conectado: false, cuenta: null, pendientes: 0, guardados: 0, resultado };
+  const a = await getSupabaseAdminClient();
+  if (!a) return base;
+  const [{ data: cfg }, { count: pendientes }, { count: guardados }] = await Promise.all([
+    a.from("google_contactos_config").select("cuenta_email").eq("id", 1).maybeSingle(),
+    a.from("leads").select("id", { count: "exact", head: true }).is("google_contacto_id", null),
+    a.from("leads").select("id", { count: "exact", head: true }).not("google_contacto_id", "is", null),
+  ]);
+  return { ...base, conectado: !!cfg, cuenta: (cfg?.cuenta_email as string) ?? null, pendientes: pendientes ?? 0, guardados: guardados ?? 0 };
+}
+
+export default async function AdminCrmPage({ searchParams }: { searchParams: Promise<{ contactos?: string }> }) {
+  const { contactos } = await searchParams;
   const [leads, perfiles, proyectos, lotes, actual, { propiedades: listaPropiedades }] = await Promise.all([
     getLeads(),
     getPerfiles(),
@@ -40,6 +56,12 @@ export default async function AdminCrmPage() {
       <div className="mt-6">
         <LinkAltaCliente />
       </div>
+
+      {actual?.rol === "administrador" && (
+        <div className="mt-4">
+          <GoogleContactosCard estado={await estadoContactos(contactos ?? null)} />
+        </div>
+      )}
 
       <div className="mt-4">
         <NuevoClienteForm proyectos={proyectos} propiedades={propiedades} lotes={lotes} vendedores={vendedores} planesPorProyecto={planesPorProyecto} rolActual={actual?.rol ?? "vendedor"} />

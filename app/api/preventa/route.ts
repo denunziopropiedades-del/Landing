@@ -3,7 +3,8 @@ import { z } from "zod";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { guardarLeadUnificado, labelOrigen, origenDesdeRequest } from "@/lib/leads";
+import { labelOrigen, origenDesdeRequest } from "@/lib/leads";
+import { guardarLeadYContacto } from "@/lib/leads-servidor";
 
 const esc = (t: string) => t.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
   const anticipoSi = /^s/i.test(d.anticipo);
   const pagoCuotas = /cuota/i.test(d.pago ?? "");
 
-  const res = await guardarLeadUnificado(
+  const res = await guardarLeadYContacto(
     supabase,
     {
       tipo: "contacto",

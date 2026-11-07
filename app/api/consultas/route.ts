@@ -3,7 +3,8 @@ import { consultaPropiedadSchema } from "@/lib/schemas";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { guardarLeadUnificado, origenDesdeRequest } from "@/lib/leads";
+import { origenDesdeRequest } from "@/lib/leads";
+import { guardarLeadYContacto } from "@/lib/leads-servidor";
 import { formatearPrecio, labelTipo, mapPropiedad, ubicacionTexto, type TipoPropiedad } from "@/lib/propiedades";
 import { nombrePartido } from "@/lib/zonas";
 
@@ -54,9 +55,9 @@ export async function POST(request: Request) {
       estado: "nuevo",
     };
     const origen = origenDesdeRequest(request);
-    let { error } = await guardarLeadUnificado(supabase, data.propiedadId ? { ...fila, propiedad_id: data.propiedadId } : fila, origen);
+    let { error } = await guardarLeadYContacto(supabase, data.propiedadId ? { ...fila, propiedad_id: data.propiedadId } : fila, origen);
     // Si todavía no se corrió sql-propiedades.sql, la columna propiedad_id no existe: se guarda sin ella.
-    if (error && data.propiedadId) ({ error } = await guardarLeadUnificado(supabase, fila, origen));
+    if (error && data.propiedadId) ({ error } = await guardarLeadYContacto(supabase, fila, origen));
     if (error) return NextResponse.json({ error }, { status: 500 });
   }
 

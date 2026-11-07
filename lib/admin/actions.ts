@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizarTelefono } from "@/lib/leads";
+import { guardarContactoDespues, oauthConfigurado, sincronizarContactos } from "@/lib/google-contactos";
 import { requireRole, AdminActionError } from "@/lib/admin/auth";
 import { registrarActividad } from "@/lib/admin/activity";
 import { cancelarEventoVisita, crearEventoEscribania, actualizarLugarEventoVisita } from "@/lib/google-calendar";
@@ -542,8 +543,9 @@ export async function importarLeadsMetaCsvAction(
         estado: "nuevo" as const,
         observaciones: f.observaciones,
       }));
-      const { error } = await admin.from("leads").insert(payload);
+      const { data: creados, error } = await admin.from("leads").insert(payload).select("id");
       if (error) throw new Error(error.message);
+      for (const c of creados ?? []) guardarContactoDespues(c.id as string);
       await registrarActividad(actor, "importar-csv", "lead", null, { cantidad: nuevas.length });
     }
 
@@ -1408,6 +1410,7 @@ export async function crearLeadManualAction(_prev: ActionResult | null, formData
       throw new AdminActionError(`No se pudo guardar el cliente: ${error.message}`);
     }
 
+    guardarContactoDespues(data.id as string);
     await registrarActividad(actor, "crear", "lead", data.id, {
       origen: "manual",
       ...(manzana ? { manzana } : {}),
@@ -2894,6 +2897,38 @@ export async function bloquearAgendaLeadAction(id: string, bloquear: boolean): P
       agenda: bloquear ? "bloqueada" : "desbloqueada",
       ...(await contextoLead(admin, id)),
     });
+    revalidatePath("/admin/crm");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/* ───────────── Google Contactos ───────────── */
+
+export async function sincronizarContactosAction(): Promise<ActionResult> {
+  try {
+    await requireRole("administrador");
+    if (!oauthConfigurado()) throw new AdminActionError("Falta configurar el acceso de Google (Client ID y Client Secret).");
+    const r = await sincronizarContactos({ limite: 200 });
+    if ("sinConexion" in r && r.sinConexion) throw new AdminActionError("Primero conectá tu cuenta de Google.");
+    revalidatePath("/admin/crm");
+    return {
+      ok: true,
+      aviso: r.pendientes
+        ? `Listo: ${r.creados} contacto(s) nuevo(s) en Google${r.reutilizados ? `, ${r.reutilizados} ya existían` : ""}${r.errores ? `, ${r.errores} con error` : ""}.`
+        : "No hay clientes pendientes de guardar.",
+    };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function desconectarContactosAction(): Promise<ActionResult> {
+  try {
+    await requireRole("administrador");
+    const admin = (await getSupabaseAdminClient())!;
+    await admin.from("google_contactos_config").delete().eq("id", 1);
     revalidatePath("/admin/crm");
     return { ok: true };
   } catch (err) {

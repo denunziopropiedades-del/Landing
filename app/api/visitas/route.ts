@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { guardarLeadUnificado, origenDesdeRequest } from "@/lib/leads";
+import { origenDesdeRequest } from "@/lib/leads";
+import { guardarLeadYContacto } from "@/lib/leads-servidor";
 import { visitaSchema } from "@/lib/schemas";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { NOTA_COORDINACION_VISITA_HTML, NOTA_RESERVA_LOTE_HTML, sendEmail, sendNotificationEmail } from "@/lib/email";
@@ -92,13 +93,13 @@ export async function POST(request: Request) {
       estado: "visita_programada",
     };
     const origen = origenDesdeRequest(request);
-    let resLead = await guardarLeadUnificado(
+    let resLead = await guardarLeadYContacto(
       supabase,
       data.propiedadId && propiedadTexto ? { ...filaLead, propiedad_id: data.propiedadId } : filaLead,
       origen
     );
     // Si todavía no existe la columna propiedad_id, se guarda igual (el dato queda en observaciones).
-    if (resLead.error && data.propiedadId) resLead = await guardarLeadUnificado(supabase, filaLead, origen);
+    if (resLead.error && data.propiedadId) resLead = await guardarLeadYContacto(supabase, filaLead, origen);
     const lead = resLead.id ? { id: resLead.id } : null;
     const errorLead = resLead.error ? { message: resLead.error } : null;
     if (errorLead || !lead) {

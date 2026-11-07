@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { guardarLeadUnificado } from "@/lib/leads";
+import { guardarLeadYContacto } from "@/lib/leads-servidor";
 import { enviarEtapaCrm } from "@/lib/meta-capi";
 import crypto from "node:crypto";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
   if (conocidos.ciudad) detalles.push(`Ciudad: ${conocidos.ciudad}`);
   detalles.push(...extra);
 
-  const { error: insertErrorMsg } = await guardarLeadUnificado(supabase, {
+  const { error: insertErrorMsg } = await guardarLeadYContacto(supabase, {
     tipo: "meta",
     origen: "meta_lead_ads",
     utm_campaign: conocidos.campana ?? null,

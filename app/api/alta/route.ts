@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardarContactoDespues } from "@/lib/google-contactos";
 import { altaClienteSchema } from "@/lib/schemas";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
@@ -52,9 +53,10 @@ export async function POST(request: Request) {
       observaciones: resumen,
       estado: "nuevo" as const,
     };
-    let { error } = await supabase.from("leads").insert({ ...base, datos_contrato: datosContrato });
+    let { data: creado, error } = await supabase.from("leads").insert({ ...base, datos_contrato: datosContrato }).select("id").maybeSingle();
     // Si todavía no se corrió sql-alta-clientes.sql, se guarda igual (los datos quedan en observaciones).
-    if (error && /datos_contrato/.test(error.message)) ({ error } = await supabase.from("leads").insert(base));
+    if (error && /datos_contrato/.test(error.message)) ({ data: creado, error } = await supabase.from("leads").insert(base).select("id").maybeSingle());
+    if (!error && creado?.id) guardarContactoDespues(creado.id as string);
     if (error) {
       console.error("alta de cliente", error);
       return NextResponse.json({ error: "No pudimos guardar tus datos. Probá de nuevo." }, { status: 500 });

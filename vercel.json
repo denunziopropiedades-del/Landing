@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/documentos-clientes",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/google-contactos",
+      "schedule": "30 11 * * *"
     }
   ]
 }
