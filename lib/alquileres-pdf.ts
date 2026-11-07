@@ -1,4 +1,4 @@
-import { fechaCorta, formatoMonto, nombrePeriodo, type ContratoAlq, type CuotaAlq, type LiquidacionAlq, type PersonaAlq } from "@/lib/alquileres";
+import { fechaCorta, formatoMonto, nombrePeriodo, textoHonorarios, type ContratoAlq, type CuotaAlq, type LiquidacionAlq, type PersonaAlq } from "@/lib/alquileres";
 
 const EMISOR = "DE NUNZIO NEGOCIOS INMOBILIARIOS";
 const MATRICULA = "Matías De Nunzio · Martillero Público y Corredor Inmobiliario · Matrícula COL 7886";
@@ -96,7 +96,7 @@ export async function generarLiquidacionPdf(d: {
   doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor("#dddddd").lineWidth(1).stroke();
   doc.moveDown(0.4);
   fila(doc, "Total cobrado", formatoMonto(l.cobrado, m));
-  fila(doc, `Comisión de administración (${contrato.comisionAdminPct}%)`, `- ${formatoMonto(l.comision, m)}`);
+  fila(doc, `Honorarios de administración (${textoHonorarios(contrato)})`, `- ${formatoMonto(l.comision, m)}`);
   if (l.gastos) fila(doc, `Gastos${l.gastosDetalle ? `: ${l.gastosDetalle}` : ""}`, `- ${formatoMonto(l.gastos, m)}`);
   doc.moveDown(0.3);
   fila(doc, "NETO A RENDIR AL PROPIETARIO", formatoMonto(l.neto, m), true);

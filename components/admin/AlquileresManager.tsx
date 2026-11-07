@@ -18,6 +18,8 @@ import {
   type LiquidacionAlq,
   type PersonaAlq,
   type ServicioAlq,
+  calcularHonorarios,
+  textoHonorarios,
 } from "@/lib/alquileres";
 import {
   ajustarMontoContratoAction,
@@ -220,7 +222,7 @@ export default function AlquileresManager({ datos, sitio }: { datos: Datos; siti
                       {c.localidad ? `${c.localidad} · ` : ""}Propietario: {prop?.nombre ?? "—"} · Inquilino: {inq?.nombre ?? "—"}
                     </p>
                     <p className="mt-1 text-xs text-brand-black/60">
-                      {formatoMonto(c.montoActual, c.moneda)} por mes · vence el día {c.diaVencimiento} · comisión {c.comisionAdminPct}% · {fechaCorta(c.fechaInicio)} al{" "}
+                      {formatoMonto(c.montoActual, c.moneda)} por mes · vence el día {c.diaVencimiento} · honorarios {textoHonorarios(c)} · {fechaCorta(c.fechaInicio)} al{" "}
                       {fechaCorta(c.fechaFin)}
                     </p>
                     <div className="mt-1 flex flex-wrap gap-1">
@@ -575,9 +577,7 @@ export default function AlquileresManager({ datos, sitio }: { datos: Datos; siti
             <Campo label="Día de vencimiento (1 a 28)">
               <input type="number" min={1} max={28} name="diaVencimiento" defaultValue={contratoEdit.diaVencimiento ?? 10} className={input} />
             </Campo>
-            <Campo label="Comisión de administración (%)">
-              <input name="comisionAdminPct" inputMode="decimal" defaultValue={contratoEdit.comisionAdminPct ?? 5} className={input} />
-            </Campo>
+            <HonorariosCampos contrato={contratoEdit} input={input} />
             <Campo label="Interés por mora (% por día)">
               <input name="punitorioDiarioPct" inputMode="decimal" defaultValue={contratoEdit.punitorioDiarioPct ?? 0} className={input} />
             </Campo>
@@ -844,8 +844,7 @@ export default function AlquileresManager({ datos, sitio }: { datos: Datos; siti
         (() => {
           const cobradas = datos.cuotas.filter((q) => q.contratoId === liquidar.id && q.pagadoEn && !q.liquidacionId);
           const total = cobradas.reduce((s, q) => s + (q.pagadoMonto ?? 0), 0);
-          const base = cobradas.reduce((s, q) => s + Math.min(q.pagadoMonto ?? 0, q.monto + q.punitorios), 0);
-          const comision = Math.round(base * liquidar.comisionAdminPct) / 100;
+          const comision = calcularHonorarios(liquidar, cobradas);
           const gastosProp = datos.servicios.filter((s) => s.contratoId === liquidar.id && s.aCargo === "propietario" && s.pagado && s.monto);
           return (
             <Modal titulo={`Liquidar · ${liquidar.direccion}`} onClose={() => setLiquidar(null)}>
@@ -858,7 +857,7 @@ export default function AlquileresManager({ datos, sitio }: { datos: Datos; siti
                     e.preventDefault();
                     const f = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
                     correr(
-                      () => crearLiquidacionAction(liquidar.id, { gastos: f.gastos, gastosDetalle: f.gastosDetalle, notas: f.notas }),
+                      () => crearLiquidacionAction(liquidar.id, { gastos: f.gastos, gastosDetalle: f.gastosDetalle, notas: f.notas, comision: f.comision }),
                       "Liquidación creada. Podés enviarla al propietario desde la pestaña Liquidaciones.",
                       () => {
                         setLiquidar(null);
@@ -875,8 +874,13 @@ export default function AlquileresManager({ datos, sitio }: { datos: Datos; siti
                     ))}
                   </ul>
                   <p className="text-sm">
-                    Cobrado <b>{formatoMonto(total, liquidar.moneda)}</b> − comisión {liquidar.comisionAdminPct}% <b>{formatoMonto(comision, liquidar.moneda)}</b>
+                    Cobrado <b>{formatoMonto(total, liquidar.moneda)}</b> − honorarios ({textoHonorarios(liquidar)}
+                    {liquidar.comisionTipo === "fijo" && cobradas.length > 1 ? ` × ${cobradas.length} meses` : ""}){" "}
+                    <b>{formatoMonto(comision, liquidar.moneda)}</b>
                   </p>
+                  <Campo label={`Honorarios a descontar (${liquidar.moneda === "USD" ? "USD" : "$"}) — podés corregirlos para esta liquidación`}>
+                    <input name="comision" inputMode="decimal" defaultValue={String(comision).replace(".", ",")} className={input} />
+                  </Campo>
                   {gastosProp.length > 0 && (
                     <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
                       Gastos del propietario pagados: {gastosProp.map((s) => `${s.concepto} ${formatoMonto(s.monto ?? 0, liquidar.moneda)}`).join(", ")}. Si los pagaste vos, descontalos abajo.
@@ -1165,5 +1169,29 @@ function Cobros({
         );
       })}
     </div>
+  );
+}
+
+/** Honorarios de administración al propietario: % del alquiler cobrado o monto fijo por mes. */
+function HonorariosCampos({ contrato, input }: { contrato: Partial<ContratoAlq>; input: string }) {
+  const [tipo, setTipo] = useState<"pct" | "fijo">(contrato.comisionTipo ?? "pct");
+  return (
+    <>
+      <Campo label="Honorarios de administración">
+        <select name="comisionTipo" value={tipo} onChange={(e) => setTipo(e.target.value as "pct" | "fijo")} className={input}>
+          <option value="pct">Porcentaje del alquiler</option>
+          <option value="fijo">Monto fijo por mes</option>
+        </select>
+      </Campo>
+      {tipo === "pct" ? (
+        <Campo label="Porcentaje (%)">
+          <input name="comisionAdminPct" inputMode="decimal" defaultValue={contrato.comisionAdminPct ?? 5} className={input} />
+        </Campo>
+      ) : (
+        <Campo label="Monto fijo mensual (en la moneda del contrato)">
+          <input name="comisionFija" inputMode="decimal" required defaultValue={contrato.comisionFija ?? ""} className={input} />
+        </Campo>
+      )}
+    </>
   );
 }

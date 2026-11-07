@@ -31,6 +31,10 @@ export type ContratoAlq = {
   montoActual: number;
   diaVencimiento: number;
   comisionAdminPct: number;
+  /** Cómo se cobran los honorarios de administración al propietario. */
+  comisionTipo: "pct" | "fijo";
+  /** Monto fijo mensual de honorarios (cuando comisionTipo = "fijo"), en la moneda del contrato. */
+  comisionFija: number | null;
   punitorioDiarioPct: number;
   deposito: number | null;
   proximoAjuste: string | null;
@@ -121,6 +125,8 @@ export const mapContrato = (r: any): ContratoAlq => ({
   montoActual: num(r.monto_actual),
   diaVencimiento: Number(r.dia_vencimiento ?? 10),
   comisionAdminPct: num(r.comision_admin_pct),
+  comisionTipo: r.comision_tipo === "fijo" ? "fijo" : "pct",
+  comisionFija: numN(r.comision_fija),
   punitorioDiarioPct: num(r.punitorio_diario_pct),
   deposito: numN(r.deposito),
   proximoAjuste: str(r.proximo_ajuste),
@@ -257,4 +263,25 @@ export function totalCuota(c: CuotaAlq, contrato: Pick<ContratoAlq, "punitorioDi
 
 export function diasParaVencer(fecha: string, alDia = hoyIso()): number {
   return diasEntre(alDia, fecha);
+}
+
+/**
+ * Honorarios de administración que se le descuentan al propietario por un grupo de
+ * meses cobrados: un % del alquiler cobrado (sin expensas ni extras de terceros) o un
+ * monto fijo por cada mes cobrado.
+ */
+export function calcularHonorarios(
+  contrato: Pick<ContratoAlq, "comisionTipo" | "comisionFija" | "comisionAdminPct">,
+  cuotas: Pick<CuotaAlq, "pagadoMonto" | "monto" | "punitorios">[]
+): number {
+  if (contrato.comisionTipo === "fijo") return Math.round((contrato.comisionFija ?? 0) * cuotas.length * 100) / 100;
+  const base = cuotas.reduce((s, c) => s + Math.min(c.pagadoMonto ?? 0, c.monto + c.punitorios), 0);
+  return Math.round(base * contrato.comisionAdminPct) / 100;
+}
+
+/** "16%" o "USD 100 fijos por mes", para mostrar en pantallas y PDFs. */
+export function textoHonorarios(contrato: Pick<ContratoAlq, "comisionTipo" | "comisionFija" | "comisionAdminPct" | "moneda">): string {
+  return contrato.comisionTipo === "fijo"
+    ? `${formatoMonto(contrato.comisionFija ?? 0, contrato.moneda)} fijos por mes`
+    : `${contrato.comisionAdminPct}%`;
 }

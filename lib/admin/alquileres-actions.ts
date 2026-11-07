@@ -6,7 +6,7 @@ import { AdminActionError, getPerfilActual, requireRole } from "@/lib/admin/auth
 import { registrarActividad } from "@/lib/admin/activity";
 import { cargarAlquileres, type DatosAlquileres } from "@/lib/alquileres-server";
 import { crearLinkPagoAlquiler, isMercadoPagoConfigured } from "@/lib/mercadopago";
-import { hoyIso, mapContrato, mapCuota, nombrePeriodo, punitoriosCalculados, totalCuota } from "@/lib/alquileres";
+import { hoyIso, mapContrato, mapCuota, nombrePeriodo, punitoriosCalculados, totalCuota, calcularHonorarios } from "@/lib/alquileres";
 
 type R<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -130,6 +130,8 @@ export async function guardarContratoAlqAction(datos: Record<string, string>): P
     if (!datos.propietarioId || !datos.inquilinoId) throw new AdminActionError("Elegí el propietario y el inquilino.");
     if (!inicio || !fin || fin <= inicio) throw new AdminActionError("Revisá las fechas de inicio y fin del contrato.");
     if (monto === null || monto < 0) throw new AdminActionError("Falta el monto del alquiler.");
+    if (datos.comisionTipo === "fijo" && (n(datos.comisionFija) ?? -1) < 0)
+      throw new AdminActionError("Ingresá el monto fijo mensual de honorarios.");
     const dia = Math.min(Math.max(Number(datos.diaVencimiento || 10), 1), 28);
     const fila = {
       direccion,
@@ -143,7 +145,9 @@ export async function guardarContratoAlqAction(datos: Record<string, string>): P
       moneda: datos.moneda === "USD" ? "USD" : "ARS",
       monto_actual: monto,
       dia_vencimiento: dia,
-      comision_admin_pct: n(datos.comisionAdminPct) ?? 0,
+      comision_tipo: datos.comisionTipo === "fijo" ? "fijo" : "pct",
+      comision_admin_pct: datos.comisionTipo === "fijo" ? 0 : n(datos.comisionAdminPct) ?? 0,
+      comision_fija: datos.comisionTipo === "fijo" ? n(datos.comisionFija) : null,
       punitorio_diario_pct: n(datos.punitorioDiarioPct) ?? 0,
       deposito: n(datos.deposito),
       proximo_ajuste: fecha(datos.proximoAjuste),
@@ -440,7 +444,7 @@ export async function eliminarServicioAlqAction(id: string): Promise<R> {
  */
 export async function crearLiquidacionAction(
   contratoId: string,
-  datos: { gastos: string; gastosDetalle: string; notas: string }
+  datos: { gastos: string; gastosDetalle: string; notas: string; comision?: string }
 ): Promise<R<{ id: string }>> {
   try {
     const perfil = await requireRole("administrador", "supervisor");
@@ -459,8 +463,10 @@ export async function crearLiquidacionAction(
     if (!cuotas.length) throw new AdminActionError("No hay cobros pendientes de liquidar en este contrato.");
     // La comisión se calcula sobre el alquiler (no sobre expensas ni otros extras que se cobran por cuenta de terceros).
     const cobrado = cuotas.reduce((s, c) => s + (c.pagadoMonto ?? 0), 0);
-    const baseComision = cuotas.reduce((s, c) => s + Math.min(c.pagadoMonto ?? 0, c.monto + c.punitorios), 0);
-    const comision = Math.round(baseComision * contrato.comisionAdminPct) / 100;
+    // Honorarios: % o monto fijo mensual según el contrato; se pueden corregir a mano en esta liquidación.
+    const comisionManual = datos.comision !== undefined && datos.comision.trim() !== "" ? n(datos.comision) : null;
+    if (comisionManual !== null && comisionManual < 0) throw new AdminActionError("Los honorarios no pueden ser negativos.");
+    const comision = comisionManual ?? calcularHonorarios(contrato, cuotas);
     const gastos = n(datos.gastos) ?? 0;
     const neto = Math.round((cobrado - comision - gastos) * 100) / 100;
     const periodo = cuotas[cuotas.length - 1].periodo;
