@@ -20,6 +20,7 @@ export default function AgendaVisita({
 }) {
   const [estado, setEstado] = useState<"idle" | "enviando" | "ok" | "error">("idle");
   const [mensajeError, setMensajeError] = useState<string | null>(null);
+  const [bloqueado, setBloqueado] = useState(false);
   const [ocupados, setOcupados] = useState<string[]>([]);
   const mostrarSelector = (proyectos?.length ?? 0) > 1;
 
@@ -61,6 +62,7 @@ export default function AgendaVisita({
   const onSubmit = async (data: VisitaInput) => {
     setEstado("enviando");
     setMensajeError(null);
+    setBloqueado(false);
     try {
       const res = await fetch("/api/visitas", {
         method: "POST",
@@ -70,6 +72,7 @@ export default function AgendaVisita({
       if (!res.ok) {
         const body = await res.json().catch(() => null);
         setMensajeError(typeof body?.error === "string" ? body.error : null);
+        setBloqueado(body?.bloqueado === true);
         throw new Error("request-failed");
       }
       setEstado("ok");
@@ -169,11 +172,17 @@ export default function AgendaVisita({
                 {errors.horario && <p className="mt-1 text-xs text-red-600">{errors.horario.message}</p>}
               </div>
 
-              {estado === "error" && (
-                <p className="text-sm text-red-600 sm:col-span-2">
-                  {mensajeError ?? "Ocurrió un error. Intentá nuevamente."}
-                </p>
-              )}
+              {estado === "error" &&
+                (bloqueado ? (
+                  <div role="alert" className="rounded-xl bg-red-600 px-4 py-4 text-center text-white shadow-sm sm:col-span-2">
+                    <p className="text-base font-bold">No puede agendar visitas</p>
+                    <p className="mt-1 text-sm">{mensajeError}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-red-600 sm:col-span-2">
+                    {mensajeError ?? "Ocurrió un error. Intentá nuevamente."}
+                  </p>
+                ))}
 
               <button
                 type="submit"

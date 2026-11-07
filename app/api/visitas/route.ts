@@ -42,8 +42,8 @@ export async function POST(request: Request) {
       }
       return NextResponse.json(
         {
-          error:
-            "No podemos tomar una nueva visita online con estos datos. Escribinos por WhatsApp y la coordinamos personalmente.",
+          bloqueado: true,
+          error: "Por el momento usted no puede agendar visitas: ya agendó una visita y no asistió a la misma.",
         },
         { status: 403 }
       );
