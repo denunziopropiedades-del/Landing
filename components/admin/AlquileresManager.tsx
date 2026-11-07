@@ -701,7 +701,11 @@ export default function AlquileresManager({ datos, sitio }: { datos: Datos; siti
           );
         })()}
 
-      {cuotaEdit && (
+      {cuotaEdit && (() => {
+        const ct = contrato.get(cuotaEdit.contratoId);
+        const mon = ct?.moneda === "USD" ? "USD" : "$";
+        const pagada = !!cuotaEdit.pagadoEn;
+        return (
         <Modal titulo={`Editar ${nombrePeriodo(cuotaEdit.periodo)}`} onClose={() => setCuotaEdit(null)}>
           <form
             className="grid gap-3 sm:grid-cols-2"
@@ -717,19 +721,20 @@ export default function AlquileresManager({ datos, sitio }: { datos: Datos; siti
                     punitorios: f.punitorios,
                     vencimiento: f.vencimiento,
                     notas: f.notas,
+                    ...(pagada ? { pagadoMonto: f.pagadoMonto, pagadoEn: f.pagadoEn, medioPago: f.medioPago } : {}),
                   }),
                 "Mes actualizado.",
                 () => setCuotaEdit(null)
               );
             }}
           >
-            <Campo label="Alquiler">
+            <Campo label={`Alquiler del mes (${mon})`}>
               <input name="monto" inputMode="decimal" defaultValue={cuotaEdit.monto} className={input} />
             </Campo>
             <Campo label="Vencimiento">
               <input type="date" name="vencimiento" defaultValue={cuotaEdit.vencimiento} className={input} />
             </Campo>
-            <Campo label="Extras a cobrar (expensas, etc.)">
+            <Campo label={`Extras a cobrar (${mon})`}>
               <input name="extras" inputMode="decimal" defaultValue={cuotaEdit.extras} className={input} />
             </Campo>
             <Campo label="Detalle de los extras">
@@ -741,10 +746,42 @@ export default function AlquileresManager({ datos, sitio }: { datos: Datos; siti
             <Campo label="Observaciones">
               <input name="notas" defaultValue={cuotaEdit.notas ?? ""} className={input} />
             </Campo>
+            {pagada && (
+              <>
+                <p className="border-t border-black/10 pt-3 text-xs font-semibold uppercase text-brand-black/50 sm:col-span-2">
+                  Cobro registrado · recibo N° {String(cuotaEdit.reciboNumero ?? 0).padStart(6, "0")}
+                </p>
+                <Campo label={`Monto cobrado (${mon})`}>
+                  <input
+                    name="pagadoMonto"
+                    inputMode="decimal"
+                    defaultValue={cuotaEdit.pagadoMonto ?? ""}
+                    readOnly={!!cuotaEdit.liquidacionId}
+                    className={`${input} ${cuotaEdit.liquidacionId ? "bg-black/5 text-brand-black/50" : ""}`}
+                  />
+                </Campo>
+                <Campo label="Fecha de pago">
+                  <input type="date" name="pagadoEn" defaultValue={cuotaEdit.pagadoEn ?? ""} className={input} />
+                </Campo>
+                <Campo label="Medio de pago">
+                  <select name="medioPago" defaultValue={cuotaEdit.medioPago ?? "transferencia"} className={input}>
+                    <option value="transferencia">Transferencia</option>
+                    <option value="efectivo">Efectivo</option>
+                    <option value="mercadopago">Mercado Pago</option>
+                  </select>
+                </Campo>
+                <p className="text-[11px] text-brand-black/50 sm:col-span-2">
+                  {cuotaEdit.liquidacionId
+                    ? "Este cobro ya está liquidado al propietario: para cambiar el monto cobrado, borrá antes la liquidación."
+                    : "El recibo se actualiza solo con estos datos (mantiene el mismo número)."}
+                </p>
+              </>
+            )}
             <Guardar pendiente={pendiente} />
           </form>
         </Modal>
-      )}
+        );
+      })()}
 
       {servicioEdit && (
         <Modal titulo={servicioEdit.id ? "Editar gasto / servicio" : "Cargar gasto / servicio"} onClose={() => setServicioEdit(null)}>
@@ -1074,6 +1111,13 @@ function Cobros({
                 {q.pagadoEn
                   ? `Pagó ${formatoMonto(q.pagadoMonto ?? 0, c.moneda)} el ${fechaCorta(q.pagadoEn)} (${q.medioPago}) · recibo N° ${String(q.reciboNumero ?? 0).padStart(6, "0")}`
                   : `${formatoMonto(totalCuota(q, c, hoy), c.moneda)} · vence ${fechaCorta(q.vencimiento)}`}
+                {q.pagadoEn && (q.pagadoMonto ?? 0) + 0.009 < q.monto + q.extras && (
+                  <span className="font-semibold text-amber-700">
+                    {" "}
+                    · el mes era de {formatoMonto(q.monto + q.extras, c.moneda)}: faltan{" "}
+                    {formatoMonto(q.monto + q.extras - (q.pagadoMonto ?? 0), c.moneda)}
+                  </span>
+                )}
                 {q.extras ? ` · incluye ${q.extrasDetalle || "extras"}` : ""}
               </p>
             </div>
@@ -1094,6 +1138,9 @@ function Cobros({
                       <MessageCircle className="h-3.5 w-3.5" /> Enviar
                     </a>
                   )}
+                  <button type="button" onClick={() => onEditar(q)} className={`${btn} bg-black/5`}>
+                    <Pencil className="h-3.5 w-3.5" /> Editar
+                  </button>
                   <button type="button" onClick={() => onAnular(q)} className={`${btn} text-red-600`}>
                     Anular
                   </button>

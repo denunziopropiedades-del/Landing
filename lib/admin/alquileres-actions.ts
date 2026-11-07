@@ -235,11 +235,28 @@ export async function eliminarContratoAlqAction(id: string): Promise<R> {
 
 export async function editarCuotaAlqAction(
   id: string,
-  datos: { monto: string; extras: string; extrasDetalle: string; punitorios: string; vencimiento: string; notas: string }
+  datos: {
+    monto: string;
+    extras: string;
+    extrasDetalle: string;
+    punitorios: string;
+    vencimiento: string;
+    notas: string;
+    /** Solo para meses ya cobrados: corrige lo que se registró como pagado. */
+    pagadoMonto?: string;
+    pagadoEn?: string;
+    medioPago?: string;
+  }
 ): Promise<R> {
   try {
-    await requireRole("administrador", "supervisor");
+    const perfil = await requireRole("administrador", "supervisor");
     const a = await admin();
+    const { data: actual } = await a
+      .from("alq_cuotas")
+      .select("pagado_en, pagado_monto, liquidacion_id, periodo, monto")
+      .eq("id", id)
+      .maybeSingle();
+    if (!actual) throw new AdminActionError("No se encontró ese mes.");
     const fila: Record<string, unknown> = {
       monto: n(datos.monto) ?? 0,
       extras: n(datos.extras) ?? 0,
@@ -250,8 +267,25 @@ export async function editarCuotaAlqAction(
     };
     const v = fecha(datos.vencimiento);
     if (v) fila.vencimiento = v;
+    if (actual.pagado_en && datos.pagadoMonto !== undefined) {
+      const pagado = n(datos.pagadoMonto);
+      if (pagado === null || pagado <= 0) throw new AdminActionError("Ingresá el monto cobrado.");
+      if (pagado !== Number(actual.pagado_monto) && actual.liquidacion_id) {
+        throw new AdminActionError(
+          "Ese cobro ya está en una liquidación al propietario: borrá primero la liquidación para cambiar el monto cobrado."
+        );
+      }
+      fila.pagado_monto = pagado;
+      fila.pagado_en = fecha(datos.pagadoEn ?? "") ?? actual.pagado_en;
+      if (datos.medioPago && ["efectivo", "transferencia", "mercadopago"].includes(datos.medioPago)) fila.medio_pago = datos.medioPago;
+    }
     const { error } = await a.from("alq_cuotas").update(fila).eq("id", id);
     if (error) throw error;
+    await registrarActividad(perfil, "actualizar", "alquiler_cuota", id, {
+      periodo: actual.periodo,
+      monto: fila.monto,
+      ...(fila.pagado_monto !== undefined ? { pagadoMonto: fila.pagado_monto } : {}),
+    });
     refrescar();
     return { ok: true };
   } catch (err) {
