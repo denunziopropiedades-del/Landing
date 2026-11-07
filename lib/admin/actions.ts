@@ -19,6 +19,7 @@ import {
   sendEmail,
 } from "@/lib/email";
 import { NUMEROS_WHATSAPP_CONSULTAS } from "@/lib/whatsapp";
+import { linkMisCuotas } from "@/lib/mis-cuotas";
 import { sumarMeses } from "@/lib/fecha";
 import { posicionEnBloque, type BloqueManzana } from "@/lib/masterplan";
 import type { EstadoLead, EstadoLote, EstadoVisita, Rol } from "@/types/site";
@@ -2112,7 +2113,7 @@ export async function marcarCuotaPagadaAction(
       const [{ data: lead }, { data: cuotasLead }] = await Promise.all([
         admin
           .from("leads")
-          .select("nombre, email, plan_financiacion, proyectos(nombre)")
+          .select("nombre, email, plan_financiacion, portal_token, proyectos(nombre)")
           .eq("id", cuota.lead_id)
           .maybeSingle(),
         admin.from("cuotas").select("pagada, vencimiento").eq("lead_id", cuota.lead_id),
@@ -2136,6 +2137,7 @@ export async function marcarCuotaPagadaAction(
             pagoEnPesos: extraPesos ? { montoArs: extraPesos.monto_pagado_ars, cotizacion: extraPesos.cotizacion } : null,
             cuotasRestantes: pendientes.length,
             proximoVencimiento: pendientes[0]?.vencimiento ?? null,
+            linkPortal: linkMisCuotas(lead.portal_token as string | null),
           })
         );
       }

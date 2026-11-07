@@ -11,6 +11,7 @@ import {
   marcarCuotaPagadaAction,
 } from "@/lib/admin/actions";
 import { formatArs, formatUsd } from "@/lib/utils";
+import { buildWhatsappClienteUrl } from "@/lib/whatsapp";
 import type { ClienteCobranzas, Cuota, MedioPago, MonedaHonorario } from "@/types/site";
 
 function hoyIso() {
@@ -417,6 +418,7 @@ function TarjetaCliente({ cliente }: { cliente: ClienteCobranzas }) {
               <p className="font-medium text-brand-black/50">Contacto</p>
               <p className="mt-0.5 text-brand-black/80">{cliente.email}</p>
               <p className="text-brand-black/80">{cliente.telefono}</p>
+              {cliente.linkPortal && <LinkPortalCliente cliente={cliente} pagadas={pagadas} />}
             </div>
             <div>
               <p className="font-medium text-brand-black/50">Plan elegido</p>
@@ -705,6 +707,43 @@ export default function CobranzasManager({ clientes }: { clientes: ClienteCobran
           <TarjetaCliente key={c.leadId} cliente={c} />
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Link personal del cliente a "Mis cuotas": copiar o mandárselo por WhatsApp. */
+function LinkPortalCliente({ cliente, pagadas }: { cliente: ClienteCobranzas; pagadas: number }) {
+  const [copiado, setCopiado] = useState(false);
+  const link = cliente.linkPortal!;
+  const total = cliente.planFinanciacion?.cuotas ?? cliente.cuotas.length;
+  const mensaje = `Hola ${cliente.nombre}! Te paso tu link personal para ver tus cuotas${
+    cliente.proyectoNombre ? ` de ${cliente.proyectoNombre}` : ""
+  }: cuántas llevás pagas (${pagadas} de ${total}) y cuándo vence la próxima.\n${link}`;
+  const copiar = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      window.prompt("Copiá el link:", link);
+    }
+  };
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      <button type="button" onClick={copiar} className="rounded-lg border border-black/10 px-2 py-1 font-semibold text-brand-black/70">
+        {copiado ? "¡Copiado!" : "Copiar link \"Mis cuotas\""}
+      </button>
+      <a
+        href={buildWhatsappClienteUrl(cliente.telefono, mensaje)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="rounded-lg bg-[#25d366] px-2 py-1 font-semibold text-white"
+      >
+        Enviar por WhatsApp
+      </a>
+      <a href={link} target="_blank" rel="noopener noreferrer" className="rounded-lg px-2 py-1 font-semibold text-brand-green-700 underline">
+        Ver
+      </a>
     </div>
   );
 }

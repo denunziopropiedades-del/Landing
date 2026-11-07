@@ -15,6 +15,27 @@ const FIRMA_HTML = `
 
 
 /** "USD 300" o "$ 500.000" según la moneda. */
+/** "Llevás X de N cuotas pagas" con barra de avance (para los mails de cuotas). */
+function barraProgresoCuotas(pagadas: number | undefined, total: number) {
+  if (pagadas === undefined || !total) return "";
+  const pct = Math.max(0, Math.min(100, Math.round((pagadas / total) * 100)));
+  return `
+    <div style="margin: 0 0 18px;">
+      <p style="margin: 0 0 6px; color: #333;">Llevás <b>${pagadas} de ${total}</b> cuotas pagas (${pct}%).</p>
+      <div style="height: 10px; border-radius: 999px; background: #e5e7eb; overflow: hidden;">
+        <div style="height: 10px; width: ${pct}%; background: #6cc72f;"></div>
+      </div>
+    </div>`;
+}
+
+function botonMisCuotas(link: string | null | undefined) {
+  if (!link) return "";
+  return `
+    <p style="margin: 0 0 18px;">
+      <a href="${link}" style="display: inline-block; padding: 12px 22px; border-radius: 999px; background: #16294f; color: #ffffff; font-weight: bold; text-decoration: none;">Ver mis cuotas</a>
+    </p>`;
+}
+
 function montoTexto(n: number, moneda?: string | null) {
   const v = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 }).format(n);
   return moneda === "ARS" ? `$ ${v}` : `USD ${v}`;
@@ -174,6 +195,12 @@ export function armarMailRecordatorioCuota(datos: {
   montoUsd: number;
   moneda?: string;
   vencimiento: string;
+  /** Cuántas cuotas lleva pagas el cliente. */
+  pagadas?: number;
+  /** Días que faltan para el vencimiento (para el texto "vence en X días"). */
+  diasParaVencer?: number;
+  /** Link a su página personal "Mis cuotas". */
+  linkPortal?: string | null;
 }) {
   const fecha = new Date(`${datos.vencimiento}T12:00:00`).toLocaleDateString("es-AR", {
     day: "2-digit",
@@ -183,12 +210,22 @@ export function armarMailRecordatorioCuota(datos: {
 
   return `
     <h2>Tu cuota está por vencer</h2>
-    <p style="color: #333;">Hola ${datos.nombre}, te recordamos que en una semana vence tu próxima cuota de ${datos.proyectoNombre}:</p>
+    <p style="color: #333;">Hola ${datos.nombre}, te recordamos que ${
+      datos.diasParaVencer === undefined || datos.diasParaVencer >= 7
+        ? "en una semana"
+        : datos.diasParaVencer <= 0
+          ? "hoy"
+          : datos.diasParaVencer === 1
+            ? "mañana"
+            : `en ${datos.diasParaVencer} días`
+    } vence tu próxima cuota de ${datos.proyectoNombre}:</p>
     <div style="margin: 20px 0; padding: 16px; border: 1px solid #f0d999; background: #fffbeb; border-radius: 8px;">
       <p style="margin: 0 0 4px; color: #333;"><b>Cuota:</b> ${datos.numeroCuota} de ${datos.totalCuotas}</p>
       <p style="margin: 0 0 4px; color: #333;"><b>Monto:</b> ${montoTexto(datos.montoUsd, datos.moneda)}</p>
       <p style="margin: 0; color: #333;"><b>Vencimiento:</b> ${fecha}</p>
     </div>
+    ${barraProgresoCuotas(datos.pagadas, datos.totalCuotas)}
+    ${botonMisCuotas(datos.linkPortal)}
     <p style="margin: 0; color: #333;">
       Ante cualquier consulta sobre cómo abonarla, respondé este correo o escribinos por WhatsApp.
     </p>
@@ -206,6 +243,7 @@ export function armarMailConfirmacionCuotaPagada(datos: {
   pagoEnPesos?: { montoArs: number; cotizacion: number } | null;
   cuotasRestantes: number;
   proximoVencimiento: string | null;
+  linkPortal?: string | null;
 }) {
   const proximo = datos.proximoVencimiento
     ? new Date(`${datos.proximoVencimiento}T12:00:00`).toLocaleDateString("es-AR", {
@@ -234,6 +272,8 @@ export function armarMailConfirmacionCuotaPagada(datos: {
            </p>`
         : `<p style="margin: 0; color: #333;"><b>¡Esta era tu última cuota! Terminaste de abonar tu plan de financiación.</b></p>`
     }
+    <div style="margin-top: 16px;">${barraProgresoCuotas(datos.totalCuotas - datos.cuotasRestantes, datos.totalCuotas)}</div>
+    ${botonMisCuotas(datos.linkPortal)}
     <p style="margin: 16px 0 0; color: #333;">
       Ante cualquier consulta, respondé este correo o escribinos por WhatsApp.
     </p>

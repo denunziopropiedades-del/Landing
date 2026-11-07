@@ -1,5 +1,6 @@
 import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizarTelefono } from "@/lib/leads";
+import { linkMisCuotas } from "@/lib/mis-cuotas";
 import type {
   ActividadLog,
   Banner,
@@ -544,6 +545,10 @@ export async function getClientesCobranzasAdmin(): Promise<ClienteCobranzas[]> {
     honorarios.set(h.id, { monto: numOrNull(h.honorario_cobranza), moneda: h.honorario_cobranza_moneda === "ARS" ? "ARS" : "USD" });
   }
 
+  const tokens = new Map<string, string>();
+  const { data: tk } = await supabase.from("leads").select("id, portal_token").eq("forma_pago", "financiado");
+  for (const t of (tk ?? []) as { id: string; portal_token: string | null }[]) if (t.portal_token) tokens.set(t.id, t.portal_token);
+
   const hoyIso = new Date().toISOString().slice(0, 10);
 
   return data
@@ -605,6 +610,7 @@ export async function getClientesCobranzasAdmin(): Promise<ClienteCobranzas[]> {
         senaPagoConfirmadoEn: l.pago_confirmado_en ?? null,
         honorarioCobranza: honorarios.get(l.id)?.monto ?? null,
         honorarioCobranzaMoneda: honorarios.get(l.id)?.moneda ?? "USD",
+        linkPortal: linkMisCuotas(tokens.get(l.id)),
         cuotas,
       };
       return cliente;
