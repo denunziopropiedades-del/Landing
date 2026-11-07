@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { actualizarBusquedaLeadAction, bloquearAgendaLeadAction } from "@/lib/admin/actions";
+import { actualizarBusquedaLeadAction, bloquearAgendaLeadAction, cancelarVisitaAction } from "@/lib/admin/actions";
 import { ORIGENES, labelOrigen } from "@/lib/leads";
 import type { BusquedaLead, Lead } from "@/types/site";
 
@@ -177,6 +177,64 @@ export function BotonBloquearAgenda({
         {pendiente ? "Guardando…" : bloqueada ? "Desbloquear agenda" : "🚫 Bloquear agenda de visitas"}
       </button>
       {error && <span className="text-[11px] text-red-600">{error}</span>}
+    </div>
+  );
+}
+
+const fechaCortaVisita = (iso: string) => {
+  const d = new Date(`${iso}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return new Intl.DateTimeFormat("es-AR", { weekday: "short", day: "2-digit", month: "2-digit", timeZone: "UTC" }).format(d);
+};
+
+/** Visitas pendientes o confirmadas del cliente, con botón para cancelarlas (saca del calendario y le avisa por mail). */
+export function VisitasLead({
+  lead,
+  onActualizado,
+}: {
+  lead: Lead;
+  onActualizado: (id: string, cambios: Partial<Lead>) => void;
+}) {
+  const [pendiente, startTransition] = useTransition();
+  const [aviso, setAviso] = useState<{ ok: boolean; texto: string } | null>(null);
+  const visitas = lead.visitasActivas ?? [];
+  if (!visitas.length && !aviso) return null;
+
+  const cancelar = (v: NonNullable<Lead["visitasActivas"]>[number]) => {
+    const motivo = window.prompt(
+      `¿Cancelar la visita de ${lead.nombre} del ${fechaCortaVisita(v.fecha)} a las ${v.horario}?\n\nSe saca del calendario, se libera el horario y se le avisa por mail${lead.email ? ` (${lead.email})` : ""}.\n\nMotivo para el cliente (opcional):`,
+      ""
+    );
+    if (motivo === null) return;
+    startTransition(async () => {
+      const r = await cancelarVisitaAction(v.id, motivo);
+      if (!r.ok) return setAviso({ ok: false, texto: r.error });
+      setAviso({ ok: true, texto: r.aviso ?? "Visita cancelada." });
+      onActualizado(lead.id, { visitasActivas: visitas.filter((x) => x.id !== v.id) });
+    });
+  };
+
+  return (
+    <div className="mt-1.5 space-y-1">
+      {visitas.map((v) => (
+        <div key={v.id} className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1">
+          <span className="text-[11px] text-amber-900">
+            📅 <b className="capitalize">{fechaCortaVisita(v.fecha)}</b> {v.horario} hs · {v.estado}
+          </span>
+          <button
+            type="button"
+            disabled={pendiente}
+            onClick={(e) => {
+              e.stopPropagation();
+              cancelar(v);
+            }}
+            className="shrink-0 rounded-md border border-red-300 bg-white px-2 py-0.5 text-[10px] font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+          >
+            {pendiente ? "Cancelando…" : "Cancelar visita"}
+          </button>
+        </div>
+      ))}
+      {aviso && <p className={`text-[11px] ${aviso.ok ? "text-emerald-700" : "text-red-600"}`}>{aviso.texto}</p>}
     </div>
   );
 }
