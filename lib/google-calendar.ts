@@ -91,7 +91,56 @@ export type VisitaParaCalendario = {
   fecha: string;
   horario: string;
   proyectoNombre?: string;
+  /** Dirección o zona del barrio/propiedad (va en "Ubicación" del evento). */
+  ubicacion?: string | null;
+  /** Link de Google Maps del lugar. */
+  mapsUrl?: string | null;
 };
+
+/** Título, ubicación y descripción del evento de una visita (con el lugar a visitar). */
+function contenidoEventoVisita(visita: Pick<VisitaParaCalendario, "nombre" | "email" | "telefono" | "proyectoNombre" | "ubicacion" | "mapsUrl">) {
+  const lugar = visita.proyectoNombre?.trim();
+  const ubicacionTexto = visita.ubicacion && !/^https?:\/\//i.test(visita.ubicacion) ? visita.ubicacion.trim() : null;
+  return {
+    summary: `${ETIQUETA_VISITA_ONLINE} - ${visita.nombre}${lugar ? ` - ${lugar}` : ""}`,
+    // Google Calendar muestra el mapa y el botón "Cómo llegar" a partir de este campo.
+    location: [lugar, ubicacionTexto].filter(Boolean).join(", ") || visita.mapsUrl || undefined,
+    description: [
+      "Visita agendada desde la web.",
+      lugar ? `📍 Lugar a visitar: ${lugar}` : "📍 Lugar a visitar: sin definir",
+      ubicacionTexto ? `Ubicación: ${ubicacionTexto}` : null,
+      visita.mapsUrl ? `Mapa: ${visita.mapsUrl}` : null,
+      `Teléfono: ${visita.telefono}`,
+      `Email: ${visita.email}`,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  };
+}
+
+/** Actualiza el lugar (título, ubicación y descripción) de un evento de visita ya creado. No lanza si falla. */
+export async function actualizarLugarEventoVisita(
+  eventId: string,
+  visita: Pick<VisitaParaCalendario, "nombre" | "email" | "telefono" | "proyectoNombre" | "ubicacion" | "mapsUrl">
+): Promise<boolean> {
+  if (!isGoogleCalendarConfigured() || !eventId) return false;
+  try {
+    const accessToken = await getAccessToken();
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID!)}/events/${eventId}`,
+      {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify(contenidoEventoVisita(visita)),
+      }
+    );
+    if (!res.ok) console.error("No se pudo actualizar el lugar del evento", await res.text());
+    return res.ok;
+  } catch (err) {
+    console.error("No se pudo actualizar el lugar del evento", err);
+    return false;
+  }
+}
 
 /**
  * Crea un evento en Google Calendar para una visita agendada, con la etiqueta
@@ -110,15 +159,7 @@ export async function crearEventoVisita(visita: VisitaParaCalendario): Promise<s
         method: "POST",
         headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          summary: `${ETIQUETA_VISITA_ONLINE} - ${visita.nombre}`,
-          description: [
-            "Visita agendada desde la web.",
-            visita.proyectoNombre ? `Proyecto: ${visita.proyectoNombre}` : null,
-            `Teléfono: ${visita.telefono}`,
-            `Email: ${visita.email}`,
-          ]
-            .filter(Boolean)
-            .join("\n"),
+          ...contenidoEventoVisita(visita),
           start: { dateTime: sumarMinutos(visita.fecha, visita.horario, 0), timeZone: TIMEZONE },
           end: { dateTime: sumarMinutos(visita.fecha, visita.horario, DURACION_VISITA_MINUTOS), timeZone: TIMEZONE },
           colorId: COLOR_ID_ROJO,

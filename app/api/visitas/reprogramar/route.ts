@@ -92,6 +92,8 @@ export async function POST(request: Request) {
     fecha,
     horario,
     proyectoNombre: proyecto?.nombre,
+    ubicacion: proyecto?.ubicacion,
+    mapsUrl: proyecto?.ubicacion_maps_url,
   });
   await supabase.from("visitas").update({ google_event_id: googleEventId }).eq("id", visita.id);
 

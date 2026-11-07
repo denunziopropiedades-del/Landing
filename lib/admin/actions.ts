@@ -8,7 +8,7 @@ import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/
 import { normalizarTelefono } from "@/lib/leads";
 import { requireRole, AdminActionError } from "@/lib/admin/auth";
 import { registrarActividad } from "@/lib/admin/activity";
-import { cancelarEventoVisita, crearEventoEscribania } from "@/lib/google-calendar";
+import { cancelarEventoVisita, crearEventoEscribania, actualizarLugarEventoVisita } from "@/lib/google-calendar";
 import { bloqueadoPorEscribania } from "@/lib/agenda";
 import { bloqueReprogramarHtml } from "@/lib/visitas";
 import {
@@ -2287,6 +2287,24 @@ export async function cambiarProyectoVisitaAction(id: string, proyectoId: string
 
     const { error } = await admin.from("visitas").update({ proyecto_id: proyectoId }).eq("id", id);
     if (error) throw new Error(error.message);
+
+    // Actualiza el lugar en el evento de Google Calendar.
+    const { data: v } = await admin
+      .from("visitas")
+      .select("nombre, email, telefono, google_event_id, proyectos(nombre, ubicacion, ubicacion_maps_url)")
+      .eq("id", id)
+      .maybeSingle();
+    if (v?.google_event_id) {
+      const p = v.proyectos as unknown as { nombre: string; ubicacion: string | null; ubicacion_maps_url: string | null } | null;
+      await actualizarLugarEventoVisita(v.google_event_id as string, {
+        nombre: v.nombre as string,
+        email: v.email as string,
+        telefono: v.telefono as string,
+        proyectoNombre: p?.nombre,
+        ubicacion: p?.ubicacion,
+        mapsUrl: p?.ubicacion_maps_url,
+      });
+    }
 
     await registrarActividad(actor, "cambiar-proyecto", "visita", id, {
       anterior: (actual?.proyectos as unknown as { nombre: string } | null)?.nombre ?? "Sin desarrollo",

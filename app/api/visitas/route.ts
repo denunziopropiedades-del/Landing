@@ -142,6 +142,8 @@ export async function POST(request: Request) {
     fecha: data.fecha,
     horario: data.horario,
     proyectoNombre,
+    ubicacion: proyectoUbicacion,
+    mapsUrl: proyectoUbicacionMapsUrl,
   });
 
   if (supabase && visitaId && googleEventId) {
