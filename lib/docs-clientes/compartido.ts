@@ -120,7 +120,7 @@ export function enmascararEmail(e: string | null | undefined) {
 export function iniciales(nombre: string) {
   return nombre
     .split(/\s+/)
-    .filter(Boolean)
+    .filter((p) => /^\p{L}/u.test(p))
     .map((p) => `${p[0].toUpperCase()}.`)
     .join(" ");
 }
