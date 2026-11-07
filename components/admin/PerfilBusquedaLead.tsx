@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { actualizarBusquedaLeadAction } from "@/lib/admin/actions";
+import { actualizarBusquedaLeadAction, bloquearAgendaLeadAction } from "@/lib/admin/actions";
 import { ORIGENES, labelOrigen } from "@/lib/leads";
 import type { BusquedaLead, Lead } from "@/types/site";
 
@@ -22,6 +22,18 @@ export function EtiquetasOrigen({ lead }: { lead: Lead }) {
       >
         {veces > 1 ? `🔁 Consultó ${veces} veces` : "Consultó 1 vez"}
       </span>
+      {(lead.visitasAgendadas ?? 0) > 0 && (
+        <span
+          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+            (lead.visitasAgendadas ?? 0) >= 3 ? "bg-red-100 text-red-800" : (lead.visitasAgendadas ?? 0) === 2 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"
+          }`}
+        >
+          📅 Agendó {lead.visitasAgendadas} {lead.visitasAgendadas === 1 ? "visita" : "visitas"}
+        </span>
+      )}
+      {lead.agendaBloqueada && (
+        <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white">🚫 Agenda bloqueada</span>
+      )}
     </div>
   );
 }
@@ -122,6 +134,49 @@ export default function PerfilBusquedaLead({
         {ok && <span className="text-[11px] text-emerald-700">Guardado</span>}
         {error && <span className="text-[11px] text-red-600">{error}</span>}
       </div>
+    </div>
+  );
+}
+
+/** Botón para que esta persona no pueda agendar más visitas desde la web (queda atado a su mail y teléfono). */
+export function BotonBloquearAgenda({
+  lead,
+  onActualizado,
+}: {
+  lead: Lead;
+  onActualizado: (id: string, cambios: Partial<Lead>) => void;
+}) {
+  const [pendiente, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const bloqueada = !!lead.agendaBloqueada;
+  const toggle = () => {
+    if (
+      !bloqueada &&
+      !confirm(
+        `¿Bloquear a ${lead.nombre} para que no pueda agendar más visitas desde la web?\n\nQueda atado a su mail${lead.email ? ` (${lead.email})` : ""} y a su teléfono. Lo podés desbloquear cuando quieras.`
+      )
+    )
+      return;
+    startTransition(async () => {
+      setError(null);
+      const r = await bloquearAgendaLeadAction(lead.id, !bloqueada);
+      if (!r.ok) return setError(r.error);
+      onActualizado(lead.id, { agendaBloqueada: !bloqueada });
+    });
+  };
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={toggle}
+        disabled={pendiente}
+        className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold disabled:opacity-50 ${
+          bloqueada ? "border border-black/15 text-brand-black/70" : "bg-red-600 text-white"
+        }`}
+      >
+        {pendiente ? "Guardando…" : bloqueada ? "Desbloquear agenda" : "🚫 Bloquear agenda de visitas"}
+      </button>
+      {error && <span className="text-[11px] text-red-600">{error}</span>}
     </div>
   );
 }

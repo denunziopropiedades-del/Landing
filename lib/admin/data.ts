@@ -1,4 +1,5 @@
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/server";
+import { normalizarTelefono } from "@/lib/leads";
 import type {
   ActividadLog,
   Banner,
@@ -337,7 +338,32 @@ export async function getLeads(): Promise<Lead[]> {
     for (const pr of props ?? []) titulosPropiedad.set(pr.id as string, pr.titulo as string);
   }
 
+  // Visitas agendadas por persona (mail o teléfono) y bloqueos de agenda.
+  const visitasPorMail = new Map<string, number>();
+  const visitasPorTel = new Map<string, number>();
+  const bloqueadosMail = new Set<string>();
+  const bloqueadosTel = new Set<string>();
+  const adminDb = await getSupabaseAdminClient();
+  if (adminDb) {
+    const [{ data: vs }, { data: bl }] = await Promise.all([
+      adminDb.from("visitas").select("email, telefono").limit(20000),
+      adminDb.from("agenda_bloqueos").select("email, telefono_norm"),
+    ]);
+    for (const v of vs ?? []) {
+      const m = String(v.email ?? "").trim().toLowerCase();
+      const t = normalizarTelefono(v.telefono as string);
+      if (m) visitasPorMail.set(m, (visitasPorMail.get(m) ?? 0) + 1);
+      else if (t) visitasPorTel.set(t, (visitasPorTel.get(t) ?? 0) + 1);
+    }
+    for (const b of bl ?? []) {
+      if (b.email) bloqueadosMail.add(String(b.email).toLowerCase());
+      if (b.telefono_norm) bloqueadosTel.add(String(b.telefono_norm));
+    }
+  }
+
   return data.map((l) => {
+    const mailLead = String(l.email ?? "").trim().toLowerCase();
+    const telLead = normalizarTelefono(l.telefono as string);
     const lotesOperacion = (
       (l.lead_lotes ?? []) as unknown as {
         lotes: { id: string; manzana: string; numero: string; superficie_m2: number; nombre: string } | null;
@@ -413,6 +439,8 @@ export async function getLeads(): Promise<Lead[]> {
     origen: (l.origen as string | null) ?? null,
     utmCampaign: (l.utm_campaign as string | null) ?? null,
     consultasUnificadas: Number(l.consultas_unificadas ?? 0),
+    visitasAgendadas: (mailLead ? visitasPorMail.get(mailLead) ?? 0 : 0) + (telLead ? visitasPorTel.get(telLead) ?? 0 : 0),
+    agendaBloqueada: (!!mailLead && bloqueadosMail.has(mailLead)) || (telLead.length >= 8 && bloqueadosTel.has(telLead)),
     busqueda: {
       presupuestoUsd: numOrNull(l.busqueda_presupuesto_usd),
       zona: (l.busqueda_zona as string | null) ?? null,

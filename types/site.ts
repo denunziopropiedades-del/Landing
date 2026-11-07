@@ -255,6 +255,10 @@ export type Lead = {
   consultasUnificadas?: number;
   /** Qué busca el cliente, para cruzarlo con los lotes disponibles. */
   busqueda?: BusquedaLead;
+  /** Cuántas visitas agendó esta persona (por mail o teléfono), contando todas. */
+  visitasAgendadas?: number;
+  /** Si está bloqueada para agendar más visitas desde la web. */
+  agendaBloqueada?: boolean;
 };
 
 export type BusquedaLead = {

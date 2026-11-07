@@ -5,6 +5,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { NOTA_COORDINACION_VISITA_HTML, NOTA_RESERVA_LOTE_HTML, sendEmail, sendNotificationEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { crearEventoVisita } from "@/lib/google-calendar";
+import { agendaBloqueada } from "@/lib/agenda-bloqueos";
 import { bloqueReprogramarHtml, linkReprogramacion, motivoHorarioNoDisponible } from "@/lib/visitas";
 import { formatearPrecio, labelTipo, mapPropiedad, ubicacionTexto } from "@/lib/propiedades-base";
 
@@ -30,6 +31,23 @@ export async function POST(request: Request) {
   let visitaId: string | null = null;
 
   if (supabase) {
+    if (await agendaBloqueada(supabase, data.email, data.telefono)) {
+      try {
+        await sendNotificationEmail(
+          `Visita bloqueada: ${data.nombre} intentó agendar de nuevo`,
+          `<p><b>${data.nombre}</b> (${data.email || "sin mail"} · ${data.telefono || "sin teléfono"}) intentó agendar una visita para el ${data.fecha} a las ${data.horario}, pero tiene la agenda bloqueada desde el CRM. No se registró la visita.</p>`
+        );
+      } catch {
+        /* el aviso es opcional */
+      }
+      return NextResponse.json(
+        {
+          error:
+            "No podemos tomar una nueva visita online con estos datos. Escribinos por WhatsApp y la coordinamos personalmente.",
+        },
+        { status: 403 }
+      );
+    }
     const motivo = await motivoHorarioNoDisponible(supabase, data.fecha, data.horario);
     if (motivo) {
       return NextResponse.json({ error: motivo }, { status: 409 });

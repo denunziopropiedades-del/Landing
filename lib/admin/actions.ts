@@ -5,6 +5,7 @@ import { normalizarLinkMaps } from "@/lib/geo";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/server";
+import { normalizarTelefono } from "@/lib/leads";
 import { requireRole, AdminActionError } from "@/lib/admin/auth";
 import { registrarActividad } from "@/lib/admin/activity";
 import { cancelarEventoVisita, crearEventoEscribania } from "@/lib/google-calendar";
@@ -2758,6 +2759,43 @@ export async function actualizarBusquedaLeadAction(
     await registrarActividad(actor, "actualizar", "lead", id, { busqueda: true, ...(await contextoLead(admin, id)) });
     revalidatePath("/admin/crm");
     revalidatePath("/admin/coincidencias");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/**
+ * Bloquea (o desbloquea) a una persona para que no pueda agendar más visitas desde
+ * la web. Queda atada a su mail y a su teléfono.
+ */
+export async function bloquearAgendaLeadAction(id: string, bloquear: boolean): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    await verificarPropiedadLead(actor.id, actor.rol, id);
+    const admin = (await getSupabaseAdminClient())!;
+    const { data: lead } = await admin.from("leads").select("email, telefono").eq("id", id).maybeSingle();
+    if (!lead) throw new AdminActionError("No se encontró el cliente.");
+    const email = String(lead.email ?? "").trim().toLowerCase() || null;
+    const tel = normalizarTelefono(lead.telefono as string) || null;
+    if (!email && !tel) throw new AdminActionError("Este cliente no tiene mail ni teléfono cargado para bloquearlo.");
+
+    if (bloquear) {
+      const { error } = await admin.from("agenda_bloqueos").insert({ email, telefono_norm: tel, lead_id: id, motivo: `Bloqueado por ${actor.nombre || actor.email}` });
+      if (error && error.code !== "23505") {
+        if (/relation|schema cache/i.test(error.message)) throw new AdminActionError("Falta crear la tabla agenda_bloqueos en Supabase.");
+        throw new Error(error.message);
+      }
+    } else {
+      const filtros = [email ? `email.ilike.${email.replace(/[,()]/g, "")}` : null, tel ? `telefono_norm.eq.${tel}` : null, `lead_id.eq.${id}`].filter(Boolean);
+      const { error } = await admin.from("agenda_bloqueos").delete().or(filtros.join(","));
+      if (error) throw new Error(error.message);
+    }
+    await registrarActividad(actor, "actualizar", "lead", id, {
+      agenda: bloquear ? "bloqueada" : "desbloqueada",
+      ...(await contextoLead(admin, id)),
+    });
+    revalidatePath("/admin/crm");
     return { ok: true };
   } catch (err) {
     return fail(err);

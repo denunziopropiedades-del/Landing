@@ -24,7 +24,7 @@ import { buildWhatsappClienteUrl } from "@/lib/whatsapp";
 import { formatMoneda } from "@/lib/utils";
 import type { EstadoLead, Lead, Lote, Perfil, PlanFinanciacionFijo, Proyecto, Rol } from "@/types/site";
 import PlanFinanciacionCampos, { planAEditable, type PlanEditable } from "@/components/admin/PlanFinanciacionCampos";
-import PerfilBusquedaLead, { EtiquetasOrigen } from "@/components/admin/PerfilBusquedaLead";
+import PerfilBusquedaLead, { BotonBloquearAgenda, EtiquetasOrigen } from "@/components/admin/PerfilBusquedaLead";
 
 /** Propiedades (venta, alquiler, campos…) para elegir qué le interesa a cada lead. */
 export type OpcionPropiedad = { id: string; titulo: string; grupo: "venta" | "alquiler" | "campo" };
@@ -909,6 +909,7 @@ function LeadCard({
           )}
 
           <PerfilBusquedaLead lead={lead} onActualizado={onActualizado} />
+          <BotonBloquearAgenda lead={lead} onActualizado={onActualizado} />
 
           <textarea
             value={observaciones}
