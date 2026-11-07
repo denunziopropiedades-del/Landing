@@ -17,7 +17,7 @@ export function EtiquetasOrigen({ lead }: { lead: Lead }) {
       )}
       <span
         className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-          veces > 1 ? "bg-amber-100 text-amber-800" : "bg-black/5 text-brand-black/60"
+          veces >= 3 ? "bg-red-100 text-red-800" : veces === 2 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"
         }`}
       >
         {veces > 1 ? `🔁 Consultó ${veces} veces` : "Consultó 1 vez"}
