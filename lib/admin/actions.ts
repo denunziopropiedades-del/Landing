@@ -11,7 +11,14 @@ import { registrarActividad } from "@/lib/admin/activity";
 import { cancelarEventoVisita, crearEventoEscribania } from "@/lib/google-calendar";
 import { bloqueadoPorEscribania } from "@/lib/agenda";
 import { bloqueReprogramarHtml } from "@/lib/visitas";
-import { NOTA_RESERVA_LOTE_HTML, armarMailConfirmacionCuotaPagada, armarMailFirmaEscribania, sendEmail } from "@/lib/email";
+import {
+  NOTA_RESERVA_LOTE_HTML,
+  armarMailConfirmacionCuotaPagada,
+  armarMailFirmaEscribania,
+  armarMailVisitaCancelada,
+  sendEmail,
+} from "@/lib/email";
+import { NUMEROS_WHATSAPP_CONSULTAS } from "@/lib/whatsapp";
 import { sumarMeses } from "@/lib/fecha";
 import { posicionEnBloque, type BloqueManzana } from "@/lib/masterplan";
 import type { EstadoLead, EstadoLote, EstadoVisita, Rol } from "@/types/site";
@@ -2330,6 +2337,77 @@ const ESTADO_VISITA_MENSAJE: Record<EstadoVisita, { asunto: string; titulo: stri
   },
 };
 
+/** Manda el mail de "visita cancelada" con link para volver a agendar. */
+async function enviarMailVisitaCancelada(
+  visita: { id?: string; email: string | null; nombre: string; fecha: string; horario: string; proyectos?: unknown },
+  motivo?: string | null
+) {
+  if (!visita.email) return;
+  const proyecto = visita.proyectos as { nombre: string; slug?: string | null; ubicacion?: string | null } | null;
+  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://matulotes.app").replace(/\/+$/, "");
+  const linkAgendar = proyecto?.slug ? `${site}/desarrollos/${proyecto.slug}#visita` : site;
+  const { asunto, html } = armarMailVisitaCancelada({
+    nombre: visita.nombre,
+    fecha: visita.fecha,
+    horario: visita.horario,
+    lugar: proyecto?.nombre ? `${proyecto.nombre}${proyecto.ubicacion ? ` — ${proyecto.ubicacion}` : ""}` : null,
+    motivo: motivo || null,
+    linkAgendar,
+    linkWhatsapp: `https://wa.me/${NUMEROS_WHATSAPP_CONSULTAS[0]}?text=${encodeURIComponent(
+      `Hola, soy ${visita.nombre}. Me cancelaron la visita del ${visita.fecha} y quiero coordinar otra.`
+    )}`,
+  });
+  await sendEmail(visita.email, asunto, html);
+}
+
+/**
+ * Cancela una visita: la saca del Google Calendar, libera el horario en la agenda
+ * de la web y le avisa al cliente por mail.
+ */
+export async function cancelarVisitaAction(id: string, motivo?: string): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    const admin = (await getSupabaseAdminClient())!;
+    const { data: visita } = await admin
+      .from("visitas")
+      .select("id, estado, google_event_id, email, nombre, fecha, horario, proyectos(nombre, slug, ubicacion)")
+      .eq("id", id)
+      .maybeSingle();
+    if (!visita) throw new AdminActionError("No se encontró la visita.");
+    if (visita.estado === "cancelada") throw new AdminActionError("Esa visita ya estaba cancelada.");
+
+    if (visita.google_event_id) await cancelarEventoVisita(visita.google_event_id);
+    const { error } = await admin.from("visitas").update({ estado: "cancelada", google_event_id: null }).eq("id", id);
+    if (error) throw new Error(error.message);
+    const motivoLimpio = (motivo ?? "").trim().slice(0, 300) || null;
+    await registrarActividad(actor, "cancelar", "visita", id, {
+      cliente: visita.nombre,
+      fecha: `${visita.fecha} ${visita.horario}`,
+      ...(motivoLimpio ? { motivo: motivoLimpio } : {}),
+    });
+
+    let mailEnviado = false;
+    try {
+      await enviarMailVisitaCancelada(visita, motivoLimpio);
+      mailEnviado = !!visita.email;
+    } catch (err) {
+      console.error("No se pudo enviar el mail de visita cancelada", err);
+    }
+    revalidatePath("/admin/consultas");
+    revalidatePath("/admin/crm");
+    return {
+      ok: true,
+      aviso: mailEnviado
+        ? `Visita cancelada. Se sacó de la agenda y se le avisó por mail a ${visita.email}.`
+        : visita.email
+          ? "Visita cancelada y sacada de la agenda, pero no se pudo enviar el mail al cliente."
+          : "Visita cancelada y sacada de la agenda. El cliente no tiene mail cargado: avisale por WhatsApp.",
+    };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function actualizarEstadoVisitaAction(id: string, estado: EstadoVisita): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador", "supervisor", "vendedor");
@@ -2341,8 +2419,9 @@ export async function actualizarEstadoVisitaAction(id: string, estado: EstadoVis
       .eq("id", id)
       .maybeSingle();
 
-    if (estado === "cancelada" && visita?.google_event_id) {
-      await cancelarEventoVisita(visita.google_event_id);
+    if (estado === "cancelada") {
+      const r = await cancelarVisitaAction(id);
+      return r.ok ? { ok: true } : r;
     }
 
     const { error } = await admin.from("visitas").update({ estado }).eq("id", id);

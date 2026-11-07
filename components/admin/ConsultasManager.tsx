@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, Download, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, Trash2, XCircle } from "lucide-react";
 import {
   actualizarEstadoLeadAction,
   actualizarEstadoVisitaAction,
+  cancelarVisitaAction,
   cambiarProyectoVisitaAction,
   deleteLeadAction,
   eliminarVisitaAction,
@@ -73,6 +74,19 @@ export default function ConsultasManager({
     if (!confirm("¿Eliminar esta consulta?")) return;
     startTransition(() => {
       deleteLeadAction(id);
+    });
+  };
+
+  const [avisoVisita, setAvisoVisita] = useState<{ ok: boolean; texto: string } | null>(null);
+  const cancelarVisita = (v: Visita) => {
+    const motivo = window.prompt(
+      `¿Cancelar la visita de ${v.nombre} del ${v.fecha} a las ${v.horario}?\n\nSe saca del calendario, se libera el horario y se le avisa por mail${v.email ? ` (${v.email})` : ""}.\n\nMotivo para el cliente (opcional):`,
+      ""
+    );
+    if (motivo === null) return;
+    startTransition(async () => {
+      const r = await cancelarVisitaAction(v.id, motivo);
+      setAvisoVisita(r.ok ? { ok: true, texto: r.aviso ?? "Visita cancelada." } : { ok: false, texto: r.error });
     });
   };
 
@@ -222,6 +236,11 @@ export default function ConsultasManager({
 
       <div>
         <h2 className="mb-4 font-display text-lg font-bold text-brand-black">Visitas agendadas</h2>
+        {avisoVisita && (
+          <p className={`mb-3 rounded-lg px-3 py-2 text-sm ${avisoVisita.ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-800"}`}>
+            {avisoVisita.texto}
+          </p>
+        )}
         <div className="overflow-x-auto rounded-2xl border border-black/5 bg-white shadow-sm">
           <table className="w-full min-w-[700px] text-left text-sm">
             <thead className="border-b border-black/10 text-brand-black/50">
@@ -282,7 +301,17 @@ export default function ConsultasManager({
                       ))}
                     </select>
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="space-y-1 px-4 py-3 text-right">
+                    {(v.estado === "pendiente" || v.estado === "confirmada") && (
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => cancelarVisita(v)}
+                        className="block w-full whitespace-nowrap rounded-lg border border-red-300 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                      >
+                        <XCircle className="inline h-3.5 w-3.5" /> Cancelar visita
+                      </button>
+                    )}
                     <button type="button" disabled={pending} onClick={() => eliminarVisita(v.id)} className="text-red-600 hover:underline disabled:opacity-50">
                       <Trash2 className="inline h-4 w-4" /> Eliminar
                     </button>

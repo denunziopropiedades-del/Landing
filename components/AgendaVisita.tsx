@@ -85,7 +85,7 @@ export default function AgendaVisita({
   const hoy = new Date().toISOString().split("T")[0];
 
   return (
-    <section className="bg-brand-cream py-20 sm:py-28">
+    <section id="visita" className="scroll-mt-20 bg-brand-cream py-20 sm:py-28">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="font-display text-3xl font-bold text-brand-black sm:text-4xl">Coordiná tu visita</h2>

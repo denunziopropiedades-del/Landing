@@ -67,6 +67,53 @@ function conFirma(html: string) {
   return `${html}${FIRMA_HTML}`;
 }
 
+/** HTML completo (con firma) tal como le llega al cliente: sirve para vistas previas. */
+export function htmlConFirma(html: string) {
+  return conFirma(html);
+}
+
+const fechaLarga = (iso: string) => {
+  const d = new Date(`${iso}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return iso;
+  const t = new Intl.DateTimeFormat("es-AR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(d);
+  return t.charAt(0).toUpperCase() + t.slice(1);
+};
+
+/** Mail al cliente cuando se le cancela una visita agendada. */
+export function armarMailVisitaCancelada(datos: {
+  nombre: string;
+  fecha: string;
+  horario: string;
+  lugar?: string | null;
+  motivo?: string | null;
+  linkAgendar: string;
+  linkWhatsapp: string;
+}) {
+  const asunto = `Tu visita del ${fechaLarga(datos.fecha).toLowerCase()} fue cancelada`;
+  const html = `
+    <div style="font-family: sans-serif; color: #333; max-width: 560px;">
+      <div style="padding: 14px 18px; border-radius: 10px; background: #dc2626; color: #ffffff;">
+        <p style="margin: 0; font-size: 18px; font-weight: bold;">Visita cancelada</p>
+      </div>
+      <p style="margin: 18px 0 8px;">Hola ${datos.nombre},</p>
+      <p style="margin: 0 0 14px;">Te informamos que <b>tu visita fue cancelada</b> y el horario quedó liberado en nuestra agenda.</p>
+      <table style="border-collapse: collapse; width: 100%; margin: 0 0 14px; border: 1px solid #f1c4c4; border-radius: 8px; background: #fff5f5;">
+        ${datos.lugar ? `<tr><td style="padding: 8px 12px; color: #666; width: 110px;">Lugar</td><td style="padding: 8px 12px;"><b>${datos.lugar}</b></td></tr>` : ""}
+        <tr><td style="padding: 8px 12px; color: #666; width: 110px;">Fecha</td><td style="padding: 8px 12px;"><s>${fechaLarga(datos.fecha)}</s></td></tr>
+        <tr><td style="padding: 8px 12px; color: #666;">Horario</td><td style="padding: 8px 12px;"><s>${datos.horario} hs</s></td></tr>
+        ${datos.motivo ? `<tr><td style="padding: 8px 12px; color: #666;">Motivo</td><td style="padding: 8px 12px;">${datos.motivo}</td></tr>` : ""}
+      </table>
+      <p style="margin: 0 0 16px;">Si querés conocer el lugar en otro momento, podés coordinar un nuevo horario cuando quieras:</p>
+      <p style="margin: 0 0 8px;">
+        <a href="${datos.linkAgendar}" style="display: inline-block; padding: 12px 22px; border-radius: 999px; background: #16294f; color: #ffffff; font-weight: bold; text-decoration: none;">Agendar una nueva visita</a>
+      </p>
+      <p style="margin: 0 0 4px;">
+        <a href="${datos.linkWhatsapp}" style="display: inline-block; padding: 10px 20px; border-radius: 999px; background: #25d366; color: #ffffff; font-weight: bold; text-decoration: none;">Escribinos por WhatsApp</a>
+      </p>
+    </div>`;
+  return { asunto, html };
+}
+
 /** Arma el HTML del mail de bienvenida que recibe el cliente al reservar 1, 2 o 3 lotes juntos. */
 export function armarMailBienvenidaReserva(datos: {
   nombre: string;
