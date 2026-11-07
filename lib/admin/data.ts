@@ -342,6 +342,8 @@ export async function getLeads(): Promise<Lead[]> {
   // Visitas agendadas por persona (mail o teléfono) y bloqueos de agenda.
   const visitasPorMail = new Map<string, number>();
   const hoyAr = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date());
+  const proximaPor = new Map<string, string>();
+  const ultimaPor = new Map<string, string>();
   const visitasActivasPor = new Map<string, { id: string; fecha: string; horario: string; estado: EstadoVisita }[]>();
   const visitasPorTel = new Map<string, number>();
   const bloqueadosMail = new Set<string>();
@@ -355,6 +357,16 @@ export async function getLeads(): Promise<Lead[]> {
     for (const v of vs ?? []) {
       const m = String(v.email ?? "").trim().toLowerCase();
       const t = normalizarTelefono(v.telefono as string);
+      if (v.estado !== "cancelada" && v.fecha) {
+        const cuando = `${v.fecha} ${v.horario ?? ""}`.trim();
+        const futura = String(v.fecha) >= hoyAr;
+        const mapa = futura ? proximaPor : ultimaPor;
+        const claves = [v.lead_id ? `id:${v.lead_id}` : null, m ? `m:${m}` : null, t.length >= 8 ? `t:${t}` : null].filter(Boolean) as string[];
+        for (const k of claves) {
+          const prev = mapa.get(k);
+          if (!prev || (futura ? cuando < prev : cuando > prev)) mapa.set(k, cuando);
+        }
+      }
       if ((v.estado === "pendiente" || v.estado === "confirmada") && String(v.fecha) >= hoyAr) {
         const item = { id: v.id as string, fecha: v.fecha as string, horario: v.horario as string, estado: v.estado as EstadoVisita };
         const claves = [v.lead_id ? `id:${v.lead_id}` : null, m ? `m:${m}` : null, t.length >= 8 ? `t:${t}` : null].filter(Boolean) as string[];
@@ -449,6 +461,12 @@ export async function getLeads(): Promise<Lead[]> {
     consultasUnificadas: Number(l.consultas_unificadas ?? 0),
     visitasAgendadas: (mailLead ? visitasPorMail.get(mailLead) ?? 0 : 0) + (telLead ? visitasPorTel.get(telLead) ?? 0 : 0),
     agendaBloqueada: (!!mailLead && bloqueadosMail.has(mailLead)) || (telLead.length >= 8 && bloqueadosTel.has(telLead)),
+    ...(() => {
+      const claves = [`id:${l.id}`, mailLead ? `m:${mailLead}` : "", telLead.length >= 8 ? `t:${telLead}` : ""].filter(Boolean);
+      const prox = claves.map((k) => proximaPor.get(k)).filter((x): x is string => !!x).sort()[0] ?? null;
+      const ult = claves.map((k) => ultimaPor.get(k)).filter((x): x is string => !!x).sort().pop() ?? null;
+      return { proximaVisita: prox, ultimaVisita: ult };
+    })(),
     visitasActivas: (() => {
       const vistas = new Map<string, { id: string; fecha: string; horario: string; estado: EstadoVisita }>();
       for (const k of [`id:${l.id}`, mailLead ? `m:${mailLead}` : "", telLead.length >= 8 ? `t:${telLead}` : ""])

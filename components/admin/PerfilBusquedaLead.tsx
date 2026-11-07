@@ -31,6 +31,11 @@ export function EtiquetasOrigen({ lead }: { lead: Lead }) {
           📅 Agendó {lead.visitasAgendadas} {lead.visitasAgendadas === 1 ? "visita" : "visitas"}
         </span>
       )}
+      {!lead.proximaVisita && lead.ultimaVisita && (
+        <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-semibold text-brand-black/60">
+          Última visita {lead.ultimaVisita.slice(8, 10)}/{lead.ultimaVisita.slice(5, 7)}
+        </span>
+      )}
       {lead.agendaBloqueada && (
         <span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white">🚫 Agenda bloqueada</span>
       )}

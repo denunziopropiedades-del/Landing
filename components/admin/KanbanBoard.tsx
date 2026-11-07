@@ -949,7 +949,7 @@ export default function KanbanBoard({
   const puedeBorrar = rolActual === "administrador";
 
   const columnas = useMemo(
-    () => COLUMNAS.map((col) => ({ ...col, leads: leads.filter((l) => l.estado === col.estado) })),
+    () => COLUMNAS.map((col) => ({ ...col, leads: ordenarPorVisita(leads.filter((l) => l.estado === col.estado)) })),
     [leads]
   );
 
@@ -1019,4 +1019,24 @@ export default function KanbanBoard({
       ))}
     </div>
   );
+}
+
+/**
+ * Orden de las tarjetas: primero las que tienen visita próxima (la más cercana arriba),
+ * después las que ya tuvieron visita (la más reciente arriba) y al final el resto,
+ * en el orden en que llegaron.
+ */
+function ordenarPorVisita(lista: Lead[]): Lead[] {
+  const grupo = (l: Lead) => (l.proximaVisita ? 0 : l.ultimaVisita ? 1 : 2);
+  return lista
+    .map((l, i) => ({ l, i }))
+    .sort((a, b) => {
+      const ga = grupo(a.l);
+      const gb = grupo(b.l);
+      if (ga !== gb) return ga - gb;
+      if (ga === 0) return a.l.proximaVisita!.localeCompare(b.l.proximaVisita!);
+      if (ga === 1) return b.l.ultimaVisita!.localeCompare(a.l.ultimaVisita!);
+      return a.i - b.i;
+    })
+    .map((x) => x.l);
 }

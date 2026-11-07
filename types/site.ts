@@ -261,6 +261,9 @@ export type Lead = {
   agendaBloqueada?: boolean;
   /** Visitas pendientes o confirmadas de hoy en adelante (para verlas y cancelarlas desde el CRM). */
   visitasActivas?: { id: string; fecha: string; horario: string; estado: EstadoVisita }[];
+  /** Próxima visita (hoy en adelante) o, si no tiene, la última que tuvo: "YYYY-MM-DD HH:MM". Para ordenar el CRM. */
+  proximaVisita?: string | null;
+  ultimaVisita?: string | null;
 };
 
 export type BusquedaLead = {
