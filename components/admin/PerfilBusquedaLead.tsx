@@ -5,9 +5,9 @@ import { actualizarBusquedaLeadAction } from "@/lib/admin/actions";
 import { ORIGENES, labelOrigen } from "@/lib/leads";
 import type { BusquedaLead, Lead } from "@/types/site";
 
-/** Etiquetas chicas para la tarjeta: de dónde vino y si consultó varias veces. */
+/** Etiquetas chicas para la tarjeta: de dónde vino y cuántas veces consultó. */
 export function EtiquetasOrigen({ lead }: { lead: Lead }) {
-  if (!lead.origen && !lead.consultasUnificadas) return null;
+  const veces = (lead.consultasUnificadas ?? 0) + 1;
   return (
     <div className="mt-1 flex flex-wrap gap-1">
       {lead.origen && (
@@ -15,11 +15,13 @@ export function EtiquetasOrigen({ lead }: { lead: Lead }) {
           {labelOrigen(lead.origen)}
         </span>
       )}
-      {(lead.consultasUnificadas ?? 0) > 0 && (
-        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
-          🔁 Consultó {(lead.consultasUnificadas ?? 0) + 1} veces
-        </span>
-      )}
+      <span
+        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+          veces > 1 ? "bg-amber-100 text-amber-800" : "bg-black/5 text-brand-black/60"
+        }`}
+      >
+        {veces > 1 ? `🔁 Consultó ${veces} veces` : "Consultó 1 vez"}
+      </span>
     </div>
   );
 }
