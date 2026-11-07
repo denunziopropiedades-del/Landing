@@ -341,6 +341,7 @@ export async function getLeads(): Promise<Lead[]> {
 
   // Visitas agendadas por persona (mail o teléfono) y bloqueos de agenda.
   const visitasPorMail = new Map<string, number>();
+  const hoyAr = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date());
   const visitasActivasPor = new Map<string, { id: string; fecha: string; horario: string; estado: EstadoVisita }[]>();
   const visitasPorTel = new Map<string, number>();
   const bloqueadosMail = new Set<string>();
@@ -354,7 +355,7 @@ export async function getLeads(): Promise<Lead[]> {
     for (const v of vs ?? []) {
       const m = String(v.email ?? "").trim().toLowerCase();
       const t = normalizarTelefono(v.telefono as string);
-      if (v.estado === "pendiente" || v.estado === "confirmada") {
+      if ((v.estado === "pendiente" || v.estado === "confirmada") && String(v.fecha) >= hoyAr) {
         const item = { id: v.id as string, fecha: v.fecha as string, horario: v.horario as string, estado: v.estado as EstadoVisita };
         const claves = [v.lead_id ? `id:${v.lead_id}` : null, m ? `m:${m}` : null, t.length >= 8 ? `t:${t}` : null].filter(Boolean) as string[];
         for (const k of claves) visitasActivasPor.set(k, [...(visitasActivasPor.get(k) ?? []), item]);

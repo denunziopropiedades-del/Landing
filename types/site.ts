@@ -259,7 +259,7 @@ export type Lead = {
   visitasAgendadas?: number;
   /** Si está bloqueada para agendar más visitas desde la web. */
   agendaBloqueada?: boolean;
-  /** Visitas pendientes o confirmadas de esta persona (para verlas y cancelarlas desde el CRM). */
+  /** Visitas pendientes o confirmadas de hoy en adelante (para verlas y cancelarlas desde el CRM). */
   visitasActivas?: { id: string; fecha: string; horario: string; estado: EstadoVisita }[];
 };
 
