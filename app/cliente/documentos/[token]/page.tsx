@@ -10,11 +10,13 @@ import {
   monto,
   registrarAcceso,
   resolverToken,
+  textoHonorariosReserva,
   type DatosLibreDeuda,
   type DatosReserva,
 } from "@/lib/docs-clientes/core";
 import { CLASE_ESTADO, EncabezadoInstitucional, PieInstitucional } from "@/components/docs-clientes/Institucional";
 import DecisionReserva from "@/components/docs-clientes/DecisionReserva";
+import { admitePagoMp, asegurarLinkPagoReserva, urlQrPago } from "@/lib/docs-clientes/pago";
 
 export const metadata: Metadata = {
   title: "Mi documentación",
@@ -63,6 +65,7 @@ export default async function DocumentoClientePage({ params }: { params: Promise
       { etiqueta: "Reserva", valor: monto(r.importeReserva, r.monedaReserva) },
       ...(r.valorVenta && r.monedaVenta === r.monedaReserva ? [{ etiqueta: "Saldo de precio", valor: monto(r.valorVenta - r.importeReserva, r.monedaVenta) }] : []),
       ...(r.formaPagoSaldo ? [{ etiqueta: "Forma de pago del saldo", valor: r.formaPagoSaldo }] : []),
+      ...(textoHonorariosReserva(r) ? [{ etiqueta: "Honorarios profesionales", valor: textoHonorariosReserva(r)! }] : []),
       ...(doc.venceEn ? [{ etiqueta: "Válida hasta", valor: fechaAr(doc.venceEn) }] : []),
     ];
     resumen = filas;
@@ -74,6 +77,11 @@ export default async function DocumentoClientePage({ params }: { params: Promise
       ...l.detalle.map((d) => ({ etiqueta: "", valor: d })),
     ];
   }
+
+  // Pago de la reserva por Mercado Pago (se crea el link si todavía no existía).
+  const puedePagar =
+    doc.tipo === "reserva" && doc.pagoEstado !== "abonado" && estado !== "anulado" && estado !== "rechazado" && estado !== "vencido";
+  const linkPago = puedePagar && admitePagoMp(doc) ? await asegurarLinkPagoReserva(admin, doc, "cliente") : null;
 
   const { data: decision } = await admin
     .from("doc_decisiones")
@@ -131,6 +139,46 @@ export default async function DocumentoClientePage({ params }: { params: Promise
           </div>
           <iframe src={pdfUrl} title={`Documento ${doc.numero}`} className="mt-4 hidden h-[560px] w-full rounded-xl border border-slate-200 md:block" />
         </section>
+
+        {doc.tipo === "reserva" && (
+          <section className="rounded-2xl bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-bold text-slate-900">Pago de la reserva</p>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-bold ${
+                  doc.pagoEstado === "abonado" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                }`}
+              >
+                {doc.pagoEstado === "abonado" ? "Abonado" : "Pendiente"}
+              </span>
+            </div>
+            <p className="mt-1 text-2xl font-bold text-slate-900">
+              {monto((doc.datos as DatosReserva).importeReserva, (doc.datos as DatosReserva).monedaReserva)}
+            </p>
+            {doc.pagoEstado === "abonado" ? (
+              <p className="mt-1 text-sm text-slate-600">
+                Pago registrado{doc.pagoEn ? ` el ${fechaAr(doc.pagoEn, true)} hs` : ""}
+                {doc.pagoMedio === "mercadopago" ? " por Mercado Pago" : doc.pagoMedio ? ` (${doc.pagoMedio})` : ""}.
+              </p>
+            ) : linkPago ? (
+              <div className="mt-3 space-y-3">
+                <a
+                  href={linkPago}
+                  className="block rounded-full bg-[#009ee3] px-6 py-3 text-center font-semibold text-white shadow-sm"
+                >
+                  Pagar con Mercado Pago
+                </a>
+                <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={urlQrPago(doc)} alt="QR de pago de Mercado Pago" width={110} height={110} className="rounded-lg bg-white" />
+                  <p className="text-xs text-slate-600">También podés escanear este QR con la app de Mercado Pago desde otro celular.</p>
+                </div>
+              </div>
+            ) : puedePagar ? (
+              <p className="mt-1 text-sm text-slate-600">Coordiná el pago con la inmobiliaria (transferencia o efectivo).</p>
+            ) : null}
+          </section>
+        )}
 
         {doc.tipo === "reserva" && doc.aceptaHabilitada && (estado === "emitido" || estado === "enviado") && (
           <DecisionReserva

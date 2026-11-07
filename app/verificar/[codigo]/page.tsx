@@ -84,6 +84,12 @@ export default async function VerificarPage({ params }: { params: Promise<{ codi
                 <dd className="font-medium text-slate-900">{fechaAr(decision.creado_en as string, true)} hs</dd>
               </div>
             )}
+            {doc.tipo === "reserva" && doc.pagoEstado && (
+              <div className="flex justify-between gap-4 py-2">
+                <dt className="text-slate-500">Pago de la reserva</dt>
+                <dd className="font-medium text-slate-900">{doc.pagoEstado === "abonado" ? "Abonado" : "Pendiente"}</dd>
+              </div>
+            )}
             {doc.tipo === "reserva" && doc.venceEn && (
               <div className="flex justify-between gap-4 py-2">
                 <dt className="text-slate-500">Válida hasta</dt>

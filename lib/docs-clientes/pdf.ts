@@ -5,6 +5,7 @@ import {
   fechaAr,
   monto,
   sitio,
+  textoHonorariosReserva,
   type DatosLibreDeuda,
   type DatosReserva,
   type DocEmitido,
@@ -95,6 +96,8 @@ export async function generarPdfDocumento(d: DocEmitido): Promise<Buffer> {
     fila(doc, "Importe de la reserva", monto(r.importeReserva, r.monedaReserva), true);
     if (r.valorVenta && r.monedaVenta === r.monedaReserva) fila(doc, "Saldo de precio", monto(r.valorVenta - r.importeReserva, r.monedaVenta));
     if (r.formaPagoSaldo) fila(doc, "Forma de pago del saldo", r.formaPagoSaldo);
+    const hon = textoHonorariosReserva(r);
+    if (hon) fila(doc, "Honorarios profesionales", hon);
     if (d.venceEn) fila(doc, "Validez de la reserva", `Hasta el ${fechaAr(d.venceEn)}`);
 
     seccion(doc, "Condiciones");

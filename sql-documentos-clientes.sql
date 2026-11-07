@@ -109,3 +109,11 @@ alter table doc_eventos enable row level security;
 -- PDFs emitidos (privados: se sirven solo a través del link del cliente o del panel).
 insert into storage.buckets (id, name, public) values ('documentos-clientes', 'documentos-clientes', false)
 on conflict (id) do nothing;
+
+-- Pago de la reserva (Mercado Pago o manual).
+alter table doc_emitidos add column if not exists pago_estado text check (pago_estado in ('pendiente','abonado'));
+alter table doc_emitidos add column if not exists pago_link text;
+alter table doc_emitidos add column if not exists pago_mp_id text;
+alter table doc_emitidos add column if not exists pago_monto numeric;
+alter table doc_emitidos add column if not exists pago_medio text;
+alter table doc_emitidos add column if not exists pago_en timestamptz;

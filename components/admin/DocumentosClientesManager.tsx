@@ -7,6 +7,8 @@ import {
   emitirLibreDeudaAction,
   emitirReservaAction,
   enviarEmailDocAction,
+  generarLinkPagoAction,
+  marcarPagoReservaAction,
   nuevoLinkDocAction,
   revocarLinkAction,
   revocarTodosLinksAction,
@@ -21,6 +23,7 @@ import {
   fechaAr,
   hoyAr,
   monto,
+  textoHonorariosReserva,
   type DatosLibreDeuda,
   type DatosReserva,
 } from "@/lib/docs-clientes/compartido";
@@ -58,6 +61,11 @@ const EVENTO: Record<string, string> = {
   aviso_por_vencer: "Aviso de reserva por vencer",
   vencida: "Reserva vencida",
   anulado: "Documento anulado",
+  pago_link_creado: "Link de pago de Mercado Pago creado",
+  pago_link_error: "Error al crear el link de pago",
+  pago_mp_aprobado: "💰 Pago acreditado por Mercado Pago",
+  pago_manual: "Pago marcado como abonado",
+  pago_revertido: "Pago vuelto a pendiente",
 };
 
 const CANAL: Record<string, string> = { email: "Email", whatsapp: "WhatsApp", copia: "Copiado", recordatorio: "Recordatorio" };
@@ -238,7 +246,18 @@ function Emitidos({
                   {NOMBRE_TIPO[d.tipo]} · {fechaAr(d.emitidoEn)} · {resumen}
                 </p>
               </div>
-              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${CLASE_ESTADO[estado]}`}>{ETIQUETA_ESTADO[estado]}</span>
+              <span className="flex shrink-0 flex-col items-end gap-1">
+                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${CLASE_ESTADO[estado]}`}>{ETIQUETA_ESTADO[estado]}</span>
+                {d.tipo === "reserva" && (
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                      d.pagoEstado === "abonado" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {d.pagoEstado === "abonado" ? "💰 Abonado" : "Pago pendiente"}
+                  </span>
+                )}
+              </span>
             </button>
 
             {abierto === d.id && (
@@ -376,6 +395,70 @@ function Emitidos({
                   </div>
                 )}
 
+                {d.tipo === "reserva" && (
+                  <div className={`rounded-lg p-3 text-xs ${d.pagoEstado === "abonado" ? "bg-emerald-50" : "bg-amber-50"}`}>
+                    <p className="font-semibold">
+                      Pago de la reserva ({monto((d.datos as DatosReserva).importeReserva, (d.datos as DatosReserva).monedaReserva)}):{" "}
+                      {d.pagoEstado === "abonado"
+                        ? `abonado${d.pagoEn ? ` el ${fechaAr(d.pagoEn, true)}` : ""}${d.pagoMedio ? ` · ${d.pagoMedio === "mercadopago" ? "Mercado Pago" : d.pagoMedio}` : ""}`
+                        : "pendiente"}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {d.pagoEstado !== "abonado" && activo && (
+                        <>
+                          {(d.datos as DatosReserva).monedaReserva === "ARS" ? (
+                            <button
+                              type="button"
+                              disabled={pendiente}
+                              onClick={() =>
+                                startTransition(async () => {
+                                  setError(null);
+                                  const r = await generarLinkPagoAction(d.id);
+                                  if (!r.ok) return setError(r.error);
+                                  const ok = await copiar(r.link);
+                                  setAviso(`${ok ? "Link de pago copiado" : "Link de pago"}:\n${r.link}`);
+                                  onRefresh();
+                                })
+                              }
+                              className={`${btn} bg-[#009ee3] text-white`}
+                            >
+                              Copiar link de Mercado Pago
+                            </button>
+                          ) : (
+                            <span className="text-brand-black/60">Reserva en dólares: Mercado Pago solo cobra en pesos.</span>
+                          )}
+                          {(["transferencia", "efectivo"] as const).map((medio) => (
+                            <button
+                              key={medio}
+                              type="button"
+                              disabled={pendiente}
+                              onClick={() =>
+                                confirm(`¿Marcar la reserva ${d.numero} como abonada por ${medio}?`) &&
+                                correr(() => marcarPagoReservaAction(d.id, "abonado", medio), () => "Pago registrado.")
+                              }
+                              className={`${btn} border border-emerald-600 text-emerald-700`}
+                            >
+                              Abonó por {medio}
+                            </button>
+                          ))}
+                        </>
+                      )}
+                      {d.pagoEstado === "abonado" && d.pagoMedio !== "mercadopago" && (
+                        <button
+                          type="button"
+                          disabled={pendiente}
+                          onClick={() =>
+                            confirm("¿Volver el pago a pendiente?") && correr(() => marcarPagoReservaAction(d.id, "pendiente"), () => "Pago vuelto a pendiente.")
+                          }
+                          className={`${btn} text-brand-black/60`}
+                        >
+                          Volver a pendiente
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <dl className="grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
                   <div>
                     <dt className="inline text-brand-black/50">Cliente: </dt>
@@ -394,6 +477,12 @@ function Emitidos({
                         <dt className="inline text-brand-black/50">Válida hasta: </dt>
                         <dd className="inline">{fechaAr(d.venceEn)}</dd>
                       </div>
+                      {textoHonorariosReserva(d.datos as DatosReserva) && (
+                        <div>
+                          <dt className="inline text-brand-black/50">Honorarios: </dt>
+                          <dd className="inline">{textoHonorariosReserva(d.datos as DatosReserva)}</dd>
+                        </div>
+                      )}
                       <div>
                         <dt className="inline text-brand-black/50">Aceptación online: </dt>
                         <dd className="inline">{d.aceptaHabilitada ? "Habilitada" : "No"}</dd>
@@ -515,6 +604,7 @@ function NuevaReserva({
     importeReserva: "",
     monedaReserva: "ARS",
     formaPagoSaldo: "",
+    honorariosPct: "3",
     venceEn: sumarDias(hoyAr(), 7),
     condiciones: condicionesBase,
     aceptaHabilitada: "1",
@@ -601,6 +691,15 @@ function NuevaReserva({
       </Campo>
       <Campo label="Forma de pago del saldo">
         <input value={f.formaPagoSaldo} onChange={set("formaPagoSaldo")} placeholder="Ej: anticipo USD 900 y 24 cuotas de USD 390" className={input} />
+      </Campo>
+      <Campo
+        label={`Honorarios profesionales (% sobre el total de la operación)${
+          f.honorariosPct && f.valorVenta
+            ? ` = ${monto((Number(f.valorVenta.replace(/\./g, "").replace(",", ".")) * Number(f.honorariosPct.replace(",", "."))) / 100, f.monedaVenta as "USD" | "ARS")}`
+            : ""
+        }`}
+      >
+        <input value={f.honorariosPct} onChange={set("honorariosPct")} inputMode="decimal" className={input} />
       </Campo>
       <Campo label="Válida hasta *">
         <input type="date" value={f.venceEn} min={hoyAr()} onChange={set("venceEn")} required className={input} />

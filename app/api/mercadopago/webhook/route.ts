@@ -6,6 +6,8 @@ import { sendEmail, sendNotificationEmail } from "@/lib/email";
 import { generarComprobantePdf } from "@/lib/pdf-comprobante";
 import { registrarActividadSistema } from "@/lib/admin/activity";
 import { enviarEventoConversion } from "@/lib/meta-capi";
+import { mapDoc, monto as montoDoc, registrarEvento as registrarEventoDoc } from "@/lib/docs-clientes/core";
+import { mailAvisoInterno, mailPagoReservaRecibido } from "@/lib/docs-clientes/emails";
 
 export const runtime = "nodejs";
 
@@ -78,6 +80,12 @@ export async function POST(request: Request) {
 
     const leadId = payment.external_reference;
     if (!leadId) return NextResponse.json({ ok: true });
+
+    // Pago de una reserva emitida desde "Reservas y certificados": external_reference = "docres:<id>".
+    if (leadId.startsWith("docres:")) {
+      await registrarPagoReservaMp(leadId.slice(7), String(payment.id ?? dataId), Number(payment.transaction_amount ?? 0));
+      return NextResponse.json({ ok: true });
+    }
 
     // Pago de un alquiler (administración de alquileres): external_reference = "alq:<id del mes>".
     if (leadId.startsWith("alq:")) {
@@ -241,5 +249,32 @@ async function registrarPagoAlquilerMp(cuotaId: string, pagoId: string, monto: n
     }
   } catch (err) {
     console.error("No se pudo avisar el pago del alquiler", err);
+  }
+}
+
+/** Marca como abonada una reserva de "Reservas y certificados" (idempotente: MP puede reenviar el aviso). */
+async function registrarPagoReservaMp(docId: string, pagoId: string, importe: number) {
+  const supabase = await getSupabaseAdminClient();
+  if (!supabase) return;
+  const { data: actualizado } = await supabase
+    .from("doc_emitidos")
+    .update({ pago_estado: "abonado", pago_mp_id: pagoId, pago_monto: importe, pago_medio: "mercadopago", pago_en: new Date().toISOString() })
+    .eq("id", docId)
+    .or("pago_estado.is.null,pago_estado.eq.pendiente")
+    .select("*")
+    .maybeSingle();
+  if (!actualizado) return; // ya estaba abonada o no existe
+  const doc = mapDoc(actualizado);
+  await registrarEventoDoc(supabase, docId, "pago_mp_aprobado", { pagoId, importe }, "mercadopago");
+  const importeTxt = montoDoc(importe, "ARS");
+  try {
+    if (doc.clienteEmail) {
+      const m = mailPagoReservaRecibido(doc, importeTxt);
+      await sendEmail(doc.clienteEmail, m.asunto, m.html);
+    }
+    const aviso = mailAvisoInterno("💰 Reserva pagada por Mercado Pago", doc, `<p><b>Importe:</b> ${importeTxt} · Pago N.º ${pagoId}</p>`);
+    await sendNotificationEmail(aviso.asunto, aviso.html);
+  } catch (err) {
+    console.error("No se pudo avisar el pago de la reserva", err);
   }
 }

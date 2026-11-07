@@ -26,6 +26,8 @@ export type DatosReserva = {
   importeReserva: number;
   monedaReserva: "USD" | "ARS";
   formaPagoSaldo: string | null;
+  /** Honorarios profesionales del corredor: % sobre el monto total de la operación. */
+  honorariosPct?: number | null;
   condiciones: string;
 };
 
@@ -59,6 +61,12 @@ export type DocEmitido = {
   emitidoPorEmail: string | null;
   anuladoEn: string | null;
   anuladoMotivo: string | null;
+  /** Pago de la reserva: null en certificados. */
+  pagoEstado: "pendiente" | "abonado" | null;
+  pagoLink: string | null;
+  pagoMonto: number | null;
+  pagoMedio: string | null;
+  pagoEn: string | null;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -84,6 +92,11 @@ export const mapDoc = (r: any): DocEmitido => ({
   emitidoPorEmail: r.emitido_por_email ?? null,
   anuladoEn: r.anulado_en ?? null,
   anuladoMotivo: r.anulado_motivo ?? null,
+  pagoEstado: r.pago_estado ?? null,
+  pagoLink: r.pago_link ?? null,
+  pagoMonto: r.pago_monto === null || r.pago_monto === undefined ? null : Number(r.pago_monto),
+  pagoMedio: r.pago_medio ?? null,
+  pagoEn: r.pago_en ?? null,
 });
 
 /* ───────── Varios ───────── */
@@ -147,3 +160,12 @@ export function textoConsentimiento(numero: string, version: number, hash: strin
   } sus condiciones. Entiendo que esta constancia electrónica no constituye firma digital.`;
 }
 
+
+/** Texto de honorarios: "3% sobre el monto total de la operación (USD 360)". */
+export function textoHonorariosReserva(r: DatosReserva): string | null {
+  if (!r.honorariosPct) return null;
+  const base = `${String(r.honorariosPct).replace(".", ",")}% sobre el monto total de la operación`;
+  return r.valorVenta ? `${base} (${monto((r.valorVenta * r.honorariosPct) / 100, r.monedaVenta)})` : base;
+}
+
+export const ETIQUETA_PAGO: Record<"pendiente" | "abonado", string> = { pendiente: "Pago pendiente", abonado: "Abonado" };

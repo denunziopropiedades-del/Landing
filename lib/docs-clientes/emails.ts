@@ -14,7 +14,21 @@ const boton = (href: string, texto: string, color = "#16294f") =>
 const escapar = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /** Mail con la documentación y el enlace privado. */
-export function mailEnvioDocumento(d: DocEmitido, link: string, mensaje: string | null, venceLink: string) {
+export type PagoEnvio = { link: string; qr: string; monto: string } | null;
+
+/** Bloque "Pagar la reserva" con botón y QR de Mercado Pago. */
+function bloquePago(p: NonNullable<PagoEnvio>) {
+  return `
+    <div style="margin: 18px 0; padding: 16px; border: 1px solid #b9d4f5; border-radius: 10px; background: #f3f8ff;">
+      <p style="margin: 0 0 6px; font-weight: bold; color: #0f1b2d;">Pago de la reserva: ${p.monto}</p>
+      <p style="margin: 0 0 12px; font-size: 14px;">Podés abonarla online con Mercado Pago (tarjeta, débito o dinero en cuenta):</p>
+      <p style="margin: 0 0 12px;">${boton(p.link, "Pagar con Mercado Pago", "#009ee3")}</p>
+      <p style="margin: 0 0 4px; font-size: 12px; color: #555;">O escaneá este código QR desde la app de Mercado Pago:</p>
+      <img src="${p.qr}" width="150" height="150" alt="QR de pago" style="display: block; border: 0;" />
+    </div>`;
+}
+
+export function mailEnvioDocumento(d: DocEmitido, link: string, mensaje: string | null, venceLink: string, pago: PagoEnvio = null) {
   const asunto = `Documentación de su operación inmobiliaria – ${INSTITUCION.nombre}`;
   const html = `
   <div style="font-family: sans-serif; color: #333; max-width: 580px;">
@@ -30,6 +44,7 @@ export function mailEnvioDocumento(d: DocEmitido, link: string, mensaje: string 
     }:</p>
     <p style="margin: 0 0 8px;">${boton(link, "Ver mi documentación")}</p>
     <p style="margin: 0 0 16px; font-size: 12px; color: #777;">El enlace es personal: no lo reenvíe. Vence el ${fechaAr(venceLink)}.</p>
+    ${pago ? bloquePago(pago) : ""}
     <p style="margin: 0 0 12px;">El documento cuenta con un sistema de verificación de autenticidad (código QR).</p>
     <p style="margin: 0;">Ante cualquier consulta, estamos a su disposición.</p>
     ${PIE_INSTITUCIONAL}
@@ -38,7 +53,7 @@ export function mailEnvioDocumento(d: DocEmitido, link: string, mensaje: string 
 }
 
 /** Mensaje de WhatsApp para el envío manual asistido. */
-export function mensajeWhatsappDocumento(d: DocEmitido, link: string) {
+export function mensajeWhatsappDocumento(d: DocEmitido, link: string, linkPago: string | null = null) {
   const que = d.tipo === "reserva" ? "su reserva inmobiliaria" : "su certificado de libre deuda";
   return `Estimado/a ${d.clienteNombre}:
 
@@ -49,7 +64,7 @@ Puede ingresar al siguiente enlace para ${
   }:
 
 🔗 ${link}
-
+${linkPago ? `\nPara abonar la reserva con Mercado Pago:\n💳 ${linkPago}\n` : ""}
 El documento cuenta con un sistema de verificación de autenticidad y seguridad.
 
 Ante cualquier consulta, estamos a su disposición.
@@ -128,6 +143,22 @@ export function mailReservaPorVencer(d: DocEmitido, link: string | null) {
       <p style="margin: 0 0 12px;">Estimado/a ${escapar(d.clienteNombre)}:</p>
       <p style="margin: 0 0 12px;">Le recordamos que su reserva inmobiliaria <b>N.º ${d.numero}</b> tiene validez hasta el <b>${fechaAr(d.venceEn)}</b>.</p>
       ${link ? `<p style="margin: 0 0 12px;">${boton(link, "Ver mi reserva")}</p>` : ""}
+      <p style="margin: 0;">Ante cualquier consulta, estamos a su disposición.</p>
+      ${PIE_INSTITUCIONAL}
+    </div>`,
+  };
+}
+
+/** Confirmación al cliente de que se acreditó el pago de la reserva. */
+export function mailPagoReservaRecibido(d: DocEmitido, importe: string) {
+  return {
+    asunto: `Recibimos el pago de su reserva ${d.numero}`,
+    html: `
+    <div style="font-family: sans-serif; color: #333; max-width: 560px;">
+      <div style="padding: 14px 18px; border-radius: 10px; background: #16a34a; color: #fff;">
+        <p style="margin: 0; font-size: 18px; font-weight: bold;">Pago acreditado</p>
+      </div>
+      <p style="margin: 16px 0 12px;">Estimado/a ${escapar(d.clienteNombre)}, confirmamos que recibimos el pago de ${importe} correspondiente a la reserva <b>N.º ${d.numero}</b>.</p>
       <p style="margin: 0;">Ante cualquier consulta, estamos a su disposición.</p>
       ${PIE_INSTITUCIONAL}
     </div>`,

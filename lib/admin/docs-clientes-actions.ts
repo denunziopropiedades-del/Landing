@@ -29,6 +29,7 @@ import {
 } from "@/lib/docs-clientes/core";
 import { generarPdfDocumento } from "@/lib/docs-clientes/pdf";
 import { mailAvisoInterno, mailEnvioDocumento, mensajeWhatsappDocumento } from "@/lib/docs-clientes/emails";
+import { admitePagoMp, asegurarLinkPagoReserva, urlQrPago } from "@/lib/docs-clientes/pago";
 
 type R<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -234,7 +235,7 @@ export async function getDatosDocsClientes(): Promise<DatosPanelDocs> {
 async function emitir(
   a: SupabaseClient,
   actorEmail: string,
-  base: Omit<DocEmitido, "id" | "numero" | "codigoVerificacion" | "version" | "estado" | "pdfPath" | "pdfSha256" | "emitidoEn" | "emitidoPorEmail" | "anuladoEn" | "anuladoMotivo">
+  base: Omit<DocEmitido, "id" | "numero" | "codigoVerificacion" | "version" | "estado" | "pdfPath" | "pdfSha256" | "emitidoEn" | "emitidoPorEmail" | "anuladoEn" | "anuladoMotivo" | "pagoEstado" | "pagoLink" | "pagoMonto" | "pagoMedio" | "pagoEn">
 ): Promise<DocEmitido> {
   const anio = Number(hoyAr().slice(0, 4));
   const { data: nro, error: eNro } = await a.rpc("doc_siguiente_numero", { p_tipo: base.tipo, p_anio: anio });
@@ -257,6 +258,11 @@ async function emitir(
       emitidoPorEmail: actorEmail,
       anuladoEn: null,
       anuladoMotivo: null,
+      pagoEstado: base.tipo === "reserva" ? "pendiente" : null,
+      pagoLink: null,
+      pagoMonto: null,
+      pagoMedio: null,
+      pagoEn: null,
     };
     const pdf = await generarPdfDocumento(borrador);
     const hash = sha256(pdf);
@@ -281,6 +287,7 @@ async function emitir(
         datos: base.datos,
         acepta_habilitada: base.aceptaHabilitada,
         vence_en: base.venceEn,
+        pago_estado: base.tipo === "reserva" ? "pendiente" : null,
         pdf_path: path,
         pdf_sha256: hash,
         emitido_en: emitidoEn,
@@ -312,7 +319,9 @@ const CONDICIONES_BASE = `El importe de la reserva se imputará íntegramente a 
 
 La reserva asegura la disponibilidad del inmueble a favor del cliente durante el plazo de validez indicado. Vencido dicho plazo sin que se haya formalizado la operación, la reserva quedará sin efecto.
 
-La operación es gestionada por la inmobiliaria. Los gastos, honorarios e impuestos que correspondan a cada parte se informarán al momento de la firma del boleto o escritura.`;
+El importe abonado en concepto de reserva, denominada seña, no será devuelto en caso de cancelación o anulación de la operación, ni cuando no se concrete el acuerdo previamente pactado.
+
+Los honorarios profesionales del corredor interviniente son los indicados en este documento y se calculan sobre el monto total de la operación. La operación es gestionada por la inmobiliaria; los gastos e impuestos que correspondan a cada parte se informarán al momento de la firma del boleto o escritura.`;
 
 export async function condicionesReservaBase(): Promise<string> {
   return CONDICIONES_BASE;
@@ -340,6 +349,7 @@ export async function emitirReservaAction(d: Record<string, string>): Promise<R<
       importeReserva: importe,
       monedaReserva: d.monedaReserva === "USD" ? "USD" : "ARS",
       formaPagoSaldo: t(d.formaPagoSaldo, 500),
+      honorariosPct: n(d.honorariosPct),
       condiciones,
     };
     const doc = await emitir(a, perfil.email, {
@@ -354,6 +364,7 @@ export async function emitirReservaAction(d: Record<string, string>): Promise<R<
       aceptaHabilitada: acepta,
       venceEn: vence,
     });
+    await asegurarLinkPagoReserva(a, doc, perfil.email);
     await registrarActividad(perfil, "emitir", "documento_cliente", doc.id, { numero: doc.numero, cliente: clienteNombre });
     refrescar();
     return { ok: true, id: doc.id, numero: doc.numero };
@@ -473,6 +484,13 @@ export async function emitirLibreDeudaAction(d: { origen: "lote" | "alquiler"; i
 
 /* ───────────── Envíos y links ───────────── */
 
+/** Link y QR de pago para incluir en los envíos (solo reservas con pago pendiente y en pesos). */
+async function datosPago(a: SupabaseClient, doc: DocEmitido, actor: string) {
+  if (doc.tipo !== "reserva" || doc.pagoEstado === "abonado" || !admitePagoMp(doc)) return null;
+  const link = await asegurarLinkPagoReserva(a, doc, actor);
+  return link ? { link, qr: urlQrPago(doc), monto: monto((doc.datos as DatosReserva).importeReserva, "ARS") } : null;
+}
+
 function asegurarActivo(doc: DocEmitido) {
   if (doc.estado === "anulado") throw new AdminActionError("El documento está anulado.");
 }
@@ -491,7 +509,8 @@ export async function enviarEmailDocAction(
     asegurarActivo(doc);
     if (!doc.clienteEmail) throw new AdminActionError("El cliente no tiene email cargado en este documento.");
     const link = await crearLink(a, id, { canal: "email", dias: opciones.dias ?? 30, actor: perfil.email });
-    const { asunto, html } = mailEnvioDocumento(doc, link.url, t(opciones.mensaje, 2000), link.venceEn);
+    const pago = await datosPago(a, doc, perfil.email);
+    const { asunto, html } = mailEnvioDocumento(doc, link.url, t(opciones.mensaje, 2000), link.venceEn, pago);
     const pdf = opciones.adjuntar !== false ? await leerPdf(a, doc) : null;
     try {
       const r = await sendEmail(doc.clienteEmail, asunto, html, pdf ? [{ filename: `${doc.numero}.pdf`, content: pdf.toString("base64") }] : undefined);
@@ -520,7 +539,8 @@ export async function whatsappDocAction(id: string, dias = 30): Promise<R<{ url:
     const doc = await cargarDoc(a, id);
     asegurarActivo(doc);
     const link = await crearLink(a, id, { canal: "whatsapp", dias, actor: perfil.email });
-    const texto = mensajeWhatsappDocumento(doc, link.url);
+    const pago = await datosPago(a, doc, perfil.email);
+    const texto = mensajeWhatsappDocumento(doc, link.url, pago?.link ?? null);
     const url = doc.clienteTelefono
       ? buildWhatsappClienteUrl(doc.clienteTelefono, texto)
       : `https://wa.me/?text=${encodeURIComponent(texto)}`;
@@ -599,4 +619,45 @@ export async function resumenDoc(doc: DocEmitido): Promise<string> {
 
 export async function nombreTipo(tipo: TipoDoc) {
   return NOMBRE_TIPO[tipo];
+}
+
+/* ───────────── Pago de la reserva ───────────── */
+
+export async function generarLinkPagoAction(id: string): Promise<R<{ link: string }>> {
+  try {
+    const { perfil, a } = await contexto();
+    const doc = await cargarDoc(a, id);
+    asegurarActivo(doc);
+    if (doc.tipo !== "reserva") throw new AdminActionError("Solo las reservas tienen pago.");
+    if (!admitePagoMp(doc)) throw new AdminActionError("Mercado Pago solo cobra en pesos: esta reserva está en dólares.");
+    const link = await asegurarLinkPagoReserva(a, doc, perfil.email);
+    if (!link) throw new AdminActionError("No se pudo crear el link de Mercado Pago. Revisá la configuración de Mercado Pago.");
+    refrescar();
+    return { ok: true, link };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function marcarPagoReservaAction(id: string, estado: "pendiente" | "abonado", medio?: string): Promise<R> {
+  try {
+    const { perfil, a } = await contexto();
+    const doc = await cargarDoc(a, id);
+    if (doc.tipo !== "reserva") throw new AdminActionError("Solo las reservas tienen pago.");
+    const fila =
+      estado === "abonado"
+        ? {
+            pago_estado: "abonado",
+            pago_medio: ["efectivo", "transferencia", "mercadopago"].includes(medio ?? "") ? medio : "transferencia",
+            pago_monto: (doc.datos as DatosReserva).importeReserva,
+            pago_en: new Date().toISOString(),
+          }
+        : { pago_estado: "pendiente", pago_medio: null, pago_monto: null, pago_en: null, pago_mp_id: null };
+    await a.from("doc_emitidos").update(fila).eq("id", id);
+    await registrarEvento(a, id, estado === "abonado" ? "pago_manual" : "pago_revertido", estado === "abonado" ? { medio: fila.pago_medio } : {}, perfil.email);
+    refrescar();
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
 }
