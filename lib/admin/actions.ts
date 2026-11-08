@@ -125,7 +125,8 @@ export async function loginAction(_prevState: unknown, formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { ok: false as const, error: "Email o contraseña incorrectos." };
 
-  redirect("/admin");
+  // Al ingresar se abre directo el CRM.
+  redirect("/admin/crm");
 }
 
 export async function logoutAction() {

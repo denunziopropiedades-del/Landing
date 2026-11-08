@@ -33,7 +33,7 @@ export default function Footer({ textos }: { textos: SiteTextos }) {
             Política de privacidad
           </Link>{" "}
           ·{" "}
-          <Link href="/admin" className="hover:text-white/80">
+          <Link href="/admin/crm" className="hover:text-white/80">
             Panel administrador
           </Link>
         </p>
