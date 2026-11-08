@@ -105,9 +105,14 @@ const ETIQUETA_FOCO = {
   campos: "campos y chacras",
 } as const;
 
+/** Nombre como lo busca la gente: "Guernica (Presidente Perón)", "Ranchos (General Paz)". */
+export function nombreBuscado(nombre: string, info: InfoLocal) {
+  const principal = info.localidades[0];
+  return principal && principal !== nombre ? `${principal} (${nombre})` : nombre;
+}
+
 export function tituloLocal(nombre: string, info: InfoLocal) {
-  const queBuscan = info.foco.slice(0, 2).map((f) => ETIQUETA_FOCO[f]).join(" y ");
-  return `Inmobiliaria en ${nombre}: ${queBuscan}`;
+  return `Inmobiliaria en ${nombreBuscado(nombre, info)}: ${ETIQUETA_FOCO[info.foco[0]]}`;
 }
 
 export function descripcionLocal(nombre: string, info: InfoLocal) {

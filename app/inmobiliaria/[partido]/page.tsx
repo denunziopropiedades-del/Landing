@@ -5,7 +5,7 @@ import PaginaPortal from "@/components/propiedades/PaginaPortal";
 import ListadoPropiedades, { type ParamsListado } from "@/components/propiedades/ListadoPropiedades";
 import { getSiteTextos } from "@/lib/content";
 import { PARTIDOS, getPartido } from "@/lib/zonas";
-import { INFO_LOCAL, descripcionLocal, faqsLocales, tituloLocal } from "@/lib/seo-local";
+import { INFO_LOCAL, descripcionLocal, faqsLocales, nombreBuscado, tituloLocal } from "@/lib/seo-local";
 
 type Params = { partido: string };
 
@@ -76,7 +76,7 @@ export default async function InmobiliariaLocalPage({
       <nav className="mb-3 text-xs text-brand-black/50">
         <Link href="/">Inicio</Link> › <Link href={`/zonas/${p.zona.slug}`}>{p.zona.nombre}</Link> › {p.nombre}
       </nav>
-      <h1 className="font-display text-3xl font-bold text-brand-black sm:text-4xl">Inmobiliaria en {p.nombre}</h1>
+      <h1 className="font-display text-3xl font-bold text-brand-black sm:text-4xl">Inmobiliaria en {nombreBuscado(p.nombre, info)}</h1>
       <p className="mt-2 text-sm font-semibold text-brand-black/60">{info.localidades.join(" · ")}</p>
       <p className="mt-4 max-w-3xl text-brand-black/80">{info.intro}</p>
 
