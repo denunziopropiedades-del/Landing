@@ -6,6 +6,7 @@ import {
   actualizarEstadoLeadAction,
   actualizarEstadoVisitaAction,
   cancelarVisitaAction,
+  reenviarMailVisitaAction,
   cambiarProyectoVisitaAction,
   deleteLeadAction,
   eliminarVisitaAction,
@@ -302,6 +303,21 @@ export default function ConsultasManager({
                     </select>
                   </td>
                   <td className="space-y-1 px-4 py-3 text-right">
+                    {(v.estado === "pendiente" || v.estado === "confirmada") && v.email && (
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() =>
+                          startTransition(async () => {
+                            const r = await reenviarMailVisitaAction(v.id);
+                            setAvisoVisita(r.ok ? { ok: true, texto: r.aviso ?? "Mail reenviado." } : { ok: false, texto: r.error });
+                          })
+                        }
+                        className="block w-full whitespace-nowrap rounded-lg border border-emerald-300 px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                      >
+                        📧 Reenviar ubicación
+                      </button>
+                    )}
                     {(v.estado === "pendiente" || v.estado === "confirmada") && (
                       <button
                         type="button"

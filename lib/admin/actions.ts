@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizarTelefono } from "@/lib/leads";
 import { guardarContactoDespues, oauthConfigurado, sincronizarContactos } from "@/lib/google-contactos";
+import { reenviarMailVisita } from "@/lib/visitas-mail";
 import { requireRole, AdminActionError } from "@/lib/admin/auth";
 import { registrarActividad } from "@/lib/admin/activity";
 import { cancelarEventoVisita, crearEventoEscribania, actualizarLugarEventoVisita } from "@/lib/google-calendar";
@@ -2931,6 +2932,20 @@ export async function desconectarContactosAction(): Promise<ActionResult> {
     await admin.from("google_contactos_config").delete().eq("id", 1);
     revalidatePath("/admin/crm");
     return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/** Reenvía al cliente el mail de su visita con el lugar y la ubicación. */
+export async function reenviarMailVisitaAction(id: string): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    const admin = (await getSupabaseAdminClient())!;
+    const r = await reenviarMailVisita(admin, id);
+    if (!r.ok) throw new AdminActionError(r.error);
+    await registrarActividad(actor, "reenviar-mail", "visita", id, { a: r.a });
+    return { ok: true, aviso: `Mail con la ubicación reenviado a ${r.a}.` };
   } catch (err) {
     return fail(err);
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { actualizarBusquedaLeadAction, bloquearAgendaLeadAction, cancelarVisitaAction } from "@/lib/admin/actions";
+import { actualizarBusquedaLeadAction, bloquearAgendaLeadAction, cancelarVisitaAction, reenviarMailVisitaAction } from "@/lib/admin/actions";
 import { ORIGENES, labelOrigen } from "@/lib/leads";
 import type { BusquedaLead, Lead } from "@/types/site";
 
@@ -226,6 +226,21 @@ export function VisitasLead({
           <span className="text-[11px] text-amber-900">
             📅 <b className="capitalize">{fechaCortaVisita(v.fecha)}</b> {v.horario} hs · {v.estado}
           </span>
+          <button
+            type="button"
+            disabled={pendiente}
+            title="Reenviar al cliente el mail de la visita con la ubicación"
+            onClick={(e) => {
+              e.stopPropagation();
+              startTransition(async () => {
+                const r = await reenviarMailVisitaAction(v.id);
+                setAviso(r.ok ? { ok: true, texto: r.aviso ?? "Mail reenviado." } : { ok: false, texto: r.error });
+              });
+            }}
+            className="shrink-0 rounded-md border border-emerald-300 bg-white px-2 py-0.5 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+          >
+            📧 Ubicación
+          </button>
           <button
             type="button"
             disabled={pendiente}
