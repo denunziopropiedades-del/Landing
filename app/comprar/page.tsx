@@ -4,7 +4,7 @@ import ListadoPropiedades, { type ParamsListado } from "@/components/propiedades
 import { getSiteTextos } from "@/lib/content";
 
 export const metadata: Metadata = {
-  title: "Comprar",
+  title: "Casas, departamentos y terrenos en venta en La Plata y zona sur",
   description: "Casas, departamentos, PH, locales y terrenos en venta en La Plata, Corredor Sur, Ruta 3 y 205 y la Ribera.",
   alternates: { canonical: "/comprar" },
 };

@@ -33,7 +33,8 @@ export const NAV_LINKS_PORTAL: NavLink[] = [
   { href: "/desarrollos", label: "DESARROLLOS", icon: LayoutGrid, descripcion: "Lotes en Ayres de Guernica y más", destacado: true },
   { href: "/mapa", label: "Mapa", icon: MapIcon, descripcion: "Todas las ubicaciones en el mapa" },
   { href: "/zonas", label: "Zonas", icon: MapPin, descripcion: "Gran La Plata · Corredor Sur · Ruta 3 y 205 · Ribera" },
-  { href: "/tasaciones", label: "Tasaciones", icon: ClipboardCheck, descripcion: "Vendé o alquilá con nosotros" },
+  { href: "/propietarios", label: "Propietarios", icon: KeyRound, descripcion: "Alquilá o vendé tu casa, depto o campo" },
+  { href: "/tasaciones", label: "Tasaciones", icon: ClipboardCheck, descripcion: "Tasación sin cargo" },
 ];
 
 /** Menú de la página de un desarrollo (secciones de la misma página). */

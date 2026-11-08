@@ -4,8 +4,8 @@ import ListadoPropiedades, { type ParamsListado } from "@/components/propiedades
 import { getSiteTextos } from "@/lib/content";
 
 export const metadata: Metadata = {
-  title: "Alquilar",
-  description: "Casas y departamentos en alquiler en La Plata, Berisso, Ensenada, Guernica, San Vicente, Brandsen y más.",
+  title: "Casas y departamentos en alquiler en La Plata, Guernica y zona sur",
+  description: "Alquileres de casas y departamentos en La Plata, City Bell, Berisso, Ensenada, Guernica, San Vicente, Alejandro Korn, Brandsen y más. Inmobiliaria con Martillero Público colegiado.",
   alternates: { canonical: "/alquilar" },
 };
 

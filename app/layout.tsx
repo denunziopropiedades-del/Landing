@@ -1,3 +1,4 @@
+import { PARTIDOS } from "@/lib/zonas";
 import type { Metadata } from "next";
 import { Inter, Montserrat } from "next/font/google";
 import Script from "next/script";
@@ -32,7 +33,7 @@ const META_PIXEL_IDS = (process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "")
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "De Nunzio Negocios Inmobiliarios | Inmobiliaria",
+    default: "Inmobiliaria en La Plata y zona sur: alquileres, venta, lotes en cuotas y campos | De Nunzio",
     template: "%s | De Nunzio Negocios Inmobiliarios",
   },
   description:
@@ -49,6 +50,13 @@ export const metadata: Metadata = {
     "alquileres La Plata",
     "campos en venta Lobos Saladillo Monte",
     "inmobiliaria Guernica",
+    "inmobiliaria San Vicente",
+    "inmobiliaria Brandsen",
+    "inmobiliaria La Plata",
+    "alquilar mi casa",
+    "administración de alquileres",
+    "lotes en cuotas",
+    "tasación de propiedades",
   ],
   authors: [{ name: "De Nunzio Negocios Inmobiliarios" }],
   openGraph: {
@@ -56,7 +64,7 @@ export const metadata: Metadata = {
     locale: "es_AR",
     url: SITE_URL,
     siteName: "De Nunzio Negocios Inmobiliarios",
-    title: "De Nunzio Negocios Inmobiliarios | Inmobiliaria",
+    title: "Inmobiliaria en La Plata y zona sur | De Nunzio Negocios Inmobiliarios",
     description:
       "Inmobiliaria De Nunzio Negocios Inmobiliarios: casas, departamentos y campos en venta y alquiler, y lotes con escritura en el Departamento Judicial La Plata.",
   },
@@ -80,6 +88,11 @@ const realEstateSchema = {
     "De Nunzio Negocios Inmobiliarios — casas, departamentos y campos en venta y alquiler, y lotes con escritura, en los partidos del Departamento Judicial La Plata.",
   url: SITE_URL,
   email: "denunziopropiedades@gmail.com",
+  telephone: "+54 9 11 2742-4512",
+  logo: `${SITE_URL}/icon.png`,
+  founder: { "@type": "Person", name: "Matías De Nunzio", jobTitle: "Martillero Público y Corredor Público (Matrícula COL 7886)" },
+  knowsAbout: ["alquileres", "administración de alquileres", "venta de propiedades", "lotes en cuotas", "campos", "tasaciones"],
+  areaServed: PARTIDOS.map((p) => ({ "@type": "City", name: p.nombre })),
   address: {
     "@type": "PostalAddress",
     addressRegion: "Buenos Aires",

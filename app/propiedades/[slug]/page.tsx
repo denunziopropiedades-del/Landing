@@ -56,8 +56,32 @@ export default async function PropiedadPage({ params }: { params: Promise<Params
     if (p.expensas) add(<Check className="h-5 w-5" />, "Expensas", `$ ${fmt(p.expensas)}`);
   }
 
+  const sitio = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://matulotes.app").replace(/\/+$/, "");
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "RealEstateListing",
+    name: p.titulo,
+    url: `${sitio}/propiedades/${p.slug}`,
+    description: `${labelTipo(p.tipo)} en ${p.operacion === "venta" ? "venta" : rural ? "arrendamiento" : "alquiler"} en ${ubicacionTexto(p)}.`,
+    image: p.fotos.slice(0, 5),
+    ...(p.precio && !p.vendido
+      ? {
+          offers: {
+            "@type": "Offer",
+            price: p.precio,
+            priceCurrency: p.moneda,
+            businessFunction: p.operacion === "venta" ? "http://purl.org/goodrelations/v1#Sell" : "http://purl.org/goodrelations/v1#LeaseOut",
+            availability: "https://schema.org/InStock",
+          },
+        }
+      : {}),
+    contentLocation: { "@type": "Place", address: { "@type": "PostalAddress", addressLocality: partido?.nombre, addressRegion: "Buenos Aires", addressCountry: "AR" } },
+    provider: { "@type": "RealEstateAgent", name: "De Nunzio Negocios Inmobiliarios", telephone: "+54 9 11 2742-4512", url: sitio },
+  };
+
   return (
     <PaginaPortal textos={textos}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <nav className="text-xs font-semibold text-brand-black/50">
         <Link href="/" className="hover:underline">
           Inicio

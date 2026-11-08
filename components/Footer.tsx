@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { SiteTextos } from "@/types/site";
+import { PARTIDOS } from "@/lib/zonas";
 
 export default function Footer({ textos }: { textos: SiteTextos }) {
   return (
@@ -14,11 +15,19 @@ export default function Footer({ textos }: { textos: SiteTextos }) {
             ["/desarrollos", "Desarrollos"],
             ["/zonas", "Zonas"],
             ["/tasaciones", "Tasaciones"],
+            ["/propietarios", "Alquilá o vendé tu propiedad"],
             ["/visitas", "Agendar visita"],
             ["/postulantes", "Trabajá con nosotros"],
           ].map(([href, label]) => (
             <Link key={href} href={href} className="hover:text-white">
               {label}
+            </Link>
+          ))}
+        </nav>
+        <nav aria-label="Inmobiliaria por localidad" className="mb-6 flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-white/45">
+          {PARTIDOS.map((p) => (
+            <Link key={p.slug} href={`/inmobiliaria/${p.slug}`} className="hover:text-white/80">
+              Inmobiliaria en {p.nombre}
             </Link>
           ))}
         </nav>

@@ -5,7 +5,7 @@ import ConsultaForm from "@/components/propiedades/ConsultaForm";
 import { getSiteTextos } from "@/lib/content";
 
 export const metadata: Metadata = {
-  title: "Tasaciones",
+  title: "Tasación de propiedades sin cargo: casas, departamentos y campos",
   description:
     "Tasamos tu casa, departamento o campo para vender o alquilar en La Plata, Corredor Sur, Ruta 3 y 205 y la Ribera. Martillero Público colegiado.",
   alternates: { canonical: "/tasaciones" },

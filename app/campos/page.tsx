@@ -4,7 +4,7 @@ import ListadoPropiedades, { type ParamsListado } from "@/components/propiedades
 import { getSiteTextos } from "@/lib/content";
 
 export const metadata: Metadata = {
-  title: "Campos",
+  title: "Campos y chacras en venta y arrendamiento en provincia de Buenos Aires",
   description: "Campos y chacras en venta y arrendamiento en Lobos, Monte, Saladillo, Roque Pérez, Cañuelas, Magdalena y más.",
   alternates: { canonical: "/campos" },
 };

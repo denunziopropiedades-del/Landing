@@ -7,7 +7,7 @@ import { getConteoPorPartido } from "@/lib/propiedades";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Zonas",
+  title: "Inmobiliaria en La Plata, Guernica, San Vicente, Brandsen y zona sur",
   description:
     "Trabajamos en los 14 partidos del Departamento Judicial La Plata: Gran La Plata, Corredor Sur, Ruta 3 y 205 y Ribera del Río.",
   alternates: { canonical: "/zonas" },

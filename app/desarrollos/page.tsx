@@ -7,8 +7,10 @@ import { getProyectos, getSiteTextos } from "@/lib/content";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Desarrollos",
-  description: "Desarrollos y loteos con escritura garantizada: lotes en venta con financiación propia.",
+  title: "Lotes en venta en cuotas con escritura en Guernica y San Vicente",
+  description:
+    "Lotes en venta con financiación propia en cuotas y escritura: desarrollos y loteos en Guernica, San Vicente, Alejandro Korn y zona sur. Visitas guiadas sin cargo todos los días.",
+  alternates: { canonical: "/desarrollos" },
 };
 
 export default async function DesarrollosPage() {
