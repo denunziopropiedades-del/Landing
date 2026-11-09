@@ -29,6 +29,7 @@ function formatearFecha(fecha: string) {
 const LABEL_MEDIO_PAGO: Record<MedioPago, string> = {
   transferencia: "Transferencia",
   efectivo: "Efectivo",
+  mercadopago: "Mercado Pago",
 };
 
 type Honorario = { monto: number; moneda: MonedaHonorario } | null;

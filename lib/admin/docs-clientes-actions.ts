@@ -1,5 +1,6 @@
 "use server";
 
+import { quitarSenaDeLead, volcarSenaEnLead } from "@/lib/docs-clientes/sena-lead";
 import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
@@ -639,7 +640,12 @@ export async function generarLinkPagoAction(id: string): Promise<R<{ link: strin
   }
 }
 
-export async function marcarPagoReservaAction(id: string, estado: "pendiente" | "abonado", medio?: string): Promise<R> {
+export async function marcarPagoReservaAction(
+  id: string,
+  estado: "pendiente" | "abonado",
+  medio?: string,
+  numeroOperacion?: string
+): Promise<R> {
   try {
     const { perfil, a } = await contexto();
     const doc = await cargarDoc(a, id);
@@ -651,10 +657,19 @@ export async function marcarPagoReservaAction(id: string, estado: "pendiente" | 
             pago_medio: ["efectivo", "transferencia", "mercadopago"].includes(medio ?? "") ? medio : "transferencia",
             pago_monto: (doc.datos as DatosReserva).importeReserva,
             pago_en: new Date().toISOString(),
+            pago_mp_id: numeroOperacion?.trim().slice(0, 60) || null,
           }
         : { pago_estado: "pendiente", pago_medio: null, pago_monto: null, pago_en: null, pago_mp_id: null };
     await a.from("doc_emitidos").update(fila).eq("id", id);
     await registrarEvento(a, id, estado === "abonado" ? "pago_manual" : "pago_revertido", estado === "abonado" ? { medio: fila.pago_medio } : {}, perfil.email);
+    if (estado === "abonado") {
+      const medioOk = fila.pago_medio as "mercadopago" | "transferencia" | "efectivo";
+      if (await volcarSenaEnLead(a, doc, { importe: fila.pago_monto ?? null, medio: medioOk, numeroOperacion: fila.pago_mp_id ?? null })) {
+        await registrarEvento(a, id, "sena_en_crm", {}, perfil.email);
+      }
+    } else {
+      await quitarSenaDeLead(a, doc, doc.pagoMpId ?? null);
+    }
     refrescar();
     return { ok: true };
   } catch (err) {

@@ -1,3 +1,4 @@
+import { volcarSenaEnLead } from "@/lib/docs-clientes/sena-lead";
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { getPaymentClient, isMercadoPagoConfigured } from "@/lib/mercadopago";
@@ -266,6 +267,9 @@ async function registrarPagoReservaMp(docId: string, pagoId: string, importe: nu
   if (!actualizado) return; // ya estaba abonada o no existe
   const doc = mapDoc(actualizado);
   await registrarEventoDoc(supabase, docId, "pago_mp_aprobado", { pagoId, importe }, "mercadopago");
+  if (await volcarSenaEnLead(supabase, doc, { importe, medio: "mercadopago", numeroOperacion: pagoId, mpId: pagoId })) {
+    await registrarEventoDoc(supabase, docId, "sena_en_crm", { pagoId, importe }, "mercadopago");
+  }
   const importeTxt = montoDoc(importe, "ARS");
   try {
     if (doc.clienteEmail) {

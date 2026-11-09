@@ -81,7 +81,7 @@ function LeadCard({
   const [observaciones, setObservaciones] = useState(lead.observaciones);
   const [numeroTransaccion, setNumeroTransaccion] = useState(lead.numeroTransaccion ?? "");
   const [importeCobrado, setImporteCobrado] = useState(lead.importeCobrado?.toString() ?? "");
-  const [medioPagoSena, setMedioPagoSena] = useState<"transferencia" | "efectivo" | "">(lead.medioPagoSena ?? "");
+  const [medioPagoSena, setMedioPagoSena] = useState<"transferencia" | "efectivo" | "mercadopago" | "">(lead.medioPagoSena ?? "");
   const [fechaFirma, setFechaFirma] = useState(lead.fechaFirmaEscribania ?? "");
   const [horarioFirma, setHorarioFirma] = useState(lead.horarioFirmaEscribania ?? "");
   const [comisionUsd, setComisionUsd] = useState(lead.comisionUsd?.toString() ?? "");
@@ -364,6 +364,13 @@ function LeadCard({
         {lead.manzana && <p>Manzana: {lead.manzana}</p>}
         {lead.loteNumero && <p>Lote: {lead.loteNumero}</p>}
       </div>
+      {(lead.importeCobrado || lead.numeroTransaccion) && (
+        <div className="mt-1.5 rounded-lg bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-800">
+          💰 Seña{lead.importeCobrado ? ` $ ${new Intl.NumberFormat("es-AR").format(lead.importeCobrado)}` : ""}
+          {lead.numeroTransaccion ? ` · Op. N.º ${lead.numeroTransaccion}` : ""}
+          {lead.medioPagoSena ? ` · ${lead.medioPagoSena === "mercadopago" ? "Mercado Pago" : lead.medioPagoSena === "efectivo" ? "Efectivo" : "Transferencia"}` : ""}
+        </div>
+      )}
       <EtiquetasOrigen lead={lead} />
       <VisitasLead lead={lead} onActualizado={onActualizado} />
 
@@ -804,7 +811,7 @@ function LeadCard({
               <select
                 value={medioPagoSena}
                 onChange={(e) => {
-                  setMedioPagoSena(e.target.value as "transferencia" | "efectivo" | "");
+                  setMedioPagoSena(e.target.value as "transferencia" | "efectivo" | "mercadopago" | "");
                   startTransition(() => {
                     actualizarPagoLeadAction(lead.id, numeroTransaccion, importeCobrado, e.target.value).then((res) => {
                       if (res.ok) onActualizado(lead.id, { medioPagoSena: (e.target.value || null) as Lead["medioPagoSena"] });
@@ -816,6 +823,7 @@ function LeadCard({
                 <option value="">Sin especificar</option>
                 <option value="transferencia">Transferencia</option>
                 <option value="efectivo">Efectivo</option>
+                <option value="mercadopago">Mercado Pago</option>
               </select>
             </div>
           </div>

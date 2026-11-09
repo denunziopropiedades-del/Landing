@@ -275,7 +275,7 @@ export type BusquedaLead = {
 };
 
 /** Una cuota del cuotario de un cliente financiado. */
-export type MedioPago = "transferencia" | "efectivo";
+export type MedioPago = "transferencia" | "efectivo" | "mercadopago";
 
 export type Cuota = {
   id: string;

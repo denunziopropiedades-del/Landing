@@ -400,7 +400,7 @@ function Emitidos({
                     <p className="font-semibold">
                       Pago de la reserva ({monto((d.datos as DatosReserva).importeReserva, (d.datos as DatosReserva).monedaReserva)}):{" "}
                       {d.pagoEstado === "abonado"
-                        ? `abonado${d.pagoEn ? ` el ${fechaAr(d.pagoEn, true)}` : ""}${d.pagoMedio ? ` · ${d.pagoMedio === "mercadopago" ? "Mercado Pago" : d.pagoMedio}` : ""}`
+                        ? `abonado${d.pagoEn ? ` el ${fechaAr(d.pagoEn, true)}` : ""}${d.pagoMedio ? ` · ${d.pagoMedio === "mercadopago" ? "Mercado Pago" : d.pagoMedio}` : ""}${d.pagoMpId ? ` · Op. N.º ${d.pagoMpId}` : ""}${d.leadId ? " · ✓ cargado en el CRM" : ""}`
                         : "pendiente"}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
@@ -433,8 +433,14 @@ function Emitidos({
                               type="button"
                               disabled={pendiente}
                               onClick={() =>
-                                confirm(`¿Marcar la reserva ${d.numero} como abonada por ${medio}?`) &&
-                                correr(() => marcarPagoReservaAction(d.id, "abonado", medio), () => "Pago registrado.")
+                              {
+                                if (!confirm(`¿Marcar la reserva ${d.numero} como abonada por ${medio}?`)) return;
+                                const op = prompt("Número de operación / comprobante (opcional):") ?? "";
+                                correr(
+                                  () => marcarPagoReservaAction(d.id, "abonado", medio, op),
+                                  () => (d.leadId ? "Pago registrado y cargado en la ficha del CRM." : "Pago registrado. (La reserva no está vinculada a una ficha del CRM.)")
+                                );
+                              }
                               }
                               className={`${btn} border border-emerald-600 text-emerald-700`}
                             >

@@ -67,6 +67,8 @@ export type DocEmitido = {
   pagoMonto: number | null;
   pagoMedio: string | null;
   pagoEn: string | null;
+  /** N.º de operación del pago (Mercado Pago o el que se cargó a mano). */
+  pagoMpId?: string | null;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -97,6 +99,7 @@ export const mapDoc = (r: any): DocEmitido => ({
   pagoMonto: r.pago_monto === null || r.pago_monto === undefined ? null : Number(r.pago_monto),
   pagoMedio: r.pago_medio ?? null,
   pagoEn: r.pago_en ?? null,
+  pagoMpId: r.pago_mp_id ?? null,
 });
 
 /* ───────── Varios ───────── */
