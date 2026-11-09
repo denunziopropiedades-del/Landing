@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cancelarEventoVisita, crearEventoEscribania } from "@/lib/google-calendar";
-import { bloqueadoPorEscribania, DURACION_FIRMA_ESCRIBANIA_MINUTOS } from "@/lib/agenda";
+import { bloqueadoPorEscribania } from "@/lib/agenda";
 import { armarMailFirmaEscribania, sendEmail } from "@/lib/email";
 
 /**
@@ -12,8 +12,12 @@ import { armarMailFirmaEscribania, sendEmail } from "@/lib/email";
 const SITE = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://matulotes.app").replace(/\/+$/, "");
 export const DIAS_VIGENCIA_LINK_FIRMA = 15;
 export const MAX_INTENTOS_DNI = 5;
-/** Turnos por defecto si no se eligen opciones en la tarjeta: lunes a viernes, 9 a 17 hs. */
-const HORARIOS_DEFECTO = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
+/** Turnos de firma: cada 30 minutos, correlativos, de 10:00 a 16:00 (último turno). */
+export const INTERVALO_TURNOS_FIRMA = 30;
+const HORARIOS_DEFECTO = Array.from({ length: (16 * 60 - 10 * 60) / INTERVALO_TURNOS_FIRMA + 1 }, (_, i) => {
+  const m = 10 * 60 + i * INTERVALO_TURNOS_FIRMA;
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+});
 const DIAS_DEFECTO = 21;
 
 export type TurnoFirma = { fecha: string; horario: string };
@@ -233,7 +237,7 @@ export async function turnosDisponiblesFirma(admin: SupabaseClient, lead: LeadLi
     (ocupadas ?? []).some(
       (o) =>
         o.fecha_firma_escribania === c.fecha &&
-        Math.abs(aMin(String(o.horario_firma_escribania)) - aMin(c.horario)) < DURACION_FIRMA_ESCRIBANIA_MINUTOS
+        Math.abs(aMin(String(o.horario_firma_escribania)) - aMin(c.horario)) < INTERVALO_TURNOS_FIRMA
     );
 
   const porFecha = new Map<string, string[]>();

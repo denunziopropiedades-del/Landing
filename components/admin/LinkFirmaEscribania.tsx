@@ -58,11 +58,11 @@ export default function LinkFirmaEscribania({ lead, onActualizado }: { lead: Lea
           {!lead.dni && <p className="text-amber-700">Cargá el DNI del cliente: lo usa para validar el link.</p>}
           <div>
             <p className="text-[11px] text-brand-black/50">
-              Turnos a ofrecer (opcional). Si no agregás ninguno, puede elegir de lunes a viernes de 9 a 17 hs en los próximos 21 días.
+              Turnos a ofrecer (opcional). Si no agregás ninguno, puede elegir de lunes a viernes, turnos cada 30 min de 10:00 a 16:00, en los próximos 21 días.
             </p>
             <div className="mt-1 flex gap-1">
               <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="min-w-0 flex-1 rounded border border-black/10 px-1 py-0.5" />
-              <input type="time" value={horario} onChange={(e) => setHorario(e.target.value)} className="w-20 rounded border border-black/10 px-1 py-0.5" />
+              <input type="time" step={1800} min="10:00" max="16:00" value={horario} onChange={(e) => setHorario(e.target.value)} className="w-20 rounded border border-black/10 px-1 py-0.5" />
               <button
                 type="button"
                 disabled={!fecha || !horario}

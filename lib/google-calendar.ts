@@ -27,7 +27,7 @@ const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID?.trim();
 const TIMEZONE = process.env.GOOGLE_CALENDAR_TIMEZONE ?? "America/Argentina/Buenos_Aires";
 
 const DURACION_VISITA_MINUTOS = 45;
-const DURACION_ESCRIBANIA_MINUTOS = 60;
+const DURACION_ESCRIBANIA_MINUTOS = 30; // turnos de firma correlativos cada 30 min
 
 /** https://developers.google.com/calendar/api/v3/reference/colors */
 const COLOR_ID_ROJO = "11"; // Tomato
