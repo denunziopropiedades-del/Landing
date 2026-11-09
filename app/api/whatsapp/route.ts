@@ -16,7 +16,8 @@ function paginaDeOrigen(request: NextRequest): string | null {
     const url = new URL(referer);
     if (url.host !== request.nextUrl.host) return null;
     // Links privados del cliente (llevan un token): no se reenvían por WhatsApp.
-    if (url.pathname.startsWith("/visita/reprogramar") || url.pathname.startsWith("/admin")) return null;
+    const privadas = ["/visita/reprogramar", "/admin", "/firma", "/mis-cuotas", "/mi-alquiler", "/cliente", "/verificar", "/pago-reserva"];
+    if (privadas.some((r) => url.pathname === r || url.pathname.startsWith(`${r}/`))) return null;
     for (const p of PARAMS_RUIDO) url.searchParams.delete(p);
     url.hash = "";
     return url.toString();
