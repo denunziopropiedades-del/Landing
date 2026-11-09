@@ -451,6 +451,8 @@ export async function getLeads(): Promise<Lead[]> {
     sexo: l.sexo ?? null,
     fechaFirmaEscribania: l.fecha_firma_escribania ?? null,
     horarioFirmaEscribania: l.horario_firma_escribania ?? null,
+    firmaLinkVence: (l.firma_link_vence as string | null) ?? null,
+    firmaElegidaEn: (l.firma_elegida_en as string | null) ?? null,
     comisionUsd: numOrNull(l.comision_usd),
     honorariosUsd: numOrNull(l.honorarios_usd),
     honorariosArs: numOrNull(l.honorarios_ars),

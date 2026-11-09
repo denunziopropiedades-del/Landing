@@ -229,6 +229,9 @@ export type Lead = {
   medioPagoSena?: MedioPago | null;
   sexo?: "M" | "F" | null;
   fechaFirmaEscribania?: string | null;
+  /** Link para que el cliente elija la firma: vencimiento y cuándo eligió. */
+  firmaLinkVence?: string | null;
+  firmaElegidaEn?: string | null;
   horarioFirmaEscribania?: string | null;
   comisionUsd?: number | null;
   honorariosUsd?: number | null;

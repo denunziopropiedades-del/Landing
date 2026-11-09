@@ -10,13 +10,12 @@ import { guardarContactoDespues, oauthConfigurado, sincronizarContactos } from "
 import { reenviarMailVisita } from "@/lib/visitas-mail";
 import { requireRole, AdminActionError } from "@/lib/admin/auth";
 import { registrarActividad } from "@/lib/admin/activity";
-import { cancelarEventoVisita, crearEventoEscribania, actualizarLugarEventoVisita } from "@/lib/google-calendar";
-import { bloqueadoPorEscribania } from "@/lib/agenda";
+import { cancelarEventoVisita, actualizarLugarEventoVisita } from "@/lib/google-calendar";
+import { agendarFirmaEscribania, crearLinkFirma, soloDigitos } from "@/lib/firma-escribania";
 import { bloqueReprogramarHtml } from "@/lib/visitas";
 import {
   NOTA_RESERVA_LOTE_HTML,
   armarMailConfirmacionCuotaPagada,
-  armarMailFirmaEscribania,
   armarMailVisitaCancelada,
   sendEmail,
 } from "@/lib/email";
@@ -1854,128 +1853,42 @@ export async function actualizarFirmaEscribaniaLeadAction(
     const actor = await requireRole("administrador", "supervisor", "vendedor");
     await verificarPropiedadLead(actor.id, actor.rol, id);
     const admin = (await getSupabaseAdminClient())!;
-
-    const { data: lead } = await admin
-      .from("leads")
-      .select(
-        "nombre, apellido, email, manzana, escribania_calendar_event_id, lotes(manzana, numero), lead_lotes(lotes(manzana, numero, superficie_m2)), proyectos(nombre, escribania_nombre, escribania_direccion, escribania_maps_url, escribania_instrucciones, documentos_requeridos)"
-      )
-      .eq("id", id)
-      .maybeSingle();
-
-    // Si ya había un evento cargado (fecha/horario anteriores), se borra: al guardar de nuevo
-    // se crea uno nuevo con los datos actualizados, así nunca queda un evento viejo duplicado.
-    if (lead?.escribania_calendar_event_id) {
-      await cancelarEventoVisita(lead.escribania_calendar_event_id);
-    }
-
-    const fechaLimpia = fecha || "";
-    const horarioLimpio = horario.trim();
-    let eventId: string | null = null;
-
-    const loteSingular = lead?.lotes as unknown as { manzana: string; numero: string } | null;
-    const lotesOperacion = (
-      (lead?.lead_lotes ?? []) as unknown as {
-        lotes: { manzana: string; numero: string; superficie_m2: number } | null;
-      }[]
-    )
-      .map((ll) => ll.lotes)
-      .filter((lo): lo is NonNullable<typeof lo> => lo !== null);
-
-    if (fechaLimpia && horarioLimpio && lead) {
-      const proyecto = lead.proyectos as unknown as {
-        nombre: string;
-        escribania_nombre: string | null;
-        escribania_direccion: string | null;
-        escribania_maps_url: string | null;
-        escribania_instrucciones: string | null;
-        documentos_requeridos: string[] | null;
-      } | null;
-
-      eventId = await crearEventoEscribania({
-        nombreCliente: `${lead.nombre} ${lead.apellido ?? ""}`.trim(),
-        fecha: fechaLimpia,
-        horario: horarioLimpio,
-        manzana: loteSingular?.manzana ?? lead.manzana ?? undefined,
-        lote: loteSingular?.numero ?? undefined,
-        proyectoNombre: proyecto?.nombre,
-      });
-
-      if (lead.email) {
-        try {
-          await sendEmail(
-            lead.email,
-            `Confirmamos el día y horario de tu firma — ${proyecto?.nombre ?? ""}`,
-            armarMailFirmaEscribania({
-              nombre: lead.nombre,
-              proyectoNombre: proyecto?.nombre ?? "",
-              manzana: loteSingular?.manzana ?? lead.manzana ?? "",
-              lotes:
-                lotesOperacion.length > 0
-                  ? lotesOperacion.map((lo) => ({ numero: lo.numero, superficieM2: lo.superficie_m2 }))
-                  : loteSingular
-                    ? [{ numero: loteSingular.numero, superficieM2: 0 }]
-                    : [],
-              fecha: fechaLimpia,
-              horario: horarioLimpio,
-              escribaniaNombre: proyecto?.escribania_nombre ?? null,
-              escribaniaDireccion: proyecto?.escribania_direccion ?? null,
-              escribaniaMapsUrl: proyecto?.escribania_maps_url ?? null,
-              escribaniaInstrucciones: proyecto?.escribania_instrucciones ?? null,
-              documentosRequeridos: proyecto?.documentos_requeridos ?? [],
-            })
-          );
-        } catch (err) {
-          console.error("No se pudo enviar el mail de firma en escribanía", err);
-        }
-      }
-    }
-
-    const { error } = await admin
-      .from("leads")
-      .update({
-        fecha_firma_escribania: fechaLimpia || null,
-        horario_firma_escribania: horarioLimpio || null,
-        escribania_calendar_event_id: eventId,
-        actualizado_en: new Date().toISOString(),
-      })
-      .eq("id", id);
-    if (error) throw new Error(error.message);
-    const numerosLote = lotesOperacion.length > 0 ? lotesOperacion.map((lo) => lo.numero) : loteSingular ? [loteSingular.numero] : [];
+    const r = await agendarFirmaEscribania(admin, id, fecha, horario);
     await registrarActividad(actor, "actualizar", "lead", id, {
-      ...(lead?.manzana || loteSingular?.manzana ? { manzana: lead?.manzana ?? loteSingular?.manzana } : {}),
-      ...(numerosLote.length > 0 ? { lote: numerosLote.join(", ") } : {}),
+      ...(r.manzana ? { manzana: r.manzana } : {}),
+      ...(r.numerosLote.length > 0 ? { lote: r.numerosLote.join(", ") } : {}),
       fechaFirmaEscribania: fecha,
       horarioFirmaEscribania: horario,
     });
-
-    // La escribanía tiene prioridad: la firma se guarda igual, pero se avisa qué visitas
-    // del mismo día quedaron dentro del margen de 2 hs antes / 2 hs después.
-    let aviso: string | undefined;
-    if (fechaLimpia && horarioLimpio) {
-      const { data: visitasDelDia } = await admin
-        .from("visitas")
-        .select("nombre, telefono, horario")
-        .eq("fecha", fechaLimpia)
-        .neq("estado", "cancelada");
-      const enConflicto = (visitasDelDia ?? []).filter((v) => bloqueadoPorEscribania(v.horario as string, [horarioLimpio]));
-      if (enConflicto.length > 0) {
-        aviso =
-          `La firma quedó guardada (la escribanía tiene prioridad), pero estas visitas del ${fechaLimpia} ` +
-          `caen dentro de las 2 hs antes/después y hay que reprogramarlas:\n` +
-          enConflicto
-            .sort((a, b) => String(a.horario).localeCompare(String(b.horario)))
-            .map((v) => `• ${v.horario} hs — ${v.nombre} (${v.telefono})`)
-            .join("\n") +
-          `\n\nCada cliente tiene en su mail de confirmación el link para elegir otro horario.`;
-      }
-    }
-
     revalidatePath("/admin/crm");
     revalidatePath("/admin/consultas");
-    return { ok: true, aviso };
+    return { ok: true, aviso: r.aviso };
   } catch (err) {
     return fail(err);
+  }
+}
+
+/** Genera el link para que el cliente elija día y horario de firma (valida con su DNI). */
+export async function generarLinkFirmaAction(
+  id: string,
+  opciones: { fecha: string; horario: string }[]
+): Promise<{ ok: true; url: string; vence: string } | { ok: false; error: string }> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    await verificarPropiedadLead(actor.id, actor.rol, id);
+    const admin = (await getSupabaseAdminClient())!;
+    const { data: lead } = await admin.from("leads").select("dni").eq("id", id).maybeSingle();
+    if (!lead) throw new AdminActionError("No se encontró el cliente.");
+    if (soloDigitos(lead.dni as string | null).length < 6) {
+      throw new AdminActionError("Cargá primero el DNI del cliente en la ficha: el cliente lo usa para validar el link.");
+    }
+    const r = await crearLinkFirma(admin, id, opciones);
+    await registrarActividad(actor, "actualizar", "lead", id, { linkFirmaEscribania: "generado", opciones: opciones.length });
+    revalidatePath("/admin/crm");
+    return { ok: true, ...r };
+  } catch (err) {
+    const f = fail(err);
+    return { ok: false, error: f.ok ? "Error" : f.error };
   }
 }
 

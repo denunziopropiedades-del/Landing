@@ -24,6 +24,7 @@ import { buildWhatsappClienteUrl } from "@/lib/whatsapp";
 import { formatMoneda } from "@/lib/utils";
 import type { EstadoLead, Lead, Lote, Perfil, PlanFinanciacionFijo, Proyecto, Rol } from "@/types/site";
 import PlanFinanciacionCampos, { planAEditable, type PlanEditable } from "@/components/admin/PlanFinanciacionCampos";
+import LinkFirmaEscribania from "@/components/admin/LinkFirmaEscribania";
 import PerfilBusquedaLead, { BotonBloquearAgenda, EtiquetasOrigen, VisitasLead } from "@/components/admin/PerfilBusquedaLead";
 
 /** Propiedades (venta, alquiler, campos…) para elegir qué le interesa a cada lead. */
@@ -647,6 +648,7 @@ function LeadCard({
               />
             </div>
           </div>
+          <LinkFirmaEscribania lead={lead} onActualizado={onActualizado} />
 
           <div>
             <label className="mb-1 block text-[11px] font-medium text-brand-black/50">Forma de pago</label>
