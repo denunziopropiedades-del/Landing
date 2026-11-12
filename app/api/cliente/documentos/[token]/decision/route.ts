@@ -4,6 +4,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { sendEmail, sendNotificationEmail } from "@/lib/email";
 import { estadoEfectivo, otpCoincide, registrarEvento, resolverToken, sitio, textoConsentimiento } from "@/lib/docs-clientes/core";
 import { mailAvisoInterno, mailConstancia } from "@/lib/docs-clientes/emails";
+import { asegurarLeadDeReserva, volcarSenaEnLead } from "@/lib/docs-clientes/sena-lead";
 
 export const runtime = "nodejs";
 
@@ -75,6 +76,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   });
   await registrarEvento(admin, doc.id, decision === "aceptado" ? "cliente_acepto" : "cliente_rechazo", { motivo, ip }, "cliente");
 
+  // Reserva aceptada: el cliente pasa al CRM como cliente nuevo en "Reservado" (se crea la ficha si no existía).
+  let enCrm = false;
+  if (decision === "aceptado") {
+    const leadId = await asegurarLeadDeReserva(admin, doc, "aceptada");
+    if (leadId) {
+      enCrm = true;
+      await registrarEvento(admin, doc.id, "cliente_en_crm", { leadId, nuevo: !doc.leadId }, "sistema");
+      // Si la seña ya estaba pagada antes de aceptar, se vuelca también en la ficha.
+      if (doc.pagoEstado === "abonado" && !doc.leadId) {
+        await volcarSenaEnLead(admin, { ...doc, leadId }, {
+          importe: doc.pagoMonto,
+          medio: (["mercadopago", "transferencia", "efectivo"].includes(doc.pagoMedio ?? "") ? doc.pagoMedio : "transferencia") as "mercadopago" | "transferencia" | "efectivo",
+          numeroOperacion: doc.pagoMpId ?? null,
+        });
+      }
+    }
+  }
+
   const link = `${sitio()}/cliente/documentos/${token}`;
   try {
     if (doc.clienteEmail) {
@@ -89,7 +108,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     const m = mailAvisoInterno(
       decision === "aceptado" ? "✅ El cliente ACEPTÓ la reserva" : "❌ El cliente RECHAZÓ la reserva",
       doc,
-      motivo ? `<p><b>Motivo:</b> ${motivo.replace(/</g, "&lt;")}</p>` : ""
+      [
+        motivo ? `<p><b>Motivo:</b> ${motivo.replace(/</g, "&lt;")}</p>` : "",
+        enCrm ? `<p>📋 El cliente ${doc.leadId ? "pasó" : "se cargó"} en el CRM en la etapa <b>Reservado</b>: <a href="${sitio()}/admin/crm">abrir CRM</a>.</p>` : "",
+      ].join("")
     );
     await sendNotificationEmail(m.asunto, m.html);
   } catch (err) {
