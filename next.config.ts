@@ -28,6 +28,7 @@ const nextConfig: NextConfig = {
     "/api/documentos/pdf": ["./node_modules/pdfkit/js/data/**/*"],
     "/api/alquileres/recibo/[id]": ["./node_modules/pdfkit/js/data/**/*"],
     "/api/alquileres/liquidacion/[id]": ["./node_modules/pdfkit/js/data/**/*"],
+    "/api/admin/cobranzas/[leadId]/pagares": ["./node_modules/pdfkit/js/data/**/*"],
   },
 };
 
