@@ -100,6 +100,7 @@ export type CandidatoLead = {
   telefono: string | null;
   dni: string | null;
   inmueble: string;
+  proyecto: string | null;
   precioUsd: number | null;
   financiado: boolean;
   cuotas: { total: number; pagadas: number; vencidasImpagas: number };
@@ -181,6 +182,7 @@ export async function getDatosDocsClientes(): Promise<DatosPanelDocs> {
       telefono: (l.telefono as string) || null,
       dni: (l.dni as string) || null,
       inmueble: [loteTxt, proyecto].filter(Boolean).join(", "),
+      proyecto: proyecto || null,
       precioUsd: lotes.length ? lotes.reduce((s, x) => s + Number(x.precio_usd ?? 0), 0) || null : null,
       financiado: l.forma_pago === "financiado",
       cuotas: cuotasPorLead.get(l.id as string) ?? { total: 0, pagadas: 0, vencidasImpagas: 0 },

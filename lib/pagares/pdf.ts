@@ -32,6 +32,7 @@ export type DatosPagares = {
     manzana: string | null;
     lotes: string[];
     totalCuotas: number;
+    precio: { importe: number; moneda: "USD" | "ARS" } | null;
     sena: { importe: number; moneda: "USD" | "ARS"; fecha: string | null; comprobante: string | null } | null;
     anticipo: { importe: number; moneda: "USD" | "ARS" } | null;
   };
@@ -158,7 +159,8 @@ function hoja(doc: PDFKit.PDFDocument, d: DatosPagares, c: DatosPagares["cuotas"
     op.proyecto,
   ].filter(Boolean).join(" — ");
   const extras = [
-    op.sena ? `Reserva/seña abonada: ${fmtImporte(op.sena.importe, op.sena.moneda)}${op.sena.fecha ? ` el ${fechaCorta(op.sena.fecha)}` : ""}${op.sena.comprobante ? ` (comp. N.º ${op.sena.comprobante})` : ""}` : null,
+    op.precio ? `Precio total: ${fmtImporte(op.precio.importe, op.precio.moneda)}` : null,
+    op.sena ? `Reserva/seña abonada: ${fmtImporte(op.sena.importe, op.sena.moneda)}${op.sena.fecha ? ` el ${fechaCorta(op.sena.fecha)}` : ""}${op.sena.comprobante ? ` (${op.sena.comprobante})` : ""}` : null,
     op.anticipo ? `Anticipo: ${fmtImporte(op.anticipo.importe, op.anticipo.moneda)}` : null,
   ].filter(Boolean).join(" · ");
   const ref = `Referencia: cuota ${c.numero} de ${op.totalCuotas} del plan de pagos${partesLote ? ` — ${partesLote}` : ""}.${extras ? ` ${extras}.` : ""} Datos informativos: no condicionan la obligación de pago de este pagaré.`;

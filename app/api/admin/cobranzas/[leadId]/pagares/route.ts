@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/server";
 import { getPerfilActual } from "@/lib/admin/auth";
 import { generarPagaresPdf, type DatosPagares, type TipoDocBeneficiario } from "@/lib/pagares/pdf";
+import { mapDoc, type DatosReserva } from "@/lib/docs-clientes/compartido";
 import type { PlanFinanciacionFijo } from "@/types/site";
 
 export const runtime = "nodejs";
@@ -87,6 +88,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ lead
   const lotes = lotesVinculados.length ? lotesVinculados : lotesDirectos;
   const manzana = (l.manzana as string | null) ?? lotes[0]?.manzana ?? null;
 
+  // Reserva emitida desde "Reservas y certificados": de ahí salen la seña, su pago y el precio
+  // de la operación, para que el pagaré muestre lo mismo que la reserva (consulta aparte: si la
+  // tabla no existe, se usan los datos de la ficha del CRM).
+  const admin = await getSupabaseAdminClient();
+  const { data: reservaRow } = admin
+    ? await admin
+        .from("doc_emitidos")
+        .select("*")
+        .eq("lead_id", leadId)
+        .eq("tipo", "reserva")
+        .neq("estado", "anulado")
+        .order("emitido_en", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
+  const reserva = reservaRow ? mapDoc(reservaRow) : null;
+  const datosReserva = reserva ? (reserva.datos as DatosReserva) : null;
+
   const domicilio = dc ? [dc.domicilio, dc.localidad, dc.partido, dc.provincia].filter(Boolean).join(", ") : "";
   const importeSena = Number(l.importe_cobrado) || 0;
 
@@ -109,7 +128,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ lead
       manzana,
       lotes: lotes.map((x) => String(x.numero)),
       totalCuotas: Math.max(plan?.cuotas ?? 0, todas.length),
-      sena: importeSena
+      precio: datosReserva?.valorVenta ? { importe: datosReserva.valorVenta, moneda: datosReserva.monedaVenta } : null,
+      sena: reserva && datosReserva && reserva.pagoEstado === "abonado"
+        ? {
+            importe: reserva.pagoMonto || datosReserva.importeReserva,
+            moneda: datosReserva.monedaReserva,
+            fecha: reserva.pagoEn?.slice(0, 10) ?? null,
+            comprobante: [`Reserva ${reserva.numero}`, reserva.pagoMpId ? `op. ${reserva.pagoMpId}` : null].filter(Boolean).join(", "),
+          }
+        : importeSena
         ? {
             importe: importeSena,
             moneda: "ARS",

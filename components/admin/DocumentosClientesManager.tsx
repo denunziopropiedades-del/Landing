@@ -1,5 +1,6 @@
 "use client";
 
+import DescargarPagares from "@/components/admin/DescargarPagares";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -132,6 +133,7 @@ export default function DocumentosClientesManager({ datos, condicionesBase }: { 
       {tab === "emitidos" && (
         <Emitidos
           docs={datos.docs}
+          leads={datos.leads}
           abierto={abierto}
           setAbierto={setAbierto}
           pendiente={pendiente}
@@ -185,6 +187,7 @@ export default function DocumentosClientesManager({ datos, condicionesBase }: { 
 
 function Emitidos({
   docs,
+  leads,
   abierto,
   setAbierto,
   pendiente,
@@ -195,6 +198,7 @@ function Emitidos({
   onRefresh,
 }: {
   docs: Doc[];
+  leads: CandidatoLead[];
   abierto: string | null;
   setAbierto: (id: string | null) => void;
   pendiente: boolean;
@@ -464,6 +468,27 @@ function Emitidos({
                     </div>
                   </div>
                 )}
+
+                {d.tipo === "reserva" && activo && d.leadId && (() => {
+                  const lead = leads.find((l) => l.id === d.leadId);
+                  if (!lead?.financiado) return null;
+                  if (!lead.cuotas.total)
+                    return (
+                      <p className="rounded-lg bg-brand-black/[0.03] p-3 text-xs text-brand-black/60">
+                        Pagarés: todavía no hay cuotas generadas para este cliente. Cargá la fecha de la primera cuota en el CRM y vas a poder descargarlos acá y en Cobranzas.
+                      </p>
+                    );
+                  return (
+                    <div className="overflow-hidden rounded-lg border border-black/5">
+                      <DescargarPagares
+                        leadId={lead.id}
+                        proyecto={lead.proyecto}
+                        cuotasTotal={lead.cuotas.total}
+                        cuotasPendientes={lead.cuotas.total - lead.cuotas.pagadas}
+                      />
+                    </div>
+                  );
+                })()}
 
                 <dl className="grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
                   <div>
