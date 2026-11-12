@@ -108,7 +108,7 @@ export default function DescargarPagares({
   const input = "w-full rounded-lg border border-black/10 px-2 py-1.5 text-sm";
   return (
     <div className="space-y-3 border-t border-black/5 p-4 text-xs">
-      <p className="font-medium text-brand-black/50">Pagarés de las cuotas — uno por hoja, para firma y huella del deudor</p>
+      <p className="font-medium text-brand-black/50">Pagarés de las cuotas — uno por hoja, para firma del deudor</p>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="space-y-1 sm:col-span-2">
           <span className="text-brand-black/60">Beneficiario (a quien se le paga — la desarrolladora)</span>

@@ -3,7 +3,7 @@ import { fechaCorta, fechaEnLetras, fechaLarga, importeEnLetras } from "@/lib/pa
 
 /**
  * Pagarés de las cuotas (Decreto-Ley 5965/63, arts. 101 y ss.): una cuota por hoja A4,
- * con firma y huella del deudor, espacio para aval y talón de control recortable.
+ * con firma del deudor, espacio para aval y talón de control recortable.
  *
  * Requisitos del art. 101 que cubre cada hoja: la palabra "pagaré" en el texto, la promesa
  * pura y simple de pagar una suma determinada, el vencimiento, el lugar de pago, el
@@ -29,6 +29,8 @@ export type DatosPagares = {
   };
   operacion: {
     proyecto: string | null;
+    /** Descripción del inmueble de la reserva, si la ficha no tiene lotes vinculados. */
+    inmueble: string | null;
     manzana: string | null;
     lotes: string[];
     totalCuotas: number;
@@ -142,11 +144,10 @@ function hoja(doc: PDFKit.PDFDocument, d: DatosPagares, c: DatosPagares["cuotas"
   // ---- Cuerpo (promesa de pago) ----
   const LG = 5.5;
   const docBenef = d.beneficiario.numeroDoc ? `, ${d.beneficiario.tipoDoc} ${d.beneficiario.numeroDoc},` : ",";
-  doc.font("Times-Roman").fontSize(11.5).text("El día ", px, iy + 112, { width: pw, align: "justify", lineGap: LG, continued: true })
-    .font("Times-Bold").text(fechaEnLetras(c.vencimiento), { continued: true })
-    .font("Times-Roman").text(" ", { continued: true })
-    .font("Times-Bold").text("PAGARÉ SIN PROTESTO", { continued: true })
-    .font("Times-Roman").text(" (art. 50, Decreto-Ley 5965/63) a ", { continued: true })
+  // Texto alineado a la izquierda: el justificado de pdfkit abre huecos entre tramos con distinta fuente.
+  doc.font("Times-Roman").fontSize(11.5).text("El día ", px, iy + 112, { width: pw, lineGap: LG, continued: true })
+    .font("Times-Bold").text(`${fechaEnLetras(c.vencimiento)} PAGARÉ SIN PROTESTO `, { continued: true })
+    .font("Times-Roman").text("(art. 50, Decreto-Ley 5965/63) a ", { continued: true })
     .font("Times-Bold").text(d.beneficiario.nombre.toUpperCase(), { continued: true })
     .font("Times-Roman").text(`${docBenef} o a su orden, la cantidad de:`);
 
@@ -161,7 +162,7 @@ function hoja(doc: PDFKit.PDFDocument, d: DatosPagares, c: DatosPagares["cuotas"
 
   const enBilletes = c.moneda === "USD" ? "en billetes de dicha moneda, " : "";
   doc.font("Times-Roman").fontSize(11.5)
-    .text(`${enBilletes}por igual valor recibido a mi entera satisfacción. Pagadero en `, px, yL + hL + 6, { width: pw, align: "justify", lineGap: LG, continued: true })
+    .text(`${enBilletes}por igual valor recibido a mi entera satisfacción. Pagadero en `, px, yL + hL + 6, { width: pw, lineGap: LG, continued: true })
     .font("Times-Bold").text(d.lugarPago, { continued: true })
     .font("Times-Roman").text(".");
 
@@ -177,7 +178,7 @@ function hoja(doc: PDFKit.PDFDocument, d: DatosPagares, c: DatosPagares["cuotas"
     op.manzana ? `Manzana ${op.manzana}` : null,
     op.lotes.length ? `Lote${op.lotes.length > 1 ? "s" : ""} ${op.lotes.join(", ")}` : null,
     op.proyecto,
-  ].filter(Boolean).join(" — ");
+  ].filter(Boolean).join(" — ") || op.inmueble || "";
   const extras = [
     op.precio ? `Precio total: ${fmtImporte(op.precio.importe, op.precio.moneda)}` : null,
     op.sena ? `Reserva/seña abonada: ${fmtImporte(op.sena.importe, op.sena.moneda)}${op.sena.fecha ? ` el ${fechaCorta(op.sena.fecha)}` : ""}${op.sena.comprobante ? ` (${op.sena.comprobante})` : ""}` : null,
@@ -193,15 +194,7 @@ function hoja(doc: PDFKit.PDFDocument, d: DatosPagares, c: DatosPagares["cuotas"
 
   // ---- Firmas (posición fija respecto del pie del marco) ----
   const yLinea = iy + ih - 112; // línea de firma
-  const wDeudor = d.incluirAval ? pw * 0.58 : pw * 0.7;
-  const wHuella = 60, hHuella = 76;
-  const xHuella = px + wDeudor - wHuella;
-  const wFirma = wDeudor - wHuella - 12;
-
-  doc.fillColor(NAVY).font("Helvetica").fontSize(6).text("HUELLA PULGAR DERECHO", xHuella - 10, yLinea - hHuella - 2, { width: wHuella + 20, align: "center" });
-  doc.save().fillColor("#ffffff").roundedRect(xHuella, yLinea - hHuella + 6, wHuella, hHuella, 7).fill().restore();
-  doc.lineWidth(1).strokeColor(NAVY).roundedRect(xHuella, yLinea - hHuella + 6, wHuella, hHuella, 7).stroke();
-
+  const wDeudor = d.incluirAval ? pw * 0.52 : pw * 0.6;
   const bloqueFirma = (x: number, w: number, titulo: string, datos: [string, string][]) => {
     doc.lineWidth(0.8).strokeColor("#111111").moveTo(x, yLinea).lineTo(x + w, yLinea).stroke();
     doc.fillColor("#111111").font("Helvetica-Bold").fontSize(7.5).text(titulo, x, yLinea + 4, { width: w, align: "center" });
@@ -215,14 +208,14 @@ function hoja(doc: PDFKit.PDFDocument, d: DatosPagares, c: DatosPagares["cuotas"
   };
 
   const de = d.deudor;
-  bloqueFirma(px, wFirma + 12 + wHuella, "FIRMA DEL SUSCRIPTOR (DEUDOR)", [
+  bloqueFirma(px, wDeudor, "FIRMA DEL SUSCRIPTOR (DEUDOR)", [
     ["Aclaración", de.nombre.toUpperCase()],
     ["DNI", [de.dni, de.cuitCuil ? `   CUIT/CUIL: ${de.cuitCuil}` : ""].filter(Boolean).join("")],
     ["Domicilio", de.domicilio ?? ""],
     ["E-mail", [de.email, de.telefono ? `   Tel.: ${de.telefono}` : ""].filter(Boolean).join("")],
   ]);
   if (d.incluirAval) {
-    const xA = px + wDeudor + 22;
+    const xA = px + wDeudor + 30;
     bloqueFirma(xA, px + pw - xA, "POR AVAL (CODEUDOR / GARANTE)", [
       ["Aclaración", ""],
       ["DNI", ""],

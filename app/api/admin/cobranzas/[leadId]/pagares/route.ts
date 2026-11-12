@@ -92,17 +92,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ lead
   // de la operación, para que el pagaré muestre lo mismo que la reserva (consulta aparte: si la
   // tabla no existe, se usan los datos de la ficha del CRM).
   const admin = await getSupabaseAdminClient();
-  const { data: reservaRow } = admin
-    ? await admin
-        .from("doc_emitidos")
-        .select("*")
-        .eq("lead_id", leadId)
-        .eq("tipo", "reserva")
-        .neq("estado", "anulado")
-        .order("emitido_en", { ascending: false })
-        .limit(1)
-        .maybeSingle()
-    : { data: null };
+  const buscarReserva = async (campo: "lead_id" | "cliente_email", valor: string) => {
+    if (!admin) return null;
+    let q = admin.from("doc_emitidos").select("*").eq("tipo", "reserva").neq("estado", "anulado");
+    q = campo === "lead_id" ? q.eq("lead_id", valor) : q.is("lead_id", null).ilike("cliente_email", valor.replace(/[%_\\]/g, "\\$&"));
+    const { data } = await q.order("emitido_en", { ascending: false }).limit(1).maybeSingle();
+    return data;
+  };
+  // Primero la reserva vinculada a la ficha; si no hay, una reserva sin vincular con el mismo email.
+  const emailLead = ((l.email as string | null) ?? "").trim();
+  const reservaRow = (await buscarReserva("lead_id", leadId)) ?? (emailLead ? await buscarReserva("cliente_email", emailLead) : null);
   const reserva = reservaRow ? mapDoc(reservaRow) : null;
   const datosReserva = reserva ? (reserva.datos as DatosReserva) : null;
 
@@ -125,6 +124,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ lead
     },
     operacion: {
       proyecto: (l.proyectos as unknown as { nombre: string } | null)?.nombre ?? null,
+      inmueble: datosReserva?.inmueble ?? null,
       manzana,
       lotes: lotes.map((x) => String(x.numero)),
       totalCuotas: Math.max(plan?.cuotas ?? 0, todas.length),

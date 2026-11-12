@@ -469,8 +469,14 @@ function Emitidos({
                   </div>
                 )}
 
-                {d.tipo === "reserva" && activo && d.leadId && (() => {
-                  const lead = leads.find((l) => l.id === d.leadId);
+                {d.tipo === "reserva" && activo && (() => {
+                  // Ficha vinculada a la reserva; si no está vinculada, la del mismo email.
+                  const mail = d.clienteEmail?.trim().toLowerCase();
+                  const lead = d.leadId
+                    ? leads.find((l) => l.id === d.leadId)
+                    : mail
+                      ? leads.find((l) => l.email?.trim().toLowerCase() === mail)
+                      : undefined;
                   if (!lead?.financiado) return null;
                   if (!lead.cuotas.total)
                     return (
