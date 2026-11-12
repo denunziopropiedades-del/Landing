@@ -59,6 +59,26 @@ export function codigoVerificacion(d: DatosPagares, c: DatosPagares["cuotas"][nu
   return `${h.slice(0, 4)}-${h.slice(4, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}`;
 }
 
+/**
+ * Huella digital SHA-256 del contenido de cada pagaré (todo lo que dice la hoja: partes,
+ * importe, vencimiento, lugares y fecha). Cualquier cambio en esos datos cambia la huella.
+ */
+export function huellaSha256(d: DatosPagares, c: DatosPagares["cuotas"][number]) {
+  const contenido = JSON.stringify({
+    pagare: c.numero,
+    cuotaId: c.id,
+    importe: c.monto.toFixed(2),
+    moneda: c.moneda,
+    vencimiento: c.vencimiento,
+    beneficiario: d.beneficiario,
+    lugarPago: d.lugarPago,
+    lugarEmision: d.lugarEmision,
+    fechaEmision: d.fechaEmision,
+    deudor: d.deudor,
+  });
+  return crypto.createHash("sha256").update(contenido).digest("hex");
+}
+
 function pdfToBuffer(doc: PDFKit.PDFDocument): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
@@ -212,11 +232,13 @@ function hoja(doc: PDFKit.PDFDocument, d: DatosPagares, c: DatosPagares["cuotas"
   }
 
   // ---- Código de verificación ----
-  const yV = iy + ih - 18;
+  const yV = iy + ih - 24;
   doc.lineWidth(0.4).strokeColor(NAVY).strokeOpacity(0.35).moveTo(px, yV - 5).lineTo(px + pw, yV - 5).stroke().strokeOpacity(1);
   doc.fillColor("#444444").font("Courier").fontSize(7)
     .text(`CÓDIGO DE VERIFICACIÓN: ${codigoVerificacion(d, c)}`, px, yV, { lineBreak: false });
   doc.text(`Emitido ${emitidoEl}`, px, yV, { width: pw, align: "right", lineBreak: false });
+  doc.fontSize(6.2).fillColor("#555555")
+    .text(`HUELLA DIGITAL SHA-256: ${huellaSha256(d, c)}`, px, yV + 9, { width: pw, lineBreak: false });
 
   // ---- Línea de corte + talón de control ----
   const yC = fy + fh + 20;
