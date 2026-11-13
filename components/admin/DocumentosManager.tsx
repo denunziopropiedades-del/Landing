@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Copy, Download, FilePlus2, FileText, History, Loader2, Pencil, Save, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
+import { Copy, CopyPlus, Download, FilePlus2, FileText, History, Loader2, Pencil, Save, Trash2, Upload, UserRound, Wand2, X } from "lucide-react";
 import {
+  actualizarDocumentoAction,
   eliminarDocumentoAction,
   eliminarModeloAction,
   guardarModeloAction,
@@ -211,6 +212,159 @@ function EditorModelo({ modelo, onCerrar, onGuardado }: { modelo?: Modelo; onCer
 }
 
 /* ── Pantalla principal ─────────────────────────────────────────────────── */
+/* ── Edición de un documento ya generado ───────────────────────────────── */
+
+/**
+ * Corrige un documento del historial: los datos (nombre, DNI, montos, fechas…) y, si hace falta,
+ * el texto completo de ese documento. Los cambios se guardan sobre el mismo documento; el modelo
+ * no se toca, así los próximos contratos siguen saliendo del modelo original.
+ */
+function EditorDocumento({
+  doc,
+  clientes,
+  firma,
+  onCerrar,
+  onDescargar,
+}: {
+  doc: DocumentoGenerado;
+  clientes: ClienteParaDocumento[];
+  firma: Profesional;
+  onCerrar: () => void;
+  onDescargar: (d: { cuerpo: string; titulo: string; valores: Record<string, string> }) => Promise<void>;
+}) {
+  const [titulo, setTitulo] = useState(doc.titulo);
+  const [cuerpo, setCuerpo] = useState(doc.cuerpo);
+  const [valores, setValores] = useState<Record<string, string>>(doc.valores ?? {});
+  const [leadId, setLeadId] = useState(doc.leadId ?? "");
+  const [verTexto, setVerTexto] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; texto: string } | null>(null);
+  const campos = useMemo(() => camposDe(cuerpo), [cuerpo]);
+  const cambios =
+    titulo !== doc.titulo || cuerpo !== doc.cuerpo || leadId !== (doc.leadId ?? "") || JSON.stringify(valores) !== JSON.stringify(doc.valores ?? {});
+
+  const guardar = async (descargarDespues: boolean) => {
+    setGuardando(true);
+    setMsg(null);
+    const r = await actualizarDocumentoAction({ id: doc.id, titulo, cuerpo, valores, leadId: leadId || null });
+    if (!r.ok) {
+      setMsg({ ok: false, texto: r.error });
+      setGuardando(false);
+      return;
+    }
+    if (descargarDespues) await onDescargar({ cuerpo, titulo, valores });
+    setMsg({ ok: true, texto: descargarDespues ? "Cambios guardados y PDF corregido descargado." : "Cambios guardados." });
+    setGuardando(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+        <Pencil className="mt-0.5 h-5 w-5 text-amber-700" />
+        <div className="min-w-0 flex-1 text-sm">
+          <p className="font-semibold text-amber-900">Editando un documento ya generado</p>
+          <p className="text-amber-900/80">
+            {doc.modeloNombre} · generado el {new Date(doc.creadoEn).toLocaleString("es-AR")}. Los cambios se guardan en este documento; el modelo no se modifica.
+          </p>
+        </div>
+        <button type="button" onClick={onCerrar} className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-semibold text-amber-900 hover:bg-amber-100">
+          <X className="h-4 w-4" /> Cerrar
+        </button>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-2">
+        <section className="space-y-4 rounded-2xl border border-black/10 bg-white p-4">
+          <div>
+            <label className={label} htmlFor="ed-titulo">Título del documento</label>
+            <input id="ed-titulo" className={input} value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+          </div>
+          <div>
+            <label className={label} htmlFor="ed-cliente">Cliente del CRM vinculado</label>
+            <select id="ed-cliente" className={input} value={leadId} onChange={(e) => setLeadId(e.target.value)}>
+              <option value="">Sin cliente</option>
+              {clientes.map((c) => (
+                <option key={c.id} value={c.id}>{c.etiqueta}</option>
+              ))}
+            </select>
+          </div>
+
+          {campos.length > 0 && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {campos.map((c) => {
+                const id = `ed-${c.clave.replace(/[^a-z0-9]+/g, "-")}`;
+                const v = valores[c.clave] ?? "";
+                const props = {
+                  id,
+                  value: v,
+                  placeholder: c.porDefecto || undefined,
+                  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setValores((x) => ({ ...x, [c.clave]: e.target.value })),
+                  className: `${input} ${!v && !c.porDefecto ? "border-amber-300 bg-amber-50/50" : ""}`,
+                };
+                return (
+                  <div key={c.clave} className={c.tipo === "texto largo" || c.etiqueta.length > 28 ? "sm:col-span-2" : ""}>
+                    <label className={label} htmlFor={id}>{c.etiqueta}</label>
+                    {c.tipo === "texto largo" ? (
+                      <textarea rows={Math.min(14, Math.max(3, v.split("\n").length + 1))} {...props} />
+                    ) : (
+                      <input type={c.tipo === "fecha" ? "date" : c.tipo === "hora" ? "time" : "text"} inputMode={c.tipo === "numero" || c.tipo === "porcentaje" ? "decimal" : undefined} {...props} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="rounded-xl border border-black/10">
+            <button type="button" onClick={() => setVerTexto((x) => !x)} className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-semibold">
+              <span>Editar el texto del contrato (cláusulas, redacción)</span>
+              <span className="text-brand-black/50">{verTexto ? "Ocultar" : "Abrir"}</span>
+            </button>
+            {verTexto && (
+              <div className="space-y-2 border-t border-black/10 p-3">
+                <p className="text-xs text-brand-black/55">
+                  Los datos entre {"{{ llaves }}"} se completan con los campos de arriba. Un párrafo por bloque, separados por una línea en blanco; **texto** sale en negrita.
+                </p>
+                <textarea className={`${input} font-mono text-xs`} rows={22} value={cuerpo} onChange={(e) => setCuerpo(e.target.value)} />
+                {cuerpo !== doc.cuerpo && (
+                  <button type="button" onClick={() => setCuerpo(doc.cuerpo)} className="text-xs font-semibold text-brand-black/60 underline">
+                    Deshacer cambios en el texto
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={guardando || !cambios}
+              onClick={() => guardar(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-brand-green-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-green-600 disabled:opacity-50"
+            >
+              {guardando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Guardar y descargar PDF
+            </button>
+            <button
+              type="button"
+              disabled={guardando || !cambios}
+              onClick={() => guardar(false)}
+              className="inline-flex items-center gap-2 rounded-lg border border-black/10 px-4 py-2.5 text-sm font-semibold hover:bg-black/5 disabled:opacity-50"
+            >
+              <Save className="h-4 w-4" /> Solo guardar
+            </button>
+            {!cambios && <span className="text-xs text-brand-black/50">Sin cambios todavía.</span>}
+          </div>
+          {msg && <p className={`text-sm ${msg.ok ? "text-brand-green-700" : "text-red-600"}`}>{msg.texto}</p>}
+        </section>
+
+        <section className="min-w-0 overflow-x-auto rounded-2xl bg-brand-cream p-4">
+          <p className="mb-3 text-xs font-semibold text-brand-black/55">Vista previa del documento corregido</p>
+          <Vista cuerpo={cuerpo} valores={valores} campos={campos} firma={firma} />
+        </section>
+      </div>
+    </div>
+  );
+}
+
 export default function DocumentosManager({
   modelos: modelosGuardados,
   historial,
@@ -237,6 +391,7 @@ export default function DocumentosManager({
   const [verProf, setVerProf] = useState(false);
   const [descargando, setDescargando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
+  const [editandoDoc, setEditandoDoc] = useState<DocumentoGenerado | null>(null);
   const [, start] = useTransition();
 
   const modelo = modelos.find((m) => m.id === modeloId) ?? modelos[0];
@@ -328,7 +483,7 @@ export default function DocumentosManager({
         <button type="button" onClick={() => setVista("generar")} className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold ${vista === "generar" ? "bg-brand-black text-white" : "bg-white text-brand-black/70"}`}>
           <FileText className="h-4 w-4" /> Generar
         </button>
-        <button type="button" onClick={() => setVista("historial")} className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold ${vista === "historial" ? "bg-brand-black text-white" : "bg-white text-brand-black/70"}`}>
+        <button type="button" onClick={() => { setVista("historial"); setEditandoDoc(null); }} className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold ${vista === "historial" ? "bg-brand-black text-white" : "bg-white text-brand-black/70"}`}>
           <History className="h-4 w-4" /> Historial ({historial.length})
         </button>
         <button type="button" onClick={() => setVerProf((v) => !v)} className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-brand-black/70">
@@ -371,7 +526,16 @@ export default function DocumentosManager({
         />
       )}
 
-      {vista === "historial" ? (
+      {vista === "historial" && editandoDoc ? (
+        <EditorDocumento
+          key={editandoDoc.id}
+          doc={editandoDoc}
+          clientes={clientes}
+          firma={prof}
+          onCerrar={() => setEditandoDoc(null)}
+          onDescargar={(x) => descargar({ ...x, registrar: false })}
+        />
+      ) : vista === "historial" ? (
         <ul className="space-y-2">
           {historial.length === 0 && <li className="rounded-xl bg-white p-6 text-center text-sm text-brand-black/60">Todavía no se generaron documentos.</li>}
           {historial.map((d) => (
@@ -389,14 +553,25 @@ export default function DocumentosManager({
               <button
                 type="button"
                 onClick={() => {
+                  setEditandoDoc(d);
+                  setMensaje(null);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold hover:bg-black/5"
+              >
+                <Pencil className="h-4 w-4" /> Editar
+              </button>
+              <button
+                type="button"
+                title="Generar un documento nuevo con estos mismos datos"
+                onClick={() => {
                   if (modelos.some((m) => m.id === d.modeloId)) setModeloId(d.modeloId);
                   setValores(d.valores);
                   setClienteId(d.leadId ?? "");
                   setVista("generar");
                 }}
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold hover:bg-black/5"
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold text-brand-black/60 hover:bg-black/5"
               >
-                <Pencil className="h-4 w-4" /> Editar
+                <CopyPlus className="h-4 w-4" /> Usar como base
               </button>
               <button type="button" onClick={() => start(async () => { const r = await eliminarDocumentoAction(d.id); if (!r.ok) setMensaje(r.error); })} className="rounded-lg p-2 text-red-600 hover:bg-red-50" aria-label="Eliminar del historial">
                 <Trash2 className="h-4 w-4" />

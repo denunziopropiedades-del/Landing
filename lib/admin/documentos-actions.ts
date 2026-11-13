@@ -221,6 +221,38 @@ export async function registrarDocumentoAction(input: {
   }
 }
 
+/** Corrige un documento ya generado: sus datos y/o el texto completo (solo ese documento, no el modelo). */
+export async function actualizarDocumentoAction(input: {
+  id: string;
+  titulo: string;
+  cuerpo: string;
+  valores: Record<string, string>;
+  leadId?: string | null;
+}): Promise<R> {
+  try {
+    const actor = await requireRole("administrador", "supervisor", "vendedor");
+    if (!input.cuerpo.trim()) throw new AdminActionError("El texto del documento no puede quedar vacío.");
+    const admin = (await getSupabaseAdminClient())!;
+    const { data: previo } = await admin.from("documentos_generados").select("titulo").eq("id", input.id).maybeSingle();
+    if (!previo) throw new AdminActionError("No se encontró el documento (puede que lo hayan eliminado).");
+    const { error } = await admin
+      .from("documentos_generados")
+      .update({
+        titulo: input.titulo.trim().slice(0, 200) || previo.titulo,
+        cuerpo: input.cuerpo,
+        valores: input.valores,
+        lead_id: input.leadId || null,
+      })
+      .eq("id", input.id);
+    if (error) throw new Error(errorDb(error.message));
+    await registrarActividad(actor, "editar", "documento", input.id, { titulo: input.titulo });
+    revalidatePath("/admin/documentos");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function eliminarDocumentoAction(id: string): Promise<R> {
   try {
     const actor = await requireRole("administrador", "supervisor");
