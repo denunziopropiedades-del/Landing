@@ -3,14 +3,18 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import {
   ETIQUETA_ESTADO,
   INSTITUCION,
+  NOMBRE_CORTO,
   NOMBRE_TIPO,
+  admiteDecision,
   enmascararEmail,
   estadoEfectivo,
   fechaAr,
   monto,
   registrarAcceso,
   resolverToken,
+  textoHonorariosAutorizacion,
   textoHonorariosReserva,
+  type DatosAutorizacionVenta,
   type DatosLibreDeuda,
   type DatosReserva,
 } from "@/lib/docs-clientes/core";
@@ -69,6 +73,17 @@ export default async function DocumentoClientePage({ params }: { params: Promise
       ...(doc.venceEn ? [{ etiqueta: "Válida hasta", valor: fechaAr(doc.venceEn) }] : []),
     ];
     resumen = filas;
+  } else if (doc.tipo === "autorizacion_venta") {
+    const a = doc.datos as DatosAutorizacionVenta;
+    filas = [
+      { etiqueta: "Inmueble", valor: a.inmueble },
+      ...(a.valorTasacion ? [{ etiqueta: "Valor de tasación", valor: monto(a.valorTasacion, a.moneda) }] : []),
+      { etiqueta: "Precio de venta", valor: monto(a.precio, a.moneda) },
+      { etiqueta: "Modalidad", valor: a.exclusiva ? "Exclusiva" : "Sin exclusividad" },
+      { etiqueta: "Plazo", valor: `${a.plazoDias} días${doc.venceEn ? ` (hasta el ${fechaAr(doc.venceEn)})` : ""}` },
+      { etiqueta: "Honorarios", valor: textoHonorariosAutorizacion(a) },
+    ];
+    resumen = filas;
   } else {
     const l = doc.datos as DatosLibreDeuda;
     filas = [
@@ -93,7 +108,7 @@ export default async function DocumentoClientePage({ params }: { params: Promise
 
   return (
     <main className="min-h-screen bg-slate-50 pb-12">
-      <EncabezadoInstitucional titulo={doc.tipo === "reserva" ? "Mi reserva inmobiliaria" : "Mi certificado de libre deuda"} sub={doc.clienteNombre} />
+      <EncabezadoInstitucional titulo={`Mi ${NOMBRE_CORTO[doc.tipo]}`} sub={doc.clienteNombre} />
       <div className="mx-auto max-w-2xl space-y-5 px-4 pt-6">
         <section className="rounded-2xl bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-2">
@@ -180,8 +195,10 @@ export default async function DocumentoClientePage({ params }: { params: Promise
           </section>
         )}
 
-        {doc.tipo === "reserva" && doc.aceptaHabilitada && (estado === "emitido" || estado === "enviado") && (
+        {admiteDecision(doc.tipo) && doc.aceptaHabilitada && (estado === "emitido" || estado === "enviado") && (
           <DecisionReserva
+            que={NOMBRE_CORTO[doc.tipo]}
+            firma={doc.tipo === "autorizacion_venta"}
             token={token}
             numero={doc.numero}
             resumen={resumen}
@@ -192,15 +209,17 @@ export default async function DocumentoClientePage({ params }: { params: Promise
 
         {decision && (estado === "aceptado" || estado === "rechazado") && (
           <section className={`rounded-2xl p-5 text-white shadow-sm ${estado === "aceptado" ? "bg-emerald-600" : "bg-red-600"}`}>
-            <p className="font-bold">{estado === "aceptado" ? "Reserva aceptada" : "Reserva rechazada"}</p>
+            <p className="font-bold">
+              {doc.tipo === "autorizacion_venta" ? "Autorización" : "Reserva"} {estado === "aceptado" ? "aceptada" : "rechazada"}
+            </p>
             <p className="mt-1 text-sm">Registrado el {fechaAr(decision.creado_en as string, true)} hs.</p>
           </section>
         )}
 
         {estado === "vencido" && (
           <section className="rounded-2xl bg-slate-200 p-5 text-slate-800 shadow-sm">
-            <p className="font-bold">La reserva venció</p>
-            <p className="mt-1 text-sm">El plazo de validez terminó el {fechaAr(doc.venceEn)}. Consultanos si querés renovarla.</p>
+            <p className="font-bold">{doc.tipo === "autorizacion_venta" ? "La autorización venció" : "La reserva venció"}</p>
+            <p className="mt-1 text-sm">El plazo terminó el {fechaAr(doc.venceEn)}. Consultanos si querés renovarla.</p>
           </section>
         )}
 

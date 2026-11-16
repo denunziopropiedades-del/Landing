@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sendEmail, sendNotificationEmail } from "@/lib/email";
-import { estadoEfectivo, otpCoincide, registrarEvento, resolverToken, sitio, textoConsentimiento } from "@/lib/docs-clientes/core";
+import { NOMBRE_CORTO, admiteDecision, estadoEfectivo, otpCoincide, registrarEvento, resolverToken, sitio, textoConsentimiento } from "@/lib/docs-clientes/core";
 import { mailAvisoInterno, mailConstancia } from "@/lib/docs-clientes/emails";
 import { asegurarLeadDeReserva, volcarSenaEnLead } from "@/lib/docs-clientes/sena-lead";
 
@@ -26,8 +26,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   if (!acceso.ok) return NextResponse.json({ error: "El enlace no es válido o venció." }, { status: 404 });
   const { doc } = acceso;
   const estado = estadoEfectivo(doc);
-  if (doc.tipo !== "reserva" || !doc.aceptaHabilitada || (estado !== "emitido" && estado !== "enviado")) {
-    return NextResponse.json({ error: "Esta reserva ya no admite aceptación o rechazo online." }, { status: 409 });
+  if (!admiteDecision(doc.tipo) || !doc.aceptaHabilitada || (estado !== "emitido" && estado !== "enviado")) {
+    return NextResponse.json({ error: `Esta ${NOMBRE_CORTO[doc.tipo]} ya no admite aceptación o rechazo online.` }, { status: 409 });
   }
 
   const { data: otp } = await admin
@@ -58,7 +58,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     .in("estado", ["emitido", "enviado"])
     .select("id")
     .maybeSingle();
-  if (!actualizado) return NextResponse.json({ error: "La reserva ya tenía una decisión registrada." }, { status: 409 });
+  if (!actualizado) return NextResponse.json({ error: "El documento ya tenía una decisión registrada." }, { status: 409 });
 
   const motivo = String(body?.motivo ?? "").trim().slice(0, 500) || null;
   const ip = (request.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || request.headers.get("x-real-ip") || null;
@@ -68,7 +68,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     version: doc.version,
     pdf_sha256: doc.pdfSha256,
     email_verificado: otp.enviado_a,
-    consentimiento: textoConsentimiento(doc.numero, doc.version, doc.pdfSha256, decision),
+    consentimiento: textoConsentimiento(doc.numero, doc.version, doc.pdfSha256, decision, doc.tipo),
     motivo,
     ip,
     user_agent: (request.headers.get("user-agent") ?? "").slice(0, 300),
@@ -78,7 +78,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
 
   // Reserva aceptada: el cliente pasa al CRM como cliente nuevo en "Reservado" (se crea la ficha si no existía).
   let enCrm = false;
-  if (decision === "aceptado") {
+  if (decision === "aceptado" && doc.tipo === "autorizacion_venta") {
+    // Autorización firmada: la tasación de origen pasa a "Autorización firmada".
+    const tasacionId = (doc.datos as { tasacionId?: string | null }).tasacionId;
+    if (tasacionId) await admin.from("tasaciones").update({ estado: "autorizada" }).eq("id", tasacionId);
+  }
+  if (decision === "aceptado" && doc.tipo === "reserva") {
     const leadId = await asegurarLeadDeReserva(admin, doc, "aceptada");
     if (leadId) {
       enCrm = true;
@@ -106,7 +111,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   }
   try {
     const m = mailAvisoInterno(
-      decision === "aceptado" ? "✅ El cliente ACEPTÓ la reserva" : "❌ El cliente RECHAZÓ la reserva",
+      decision === "aceptado" ? `✅ El cliente ACEPTÓ la ${NOMBRE_CORTO[doc.tipo]}` : `❌ El cliente RECHAZÓ la ${NOMBRE_CORTO[doc.tipo]}`,
       doc,
       [
         motivo ? `<p><b>Motivo:</b> ${motivo.replace(/</g, "&lt;")}</p>` : "",

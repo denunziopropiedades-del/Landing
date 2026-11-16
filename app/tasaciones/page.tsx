@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ClipboardCheck, KeyRound, Scale, Wheat } from "lucide-react";
 import PaginaPortal from "@/components/propiedades/PaginaPortal";
 import ConsultaForm from "@/components/propiedades/ConsultaForm";
@@ -29,6 +30,9 @@ export default async function TasacionesPage() {
           <p className="mt-3 max-w-xl text-lg text-brand-black/65">
             Contanos qué tenés y dónde. Te contactamos para coordinar la tasación y armar la publicación.
           </p>
+          <Link href="/tasador" className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand-gold-400 px-6 py-3 font-bold text-brand-black">
+            Tasá tu propiedad online en 1 minuto
+          </Link>
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
             {PUNTOS.map(({ icono: Icono, titulo, texto }) => (
               <div key={titulo} className="flex gap-3 rounded-2xl bg-white p-4">

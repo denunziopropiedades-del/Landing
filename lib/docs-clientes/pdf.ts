@@ -5,7 +5,9 @@ import {
   fechaAr,
   monto,
   sitio,
+  textoHonorariosAutorizacion,
   textoHonorariosReserva,
+  type DatosAutorizacionVenta,
   type DatosLibreDeuda,
   type DatosReserva,
   type DocEmitido,
@@ -49,6 +51,24 @@ function parrafo(doc: PDFKit.PDFDocument, texto: string) {
   doc.moveDown(0.5);
 }
 
+/** Recuadro que explica cómo queda registrada la aceptación online. */
+function cajaAceptacion(doc: PDFKit.PDFDocument, titulo: string, texto: string) {
+  if (doc.y > 690) doc.addPage();
+  doc.moveDown(0.2);
+  doc.roundedRect(50, doc.y, ANCHO, 46, 6).fillAndStroke("#f4f7fb", "#d5dce8");
+  const y = doc.y + 9;
+  doc
+    .fillColor(AZUL)
+    .font("Helvetica-Bold")
+    .fontSize(9.5)
+    .text(titulo, 62, y)
+    .font("Helvetica")
+    .fillColor(GRIS)
+    .fontSize(8.5)
+    .text(texto, 62, y + 12, { width: ANCHO - 24 });
+  doc.y = y + 46;
+}
+
 /** Genera el PDF definitivo de una reserva o certificado, con QR de verificación. */
 export async function generarPdfDocumento(d: DocEmitido): Promise<Buffer> {
   const PDFDocument = (await import("pdfkit")).default;
@@ -80,10 +100,10 @@ export async function generarPdfDocumento(d: DocEmitido): Promise<Buffer> {
   doc.fillColor(GRIS).font("Helvetica").fontSize(10.5).text(`N.º ${d.numero}  ·  Emitido el ${fechaAr(d.emitidoEn)}`);
   doc.moveDown(0.4);
 
-  seccion(doc, d.tipo === "reserva" ? "Datos del cliente" : "Titular");
+  seccion(doc, d.tipo === "reserva" ? "Datos del cliente" : d.tipo === "autorizacion_venta" ? "Propietario" : "Titular");
   fila(doc, "Nombre y apellido", d.clienteNombre, true);
   if (d.clienteDni) fila(doc, "DNI", d.clienteDni);
-  if (d.tipo === "reserva") {
+  if (d.tipo === "reserva" || d.tipo === "autorizacion_venta") {
     if (d.clienteEmail) fila(doc, "Email", d.clienteEmail);
     if (d.clienteTelefono) fila(doc, "Teléfono", d.clienteTelefono);
   }
@@ -104,26 +124,43 @@ export async function generarPdfDocumento(d: DocEmitido): Promise<Buffer> {
     for (const p of r.condiciones.split(/\n{2,}|\r\n\r\n/)) if (p.trim()) parrafo(doc, p.trim().replace(/\s*\n\s*/g, " "));
 
     if (d.aceptaHabilitada) {
-      doc.moveDown(0.2);
-      doc
-        .roundedRect(50, doc.y, ANCHO, 46, 6)
-        .fillAndStroke("#f4f7fb", "#d5dce8");
-      const y = doc.y + 9;
-      doc
-        .fillColor(AZUL)
-        .font("Helvetica-Bold")
-        .fontSize(9.5)
-        .text("Aceptación del cliente", 62, y)
-        .font("Helvetica")
-        .fillColor(GRIS)
-        .fontSize(8.5)
-        .text(
-          "El cliente puede aceptar o rechazar estas condiciones desde su enlace privado, previa verificación con un código de un solo uso. Queda constancia electrónica de la decisión (fecha, hora y huella del documento). Este procedimiento no constituye firma digital.",
-          62,
-          y + 12,
-          { width: ANCHO - 24 }
-        );
-      doc.y = y + 46;
+      cajaAceptacion(
+        doc,
+        "Aceptación del cliente",
+        "El cliente puede aceptar o rechazar estas condiciones desde su enlace privado, previa verificación con un código de un solo uso. Queda constancia electrónica de la decisión (fecha, hora y huella del documento). Este procedimiento no constituye firma digital."
+      );
+    }
+  } else if (d.tipo === "autorizacion_venta") {
+    const a = d.datos as DatosAutorizacionVenta;
+    if (a.domicilioPropietario) fila(doc, "Domicilio", a.domicilioPropietario);
+
+    seccion(doc, "Inmueble y condiciones");
+    fila(doc, "Inmueble", a.inmueble, true);
+    if (a.valorTasacion) fila(doc, "Valor de tasación", monto(a.valorTasacion, a.moneda));
+    fila(doc, "Precio de venta", monto(a.precio, a.moneda), true);
+    fila(doc, "Modalidad", a.exclusiva ? "Autorización exclusiva" : "Autorización sin exclusividad");
+    fila(doc, "Plazo", `${a.plazoDias} días corridos${d.venceEn ? `, hasta el ${fechaAr(d.venceEn)}` : ""}`);
+    fila(doc, "Honorarios (parte vendedora)", textoHonorariosAutorizacion(a));
+
+    seccion(doc, "Cláusulas");
+    for (const p of a.clausulas.split(/\n{2,}|\r\n\r\n/)) if (p.trim()) parrafo(doc, p.trim().replace(/\s*\n\s*/g, " "));
+
+    if (d.aceptaHabilitada) {
+      cajaAceptacion(
+        doc,
+        "Aceptación del propietario",
+        "El propietario acepta o rechaza esta autorización desde su enlace privado, previa verificación con un código de un solo uso enviado a su email. Queda constancia electrónica de la decisión (fecha, hora y huella del documento). Este procedimiento no constituye firma digital."
+      );
+    } else {
+      if (doc.y > 660) doc.addPage();
+      doc.moveDown(2.5);
+      const y = doc.y;
+      doc.moveTo(60, y).lineTo(250, y).strokeColor("#888888").lineWidth(0.6).stroke();
+      doc.moveTo(345, y).lineTo(535, y).stroke();
+      doc.fontSize(8.5).fillColor(GRIS).font("Helvetica").text("Firma y aclaración del propietario", 60, y + 4, { width: 190, align: "center" });
+      doc.text(`${INSTITUCION.titular} · ${INSTITUCION.matricula}`, 345, y + 4, { width: 190, align: "center" });
+      doc.y = y + 24;
+      doc.x = 50;
     }
   } else {
     const ld = d.datos as DatosLibreDeuda;

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/email";
-import { enmascararEmail, estadoEfectivo, hashOtp, nuevoOtp, registrarEvento, resolverToken } from "@/lib/docs-clientes/core";
+import { NOMBRE_CORTO, admiteDecision, enmascararEmail, estadoEfectivo, hashOtp, nuevoOtp, registrarEvento, resolverToken } from "@/lib/docs-clientes/core";
 import { mailCodigo } from "@/lib/docs-clientes/emails";
 
 export const runtime = "nodejs";
@@ -18,8 +18,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   if (!acceso.ok) return NextResponse.json({ error: "El enlace no es válido o venció." }, { status: 404 });
   const { doc } = acceso;
   const estado = estadoEfectivo(doc);
-  if (doc.tipo !== "reserva" || !doc.aceptaHabilitada || (estado !== "emitido" && estado !== "enviado")) {
-    return NextResponse.json({ error: "Esta reserva ya no admite aceptación o rechazo online." }, { status: 409 });
+  if (!admiteDecision(doc.tipo) || !doc.aceptaHabilitada || (estado !== "emitido" && estado !== "enviado")) {
+    return NextResponse.json({ error: `Esta ${NOMBRE_CORTO[doc.tipo]} ya no admite aceptación o rechazo online.` }, { status: 409 });
   }
   if (!doc.clienteEmail) return NextResponse.json({ error: "No hay un email registrado para enviarte el código." }, { status: 409 });
 

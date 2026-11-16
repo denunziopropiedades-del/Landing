@@ -14,6 +14,7 @@ export default function Footer({ textos }: { textos: SiteTextos }) {
             ["/campos", "Campos"],
             ["/desarrollos", "Desarrollos"],
             ["/zonas", "Zonas"],
+            ["/tasador", "Tasador online"],
             ["/tasaciones", "Tasaciones"],
             ["/propietarios", "Alquilá o vendé tu propiedad"],
             ["/visitas", "Agendar visita"],

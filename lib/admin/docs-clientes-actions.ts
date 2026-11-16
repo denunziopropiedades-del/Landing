@@ -12,6 +12,7 @@ import { nombrePeriodo } from "@/lib/alquileres";
 import {
   BUCKET,
   NOMBRE_TIPO,
+  clausulasAutorizacion,
   PREFIJO,
   crearLink,
   fechaAr,
@@ -23,6 +24,7 @@ import {
   registrarEvento,
   sha256,
   yaOcurrio,
+  type DatosAutorizacionVenta,
   type DatosLibreDeuda,
   type DatosReserva,
   type DocEmitido,
@@ -37,6 +39,7 @@ type R<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 function fail(err: unknown): { ok: false; error: string } {
   if (err instanceof AdminActionError) return { ok: false, error: err.message };
   const msg = err instanceof Error ? err.message : String(err);
+  if (/tipo_check/i.test(msg)) return { ok: false, error: "Falta correr sql-tasador.sql en Supabase para habilitar las autorizaciones de venta." };
   if (/doc_|schema cache|does not exist/i.test(msg)) {
     return { ok: false, error: "Faltan las tablas de documentos (sql-documentos-clientes.sql) en Supabase." };
   }
@@ -306,7 +309,10 @@ async function emitir(
     await registrarEvento(a, doc.id, "emitido", { numero, sha256: hash }, actorEmail);
     if (!(await yaOcurrio(a, doc.id, "aviso_emitido"))) {
       try {
-        const m = mailAvisoInterno(base.tipo === "reserva" ? "Reserva emitida" : "Certificado de libre deuda emitido", doc);
+        const m = mailAvisoInterno(
+          base.tipo === "reserva" ? "Reserva emitida" : base.tipo === "autorizacion_venta" ? "Autorización de venta emitida" : "Certificado de libre deuda emitido",
+          doc
+        );
         await sendNotificationEmail(m.asunto, m.html);
         await registrarEvento(a, doc.id, "aviso_emitido", {}, "sistema");
       } catch (err) {
@@ -370,6 +376,63 @@ export async function emitirReservaAction(d: Record<string, string>): Promise<R<
     await asegurarLinkPagoReserva(a, doc, perfil.email);
     await registrarActividad(perfil, "emitir", "documento_cliente", doc.id, { numero: doc.numero, cliente: clienteNombre });
     refrescar();
+    return { ok: true, id: doc.id, numero: doc.numero };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/**
+ * Emite la tasación y autorización de venta a nombre del propietario.
+ * Se envía y se firma igual que una reserva: link privado + código por mail.
+ */
+export async function emitirAutorizacionVentaAction(d: Record<string, string>): Promise<R<{ id: string; numero: string }>> {
+  try {
+    const { perfil, a } = await contexto();
+    const clienteNombre = t(d.clienteNombre, 160);
+    const inmueble = t(d.inmueble, 400);
+    const precio = n(d.precio);
+    const plazoDias = Math.round(n(d.plazoDias) ?? 180);
+    const honorariosPct = n(d.honorariosPct) ?? 3;
+    const exclusiva = d.exclusiva !== "0" && d.exclusiva !== "false";
+    const acepta = d.aceptaHabilitada !== "0" && d.aceptaHabilitada !== "false";
+    const mail = email(d.clienteEmail);
+    if (!clienteNombre) throw new AdminActionError("Falta el nombre del propietario.");
+    if (!inmueble) throw new AdminActionError("Falta la descripción del inmueble.");
+    if (!precio || precio <= 0) throw new AdminActionError("Falta el precio de venta.");
+    if (plazoDias < 1 || plazoDias > 730) throw new AdminActionError("El plazo tiene que estar entre 1 y 730 días.");
+    if (honorariosPct < 0 || honorariosPct > 20) throw new AdminActionError("Revisá el porcentaje de honorarios.");
+    if (acepta && !mail) throw new AdminActionError("Para que el propietario firme online hace falta su email (ahí le llega el código).");
+    const tasacionId = t(d.tasacionId, 40);
+    const datos: DatosAutorizacionVenta = {
+      inmueble,
+      domicilioPropietario: t(d.domicilioPropietario, 300),
+      precio,
+      moneda: d.moneda === "ARS" ? "ARS" : "USD",
+      valorTasacion: n(d.valorTasacion),
+      plazoDias,
+      exclusiva,
+      honorariosPct,
+      clausulas: t(d.clausulas, 12000) ?? clausulasAutorizacion({ exclusiva, plazoDias, honorariosPct }),
+      tasacionId,
+    };
+    const vence = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date(Date.now() + plazoDias * 86400000));
+    const doc = await emitir(a, perfil.email, {
+      tipo: "autorizacion_venta",
+      leadId: t(d.leadId, 40),
+      alqContratoId: null,
+      clienteNombre,
+      clienteEmail: mail,
+      clienteTelefono: t(d.clienteTelefono, 40),
+      clienteDni: t(d.clienteDni, 20),
+      datos,
+      aceptaHabilitada: acepta,
+      venceEn: vence,
+    });
+    if (tasacionId) await a.from("tasaciones").update({ doc_id: doc.id }).eq("id", tasacionId);
+    await registrarActividad(perfil, "emitir", "documento_cliente", doc.id, { numero: doc.numero, cliente: clienteNombre });
+    refrescar();
+    revalidatePath("/admin/tasador");
     return { ok: true, id: doc.id, numero: doc.numero };
   } catch (err) {
     return fail(err);
@@ -615,6 +678,10 @@ export async function resumenDoc(doc: DocEmitido): Promise<string> {
   if (doc.tipo === "reserva") {
     const r = doc.datos as DatosReserva;
     return `${r.inmueble} · reserva ${monto(r.importeReserva, r.monedaReserva)}${r.valorVenta ? ` · valor ${monto(r.valorVenta, r.monedaVenta)}` : ""}`;
+  }
+  if (doc.tipo === "autorizacion_venta") {
+    const av = doc.datos as DatosAutorizacionVenta;
+    return `${av.inmueble} · precio ${monto(av.precio, av.moneda)} · ${av.plazoDias} días`;
   }
   const l = doc.datos as DatosLibreDeuda;
   return `${l.inmueble} · al ${fechaAr(l.alDia)}`;

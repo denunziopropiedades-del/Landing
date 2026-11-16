@@ -25,6 +25,7 @@ import {
   hoyAr,
   monto,
   textoHonorariosReserva,
+  type DatosAutorizacionVenta,
   type DatosLibreDeuda,
   type DatosReserva,
 } from "@/lib/docs-clientes/compartido";
@@ -238,7 +239,9 @@ function Emitidos({
         const resumen =
           d.tipo === "reserva"
             ? `${(d.datos as DatosReserva).inmueble} · reserva ${monto((d.datos as DatosReserva).importeReserva, (d.datos as DatosReserva).monedaReserva)}`
-            : `${(d.datos as DatosLibreDeuda).inmueble}`;
+            : d.tipo === "autorizacion_venta"
+              ? `${(d.datos as DatosAutorizacionVenta).inmueble} · precio ${monto((d.datos as DatosAutorizacionVenta).precio, (d.datos as DatosAutorizacionVenta).moneda)}`
+              : `${(d.datos as DatosLibreDeuda).inmueble}`;
         return (
           <div key={d.id} className="rounded-xl bg-white shadow-sm">
             <button type="button" onClick={() => setAbierto(abierto === d.id ? null : d.id)} className="flex w-full items-start justify-between gap-3 p-4 text-left">

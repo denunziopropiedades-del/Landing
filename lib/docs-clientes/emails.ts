@@ -1,4 +1,6 @@
-import { INSTITUCION, NOMBRE_TIPO, fechaAr, type DocEmitido } from "@/lib/docs-clientes/core";
+import { INSTITUCION, NOMBRE_CORTO, NOMBRE_TIPO, admiteDecision, fechaAr, type DocEmitido } from "@/lib/docs-clientes/core";
+
+const mayuscula = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 
 /** Pie institucional que va en todos los mails del módulo. */
 /** Línea institucional (la firma con nombre y teléfonos la agrega el envío de mails). */
@@ -33,13 +35,11 @@ export function mailEnvioDocumento(d: DocEmitido, link: string, mensaje: string 
   const html = `
   <div style="font-family: sans-serif; color: #333; max-width: 580px;">
     <p style="margin: 0 0 12px;">Estimado/a ${escapar(d.clienteNombre)}:</p>
-    <p style="margin: 0 0 12px;">Desde ${INSTITUCION.nombre} le compartimos la documentación correspondiente a su ${
-      d.tipo === "reserva" ? "reserva inmobiliaria" : "certificado de libre deuda"
-    } <b>N.º ${d.numero}</b>.</p>
+    <p style="margin: 0 0 12px;">Desde ${INSTITUCION.nombre} le compartimos la documentación correspondiente a su ${NOMBRE_CORTO[d.tipo]} <b>N.º ${d.numero}</b>.</p>
     ${mensaje ? `<p style="margin: 0 0 12px; white-space: pre-line;">${escapar(mensaje)}</p>` : ""}
     <p style="margin: 0 0 16px;">Puede ingresar al siguiente enlace privado para ${
-      d.tipo === "reserva" && d.aceptaHabilitada
-        ? "consultar las condiciones, visualizar el documento, descargar su copia y aceptar o rechazar la reserva"
+      admiteDecision(d.tipo) && d.aceptaHabilitada
+        ? `consultar las condiciones, visualizar el documento, descargar su copia y aceptar o rechazar la ${NOMBRE_CORTO[d.tipo]}`
         : "visualizar el documento y descargar su copia"
     }:</p>
     <p style="margin: 0 0 8px;">${boton(link, "Ver mi documentación")}</p>
@@ -54,13 +54,17 @@ export function mailEnvioDocumento(d: DocEmitido, link: string, mensaje: string 
 
 /** Mensaje de WhatsApp para el envío manual asistido. */
 export function mensajeWhatsappDocumento(d: DocEmitido, link: string, linkPago: string | null = null) {
-  const que = d.tipo === "reserva" ? "su reserva inmobiliaria" : "su certificado de libre deuda";
+  const que = `su ${NOMBRE_CORTO[d.tipo]}`;
   return `Estimado/a ${d.clienteNombre}:
 
 Desde ${INSTITUCION.nombre} le compartimos la documentación correspondiente a ${que} N.º ${d.numero}.
 
 Puede ingresar al siguiente enlace para ${
-    d.tipo === "reserva" ? "consultar las condiciones, visualizar el documento y descargar su copia" : "visualizar el documento y descargar su copia"
+    d.tipo === "autorizacion_venta" && d.aceptaHabilitada
+      ? "leer las condiciones, descargar su copia y firmar la autorización online"
+      : d.tipo === "reserva"
+        ? "consultar las condiciones, visualizar el documento y descargar su copia"
+        : "visualizar el documento y descargar su copia"
   }:
 
 🔗 ${link}
@@ -81,11 +85,11 @@ ${INSTITUCION.leyenda}`;
 /** Código de un solo uso para aceptar/rechazar. */
 export function mailCodigo(d: DocEmitido, codigo: string) {
   return {
-    asunto: `Su código de verificación: ${codigo} – Reserva ${d.numero}`,
+    asunto: `Su código de verificación: ${codigo} – ${mayuscula(NOMBRE_CORTO[d.tipo])} ${d.numero}`,
     html: `
     <div style="font-family: sans-serif; color: #333; max-width: 520px;">
       <p style="margin: 0 0 12px;">Estimado/a ${escapar(d.clienteNombre)}:</p>
-      <p style="margin: 0 0 12px;">Para confirmar su decisión sobre la reserva <b>N.º ${d.numero}</b>, ingrese este código:</p>
+      <p style="margin: 0 0 12px;">Para confirmar su decisión sobre la ${NOMBRE_CORTO[d.tipo]} <b>N.º ${d.numero}</b>, ingrese este código:</p>
       <p style="margin: 0 0 12px; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0f1b2d;">${codigo}</p>
       <p style="margin: 0 0 12px; color: #666; font-size: 13px;">Vence en 10 minutos y sirve una sola vez. Si usted no lo pidió, ignore este mensaje.</p>
       ${PIE_INSTITUCIONAL}
@@ -101,11 +105,11 @@ export function mailConstancia(
 ) {
   const acepto = decision === "aceptado";
   return {
-    asunto: `Constancia: reserva ${d.numero} ${acepto ? "aceptada" : "rechazada"}`,
+    asunto: `Constancia: ${NOMBRE_CORTO[d.tipo]} ${d.numero} ${acepto ? "aceptada" : "rechazada"}`,
     html: `
     <div style="font-family: sans-serif; color: #333; max-width: 580px;">
       <div style="padding: 14px 18px; border-radius: 10px; background: ${acepto ? "#16a34a" : "#dc2626"}; color: #fff;">
-        <p style="margin: 0; font-size: 18px; font-weight: bold;">Reserva ${acepto ? "aceptada" : "rechazada"}</p>
+        <p style="margin: 0; font-size: 18px; font-weight: bold;">${mayuscula(NOMBRE_CORTO[d.tipo])} ${acepto ? "aceptada" : "rechazada"}</p>
       </div>
       <p style="margin: 16px 0 12px;">Estimado/a ${escapar(d.clienteNombre)}, dejamos constancia de su decisión:</p>
       <table style="border-collapse: collapse; width: 100%; border: 1px solid #e3e7ef; font-size: 14px;">

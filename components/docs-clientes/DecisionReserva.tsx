@@ -8,10 +8,14 @@ type Props = {
   resumen: { etiqueta: string; valor: string }[];
   emailEnmascarado: string;
   hash: string | null;
+  /** Nombre del documento en minúscula: "reserva inmobiliaria", "autorización de venta". */
+  que?: string;
+  /** true en contratos que se firman (autorización de venta): cambia el texto de los botones. */
+  firma?: boolean;
 };
 
 /** Aceptar o rechazar la reserva: pide código por mail, resumen, casilla de consentimiento y decisión. */
-export default function DecisionReserva({ token, numero, resumen, emailEnmascarado, hash }: Props) {
+export default function DecisionReserva({ token, numero, resumen, emailEnmascarado, hash, que = "reserva", firma = false }: Props) {
   const [paso, setPaso] = useState<"inicio" | "codigo" | "listo">("inicio");
   const [decision, setDecision] = useState<"aceptado" | "rechazado" | null>(null);
   const [codigo, setCodigo] = useState("");
@@ -63,7 +67,7 @@ export default function DecisionReserva({ token, numero, resumen, emailEnmascara
     const ok = resultado.decision === "aceptado";
     return (
       <section className={`rounded-2xl p-5 text-white shadow-sm ${ok ? "bg-emerald-600" : "bg-red-600"}`}>
-        <p className="text-lg font-bold">{ok ? "Aceptaste la reserva" : "Rechazaste la reserva"}</p>
+        <p className="text-lg font-bold">{ok ? (firma ? `Firmaste la ${que}` : `Aceptaste la ${que}`) : `Rechazaste la ${que}`}</p>
         <p className="mt-1 text-sm">
           Quedó registrado el {new Date(resultado.fecha).toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" })} hs. Te
           enviamos la constancia por mail.
@@ -75,7 +79,7 @@ export default function DecisionReserva({ token, numero, resumen, emailEnmascara
   return (
     <section className="space-y-4 rounded-2xl border-2 border-[#16294f]/15 bg-white p-5 shadow-sm">
       <div>
-        <p className="text-base font-bold text-slate-900">Aceptar o rechazar la reserva</p>
+        <p className="text-base font-bold text-slate-900">{firma ? `Firmar la ${que}` : `Aceptar o rechazar la ${que}`}</p>
         <p className="mt-1 text-sm text-slate-600">
           Para confirmar tu decisión verificamos tu identidad con un código que te enviamos por mail ({emailEnmascarado}).
         </p>
@@ -97,7 +101,7 @@ export default function DecisionReserva({ token, numero, resumen, emailEnmascara
           {info && <p className="rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-900">{info}</p>}
 
           <div className="rounded-xl bg-slate-50 p-4 text-sm">
-            <p className="mb-2 font-semibold text-slate-800">Condiciones esenciales · Reserva N.º {numero}</p>
+            <p className="mb-2 font-semibold text-slate-800">Condiciones esenciales · N.º {numero}</p>
             <dl className="space-y-1">
               {resumen.map((r) => (
                 <div key={r.etiqueta} className="flex justify-between gap-3">
@@ -117,7 +121,7 @@ export default function DecisionReserva({ token, numero, resumen, emailEnmascara
                 decision === "aceptado" ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-600 text-emerald-700"
               }`}
             >
-              Aceptar reserva
+              {firma ? "Firmar y aceptar" : "Aceptar reserva"}
             </button>
             <button
               type="button"
@@ -147,7 +151,7 @@ export default function DecisionReserva({ token, numero, resumen, emailEnmascara
               <label className="flex items-start gap-2 text-sm text-slate-700">
                 <input type="checkbox" checked={consiento} onChange={(e) => setConsiento(e.target.checked)} className="mt-1 h-4 w-4" />
                 <span>
-                  Declaro haber leído la reserva N.º {numero} y <b>{decision === "aceptado" ? "acepto" : "rechazo"}</b> sus condiciones.
+                  Declaro haber leído la {que} N.º {numero} y <b>{decision === "aceptado" ? "acepto" : "rechazo"}</b> sus condiciones.
                   Entiendo que esta constancia electrónica no constituye firma digital.
                   {hash && <span className="mt-1 block break-all font-mono text-[10px] text-slate-400">Huella del documento: {hash}</span>}
                 </span>

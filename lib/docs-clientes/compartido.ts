@@ -16,7 +16,7 @@ export const sitio = () => (process.env.NEXT_PUBLIC_SITE_URL ?? "https://matulot
 
 /* ───────── Tipos ───────── */
 
-export type TipoDoc = "reserva" | "libre_deuda";
+export type TipoDoc = "reserva" | "libre_deuda" | "autorizacion_venta";
 export type EstadoDoc = "emitido" | "enviado" | "aceptado" | "rechazado" | "vencido" | "anulado";
 
 export type DatosReserva = {
@@ -39,6 +39,23 @@ export type DatosLibreDeuda = {
   detalle: string[]; // renglones de resumen (cuotas pagas, último período, etc.)
 };
 
+/** Tasación y autorización de venta: el propietario la acepta online con código de un solo uso. */
+export type DatosAutorizacionVenta = {
+  inmueble: string;
+  domicilioPropietario: string | null;
+  /** Precio de venta pretendido. */
+  precio: number;
+  moneda: "USD" | "ARS";
+  /** Valor central de la tasación que respalda el precio (si la hubo). */
+  valorTasacion: number | null;
+  plazoDias: number;
+  exclusiva: boolean;
+  /** Honorarios a cargo del vendedor: % sobre el precio de venta. */
+  honorariosPct: number;
+  clausulas: string;
+  tasacionId: string | null;
+};
+
 export type DocEmitido = {
   id: string;
   tipo: TipoDoc;
@@ -52,7 +69,7 @@ export type DocEmitido = {
   clienteEmail: string | null;
   clienteTelefono: string | null;
   clienteDni: string | null;
-  datos: DatosReserva | DatosLibreDeuda;
+  datos: DatosReserva | DatosLibreDeuda | DatosAutorizacionVenta;
   aceptaHabilitada: boolean;
   venceEn: string | null;
   pdfPath: string | null;
@@ -104,8 +121,22 @@ export const mapDoc = (r: any): DocEmitido => ({
 
 /* ───────── Varios ───────── */
 
-export const PREFIJO: Record<TipoDoc, string> = { reserva: "RES", libre_deuda: "LD" };
-export const NOMBRE_TIPO: Record<TipoDoc, string> = { reserva: "Reserva inmobiliaria", libre_deuda: "Certificado de libre deuda" };
+export const PREFIJO: Record<TipoDoc, string> = { reserva: "RES", libre_deuda: "LD", autorizacion_venta: "AV" };
+export const NOMBRE_TIPO: Record<TipoDoc, string> = {
+  reserva: "Reserva inmobiliaria",
+  libre_deuda: "Certificado de libre deuda",
+  autorizacion_venta: "Tasación y autorización de venta",
+};
+
+/** "la reserva inmobiliaria" / "la autorización de venta": para armar textos de mails y pantallas. */
+export const NOMBRE_CORTO: Record<TipoDoc, string> = {
+  reserva: "reserva inmobiliaria",
+  libre_deuda: "certificado de libre deuda",
+  autorizacion_venta: "autorización de venta",
+};
+
+/** Tipos de documento que el cliente puede aceptar o rechazar online. */
+export const admiteDecision = (tipo: TipoDoc) => tipo === "reserva" || tipo === "autorizacion_venta";
 
 export const hoyAr = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date());
 
@@ -141,9 +172,9 @@ export function iniciales(nombre: string) {
     .join(" ");
 }
 
-/** Estado "efectivo": una reserva sin decisión cuya validez ya pasó se muestra como vencida. */
+/** Estado "efectivo": una reserva o autorización sin decisión cuya validez ya pasó se muestra como vencida. */
 export function estadoEfectivo(d: Pick<DocEmitido, "estado" | "venceEn" | "tipo">): EstadoDoc {
-  if ((d.estado === "emitido" || d.estado === "enviado") && d.tipo === "reserva" && d.venceEn && d.venceEn < hoyAr()) return "vencido";
+  if ((d.estado === "emitido" || d.estado === "enviado") && admiteDecision(d.tipo) && d.venceEn && d.venceEn < hoyAr()) return "vencido";
   return d.estado;
 }
 
@@ -157,8 +188,14 @@ export const ETIQUETA_ESTADO: Record<EstadoDoc, string> = {
 };
 
 /** Texto exacto del consentimiento que acepta el cliente (queda guardado con su decisión). */
-export function textoConsentimiento(numero: string, version: number, hash: string | null, decision: "aceptado" | "rechazado") {
-  return `Declaro haber leído la reserva inmobiliaria N.º ${numero} (versión ${version}${hash ? `, huella SHA-256 ${hash}` : ""}) y ${
+export function textoConsentimiento(
+  numero: string,
+  version: number,
+  hash: string | null,
+  decision: "aceptado" | "rechazado",
+  tipo: TipoDoc = "reserva"
+) {
+  return `Declaro haber leído la ${NOMBRE_CORTO[tipo]} N.º ${numero} (versión ${version}${hash ? `, huella SHA-256 ${hash}` : ""}) y ${
     decision === "aceptado" ? "ACEPTO" : "RECHAZO"
   } sus condiciones. Entiendo que esta constancia electrónica no constituye firma digital.`;
 }
@@ -172,3 +209,32 @@ export function textoHonorariosReserva(r: DatosReserva): string | null {
 }
 
 export const ETIQUETA_PAGO: Record<"pendiente" | "abonado", string> = { pendiente: "Pago pendiente", abonado: "Abonado" };
+
+/* ───────── Autorización de venta ───────── */
+
+/** "3% sobre el precio de venta (USD 3.600)". */
+export function textoHonorariosAutorizacion(a: DatosAutorizacionVenta): string {
+  const base = `${String(a.honorariosPct).replace(".", ",")}% sobre el precio de venta`;
+  return a.precio ? `${base} (${monto((a.precio * a.honorariosPct) / 100, a.moneda)})` : base;
+}
+
+/** Cláusulas modelo de la autorización de venta. Se pueden editar antes de emitir cada contrato. */
+export function clausulasAutorizacion(o: { exclusiva: boolean; plazoDias: number; honorariosPct: number }): string {
+  const pct = String(o.honorariosPct).replace(".", ",");
+  return [
+    `PRIMERA – Objeto. El propietario autoriza a ${INSTITUCION.nombre}, a cargo de ${INSTITUCION.titular}, ${INSTITUCION.titulo}, ${INSTITUCION.matricula} (en adelante, "la inmobiliaria"), a ofrecer en venta el inmueble identificado en este documento, ${
+      o.exclusiva ? "con carácter exclusivo" : "sin exclusividad"
+    }, por el precio y en las condiciones aquí indicadas.`,
+    `SEGUNDA – Tasación y precio. La inmobiliaria realizó la tasación del inmueble según su ubicación, superficie, estado y valores comparables de la zona. El precio de venta es el indicado en este documento y solo puede modificarse con la conformidad escrita del propietario. La inmobiliaria informará al propietario toda oferta que reciba, aunque sea por un precio menor.`,
+    `TERCERA – Plazo. La autorización rige por ${o.plazoDias} días corridos contados desde la fecha de emisión de este documento. Vencido el plazo puede renovarse por acuerdo escrito de las partes.`,
+    o.exclusiva
+      ? `CUARTA – Exclusividad. Durante el plazo de la autorización el propietario se compromete a no vender el inmueble por su cuenta ni a través de otro corredor o intermediario, y a derivar a la inmobiliaria a todo interesado que lo contacte directamente. Si el inmueble se vende durante ese plazo, cualquiera sea la vía, la inmobiliaria tiene derecho a percibir los honorarios pactados.`
+      : `CUARTA – Sin exclusividad. El propietario puede ofrecer el inmueble por su cuenta o a través de otros corredores. La inmobiliaria tiene derecho a los honorarios pactados cuando la venta se concrete con un interesado presentado por ella.`,
+    `QUINTA – Honorarios. El propietario abonará a la inmobiliaria, en concepto de honorarios profesionales, el ${pct}% del precio de venta, exigible al firmarse el boleto de compraventa o la escritura traslativa de dominio, lo que ocurra primero. Los honorarios se deben también cuando, dentro de los 180 días posteriores al vencimiento de esta autorización, el inmueble se venda a una persona que lo haya conocido por intermedio de la inmobiliaria. Los honorarios de la parte compradora están a cargo de esta y no se descuentan del precio.`,
+    `SEXTA – Obligaciones de la inmobiliaria. La inmobiliaria publicará el inmueble en su sitio web, portales y redes sociales, coordinará y acompañará las visitas, asesorará al propietario durante la negociación y colaborará con la reunión de la documentación necesaria para la escrituración.`,
+    `SÉPTIMA – Reservas. La inmobiliaria queda autorizada a recibir reservas de compra ad referéndum del propietario, quien deberá aceptarlas o rechazarlas dentro del plazo que en cada reserva se indique. La reserva no aceptada se devuelve al interesado.`,
+    `OCTAVA – Declaraciones del propietario. El propietario declara ser titular del inmueble o estar legitimado para disponer de él, que los datos informados son exactos y que el inmueble no reconoce embargos, hipotecas, inhibiciones, ocupantes ni deudas distintas de las que hubiera informado por escrito a la inmobiliaria. Se compromete a entregar copia del título de propiedad, planos y comprobantes de impuestos y servicios, y a permitir las visitas en días y horarios a coordinar.`,
+    `NOVENA – Domicilios y jurisdicción. Las partes constituyen domicilio en los indicados en este documento y aceptan como válidas las comunicaciones cursadas al correo electrónico y al teléfono allí informados. Para cualquier divergencia se someten a los tribunales ordinarios del Departamento Judicial La Plata.`,
+    `DÉCIMA – Aceptación electrónica. El propietario acepta esta autorización desde su enlace privado, previa verificación de su identidad con un código de un solo uso enviado a su correo electrónico. Queda constancia de la fecha, la hora y la huella del documento aceptado.`,
+  ].join("\n\n");
+}
