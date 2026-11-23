@@ -15,6 +15,7 @@ import {
   Menu,
   MessageCircle,
   Tag,
+  Users,
   Wheat,
   X,
   type LucideIcon,
@@ -35,6 +36,7 @@ export const NAV_LINKS_PORTAL: NavLink[] = [
   { href: "/zonas", label: "Zonas", icon: MapPin, descripcion: "Gran La Plata · Corredor Sur · Ruta 3 y 205 · Ribera" },
   { href: "/propietarios", label: "Propietarios", icon: KeyRound, descripcion: "Alquilá o vendé tu casa, depto o campo" },
   { href: "/tasador", label: "Tasador online", icon: ClipboardCheck, descripcion: "Calculá cuánto vale tu propiedad" },
+  { href: "/quienes-somos", label: "Nosotros", icon: Users, descripcion: "Quiénes somos y nuestros valores" },
 ];
 
 /** Menú de la página de un desarrollo (secciones de la misma página). */

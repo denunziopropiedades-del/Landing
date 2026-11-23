@@ -9,6 +9,7 @@ export default function Footer({ textos }: { textos: SiteTextos }) {
         <nav className="mb-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[13px] font-semibold text-white/70">
           {[
             ["/", "Inicio"],
+            ["/quienes-somos", "Quiénes somos"],
             ["/comprar", "Comprar"],
             ["/alquilar", "Alquilar"],
             ["/campos", "Campos"],
