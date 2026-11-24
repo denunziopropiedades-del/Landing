@@ -2825,16 +2825,16 @@ export async function sincronizarContactosAction(): Promise<ActionResult> {
   try {
     await requireRole("administrador");
     if (!oauthConfigurado()) throw new AdminActionError("Falta configurar el acceso de Google (Client ID y Client Secret).");
-    const r = await sincronizarContactos({ limite: 200 });
+    const r = await sincronizarContactos({ limite: 200, verificar: true });
     if ("sinConexion" in r && r.sinConexion) throw new AdminActionError("Primero conectá tu cuenta de Google.");
     revalidatePath("/admin/crm");
-    return {
-      ok: true,
-      aviso:
-        r.pendientes || r.corregidos
-          ? `Listo: ${r.creados} contacto(s) nuevo(s) en Google${r.reutilizados ? `, ${r.reutilizados} ya existían` : ""}${r.corregidos ? `, ${r.corregidos} teléfono(s) corregido(s)` : ""}${r.errores ? `, ${r.errores} con error` : ""}.`
-          : "No hay clientes pendientes de guardar.",
-    };
+    const partes = [
+      r.creados ? `${r.creados} contacto(s) nuevo(s)` : null,
+      r.recreados ? `${r.recreados} que faltaban en Google se volvieron a guardar` : null,
+      r.actualizados ? `${r.actualizados} actualizado(s) con teléfono y datos del CRM` : null,
+      r.errores ? `${r.errores} con error` : null,
+    ].filter(Boolean);
+    return { ok: true, aviso: partes.length ? `Listo: ${partes.join(", ")}.` : "Todo al día: los contactos ya están en Google con sus datos." };
   } catch (err) {
     return fail(err);
   }

@@ -61,3 +61,6 @@ update leads set telefono = formatear_telefono(telefono) where telefono is disti
 update leads set telefono_norm = normalizar_telefono(telefono) where telefono_norm is distinct from normalizar_telefono(telefono);
 update visitas set telefono = formatear_telefono(telefono) where telefono is distinct from formatear_telefono(telefono);
 update agenda_bloqueos set telefono_norm = normalizar_telefono(telefono_norm) where telefono_norm is distinct from normalizar_telefono(telefono_norm);
+
+-- Notas del contacto de Google con los datos del CRM (consultas y visitas): lo último enviado.
+alter table leads add column if not exists google_contacto_nota text;

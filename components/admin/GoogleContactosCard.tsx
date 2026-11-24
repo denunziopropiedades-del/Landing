@@ -35,7 +35,7 @@ export default function GoogleContactosCard({ estado }: { estado: EstadoContacto
           <p className="font-semibold text-brand-black">📇 Agenda de Google Contactos</p>
           <p className="text-xs text-brand-black/60">
             {estado.conectado
-              ? `Conectada${estado.cuenta ? ` con ${estado.cuenta}` : ""}: cada cliente nuevo se guarda como "Nombre Apellido Cte web" con su teléfono y mail. ${estado.guardados} guardados, ${estado.pendientes} sin guardar.`
+              ? `Conectada${estado.cuenta ? ` con ${estado.cuenta}` : ""}: cada cliente nuevo se guarda como "Nombre Apellido Cte web" con su teléfono, mail y los datos del CRM (consultas y visitas) en las notas. ${estado.guardados} guardados, ${estado.pendientes} sin guardar.`
               : estado.configurado
                 ? "Conectá tu cuenta de Google para que cada cliente nuevo se guarde solo en tus contactos."
                 : "Falta configurar el acceso de Google (Client ID y Client Secret) para poder conectarla."}
@@ -47,7 +47,7 @@ export default function GoogleContactosCard({ estado }: { estado: EstadoContacto
               Conectar Google Contactos
             </a>
           )}
-          {estado.conectado && estado.pendientes > 0 && (
+          {estado.conectado && (
             <button
               type="button"
               disabled={pendiente}
@@ -60,7 +60,7 @@ export default function GoogleContactosCard({ estado }: { estado: EstadoContacto
               }
               className="rounded-lg bg-brand-black px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
             >
-              {pendiente ? "Guardando…" : `Guardar los ${Math.min(estado.pendientes, 200)} pendientes`}
+              {pendiente ? "Revisando…" : estado.pendientes > 0 ? `Guardar los ${Math.min(estado.pendientes, 200)} pendientes` : "Revisar y actualizar contactos"}
             </button>
           )}
           {estado.conectado && (
