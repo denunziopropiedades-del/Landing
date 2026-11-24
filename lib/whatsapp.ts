@@ -1,3 +1,4 @@
+import { normalizarTelefono } from "@/lib/leads";
 import { siteTextosSeed } from "@/lib/data";
 
 /** Números que reciben las consultas de WhatsApp que llegan desde la web.
@@ -25,9 +26,11 @@ export function mensajeConsultaLote(nombreLote: string) {
  * argentino (54 9) si el teléfono no lo tiene ya cargado. Con `mensaje`, lo deja
  * precargado en el chat (ej. para reenviar el link de pago de la seña). */
 export function buildWhatsappClienteUrl(telefono: string, mensaje?: string) {
+  const norm = normalizarTelefono(telefono);
   const digitos = telefono.replace(/\D/g, "");
   let numero = digitos;
-  if (digitos.startsWith("549")) numero = digitos;
+  if (norm.length === 10) numero = `549${norm}`;
+  else if (digitos.startsWith("549")) numero = digitos;
   else if (digitos.startsWith("54")) numero = `549${digitos.slice(2)}`;
   else numero = `549${digitos}`;
   return mensaje ? `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}` : `https://wa.me/${numero}`;

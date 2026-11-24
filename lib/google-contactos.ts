@@ -46,25 +46,120 @@ async function accessToken(a: SupabaseClient): Promise<string | null> {
 
 type LeadContacto = { id: string; nombre: string | null; apellido: string | null; email: string | null; telefono: string | null; telefono_norm?: string | null };
 
+/** Teléfono como se guarda en Google: +54 9 11 2742-4512 (así WhatsApp lo reconoce). */
+export function telefonoContacto(telefono: string | null | undefined): string {
+  const d = normalizarTelefono(telefono);
+  if (d.length !== 10) return String(telefono ?? "").trim();
+  if (d.startsWith("11")) return `+54 9 11 ${d.slice(2, 6)}-${d.slice(6)}`;
+  return `+54 9 ${d}`;
+}
+
 function persona(l: LeadContacto) {
-  const tel = normalizarTelefono(l.telefono ?? "");
+  const tel = telefonoContacto(l.telefono);
   return {
     names: [{ givenName: (l.nombre ?? "").trim() || "Cliente", familyName: [(l.apellido ?? "").trim(), SUFIJO].filter(Boolean).join(" ") }],
-    ...(l.telefono ? { phoneNumbers: [{ value: tel.length === 10 ? `+54 9 ${tel}` : l.telefono, type: "mobile" }] } : {}),
+    ...(tel && tel !== "-" ? { phoneNumbers: [{ value: tel, type: "mobile" }] } : {}),
     ...(l.email ? { emailAddresses: [{ value: l.email, type: "home" }] } : {}),
     biographies: [{ value: "Cliente cargado desde la web / CRM (matulotes.app).", contentType: "TEXT_PLAIN" }],
   };
 }
 
 /**
+ * Corrige el teléfono de los contactos que ya están en Google y quedaron mal guardados
+ * (ej. con el 15 en vez del 11, o sin +54 9). Se marca en google_contacto_tel lo último enviado.
+ */
+async function corregirTelefonos(a: SupabaseClient, token: string, limite = 100) {
+  const { data } = await a
+    .from("leads")
+    .select("id, telefono, google_contacto_id, google_contacto_tel")
+    .not("google_contacto_id", "is", null)
+    .limit(1000);
+  const porContacto = new Map<string, { ids: string[]; tel: string }>();
+  for (const l of data ?? []) {
+    const tel = telefonoContacto(l.telefono as string | null);
+    if (!tel || tel === "-" || l.google_contacto_tel === tel) continue;
+    const rn = String(l.google_contacto_id);
+    const e = porContacto.get(rn);
+    if (e) e.ids.push(String(l.id));
+    else porContacto.set(rn, { ids: [String(l.id)], tel });
+  }
+  const pendientes = [...porContacto.entries()].slice(0, limite);
+  let corregidos = 0;
+  for (let i = 0; i < pendientes.length; i += 50) {
+    const tanda = pendientes.slice(i, i + 50);
+    const qs = new URLSearchParams({ personFields: "phoneNumbers,metadata" });
+    for (const [rn] of tanda) qs.append("resourceNames", rn);
+    const get = await fetch(`https://people.googleapis.com/v1/people:batchGet?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!get.ok) {
+      console.error("Google Contactos: no se pudieron leer los contactos", (await get.text()).slice(0, 300));
+      continue;
+    }
+    const gj = (await get.json()) as { responses?: { requestedResourceName?: string; person?: { resourceName?: string; etag?: string; phoneNumbers?: { value?: string; type?: string }[] } }[] };
+    const contacts: Record<string, unknown> = {};
+    const listos: string[] = [];
+    for (const r of gj.responses ?? []) {
+      const rn = r.requestedResourceName ?? r.person?.resourceName;
+      const p = r.person;
+      if (!rn || !p?.etag) {
+        // El contacto ya no existe en Google: se vuelve a crear en la próxima sincronización.
+        if (rn && porContacto.get(rn)) await a.from("leads").update({ google_contacto_id: null, google_contacto_tel: null }).in("id", porContacto.get(rn)!.ids);
+        continue;
+      }
+      const nuevo = porContacto.get(rn)!.tel;
+      const nuevoNorm = normalizarTelefono(nuevo);
+      // Reemplaza el número mal cargado del cliente y conserva cualquier otro que se haya agregado a mano.
+      const otros = (p.phoneNumbers ?? []).filter((n) => !esMismoNumeroMalCargado(n.value, nuevoNorm));
+      contacts[rn] = { etag: p.etag, phoneNumbers: [{ value: nuevo, type: "mobile" }, ...otros.map((n) => ({ value: n.value, type: n.type }))] };
+      listos.push(rn);
+    }
+    if (!listos.length) continue;
+    const upd = await fetch("https://people.googleapis.com/v1/people:batchUpdateContacts", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ contacts, updateMask: "phoneNumbers", readMask: "phoneNumbers" }),
+    });
+    if (!upd.ok) {
+      console.error("Google Contactos: no se pudieron corregir teléfonos", (await upd.text()).slice(0, 300));
+      continue;
+    }
+    for (const rn of listos) {
+      const e = porContacto.get(rn)!;
+      await a.from("leads").update({ google_contacto_tel: e.tel }).in("id", e.ids);
+      corregidos++;
+    }
+  }
+  return corregidos;
+}
+
+/** El número que Google tenía es la versión mal cargada del mismo celular (con 15, sin 54 9, etc.). */
+function esMismoNumeroMalCargado(valor: string | undefined, norm: string) {
+  const d = String(valor ?? "").replace(/\D/g, "");
+  if (!d) return false;
+  return normalizarTelefono(d) === norm || d.endsWith(norm.slice(-8));
+}
+
+/**
  * Crea en Google Contactos los clientes que todavía no están.
  * Si otra ficha con el mismo teléfono ya tiene contacto, se reutiliza (no se duplica).
  */
-export async function sincronizarContactos(opciones: { ids?: string[]; soloDesdeConexion?: boolean; limite?: number } = {}) {
+export async function sincronizarContactos(opciones: { ids?: string[]; soloDesdeConexion?: boolean; limite?: number; corregir?: boolean } = {}) {
   const a = await getSupabaseAdminClient();
-  if (!a) return { creados: 0, reutilizados: 0, errores: 0, pendientes: 0 };
+  if (!a) return { creados: 0, reutilizados: 0, errores: 0, pendientes: 0, corregidos: 0 };
   const token = await accessToken(a);
-  if (!token) return { creados: 0, reutilizados: 0, errores: 0, pendientes: 0, sinConexion: true };
+  if (!token) return { creados: 0, reutilizados: 0, errores: 0, pendientes: 0, corregidos: 0, sinConexion: true };
+  const r = await crearPendientes(a, token, opciones);
+  let corregidos = 0;
+  if (opciones.corregir !== false) {
+    try {
+      corregidos = await corregirTelefonos(a, token);
+    } catch (err) {
+      console.error("Google Contactos: error al corregir teléfonos", err);
+    }
+  }
+  return { ...r, corregidos };
+}
+
+async function crearPendientes(a: SupabaseClient, token: string, opciones: { ids?: string[]; soloDesdeConexion?: boolean; limite?: number }) {
 
   let q = a
     .from("leads")
@@ -126,7 +221,7 @@ export async function sincronizarContactos(opciones: { ids?: string[]; soloDesde
       const l = tanda[k];
       const mismos = l.telefono_norm && vistos.get(l.telefono_norm) ? vistos.get(l.telefono_norm)! : [l];
       if (rn) {
-        await a.from("leads").update({ google_contacto_id: rn, google_contacto_error: null }).in("id", mismos.map((x) => x.id));
+        await a.from("leads").update({ google_contacto_id: rn, google_contacto_error: null, google_contacto_tel: telefonoContacto(l.telefono) || null }).in("id", mismos.map((x) => x.id));
         creados++;
         reutilizados += mismos.length - 1;
       } else errores++;
@@ -140,7 +235,7 @@ export function guardarContactoDespues(leadId: string | null | undefined) {
   if (!leadId || !oauthConfigurado()) return;
   const tarea = async () => {
     try {
-      await sincronizarContactos({ ids: [leadId], soloDesdeConexion: true, limite: 5 });
+      await sincronizarContactos({ ids: [leadId], soloDesdeConexion: true, limite: 5, corregir: false });
     } catch (err) {
       console.error("Google Contactos: no se pudo guardar el cliente", err);
     }

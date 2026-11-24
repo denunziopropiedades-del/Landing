@@ -2830,9 +2830,10 @@ export async function sincronizarContactosAction(): Promise<ActionResult> {
     revalidatePath("/admin/crm");
     return {
       ok: true,
-      aviso: r.pendientes
-        ? `Listo: ${r.creados} contacto(s) nuevo(s) en Google${r.reutilizados ? `, ${r.reutilizados} ya existían` : ""}${r.errores ? `, ${r.errores} con error` : ""}.`
-        : "No hay clientes pendientes de guardar.",
+      aviso:
+        r.pendientes || r.corregidos
+          ? `Listo: ${r.creados} contacto(s) nuevo(s) en Google${r.reutilizados ? `, ${r.reutilizados} ya existían` : ""}${r.corregidos ? `, ${r.corregidos} teléfono(s) corregido(s)` : ""}${r.errores ? `, ${r.errores} con error` : ""}.`
+          : "No hay clientes pendientes de guardar.",
     };
   } catch (err) {
     return fail(err);

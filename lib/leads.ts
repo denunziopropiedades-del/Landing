@@ -7,14 +7,24 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * - Origen: de dónde vino el contacto (Meta, Google, Instagram, preventa…) y la campaña (utm).
  */
 
-/** Celular en 10 dígitos (ej. 1127424512), aunque lo escriban con +54 9, 0 o 15. Igual que normalizar_telefono() en SQL. */
+/** Celular en 10 dígitos (ej. 1127424512), aunque lo escriban con +54 9, 0 o 15. Igual que normalizar_telefono() en SQL.
+ * Si lo cargan sin característica, como 15XXXXXXXX u 8 dígitos sueltos, se toma como AMBA (11). */
 export function normalizarTelefono(v: string | null | undefined): string {
   let d = String(v ?? "").replace(/\D/g, "");
   if (d.startsWith("54")) d = d.slice(2);
   if (d.startsWith("9")) d = d.slice(1);
   if (d.startsWith("0")) d = d.slice(1);
   if (d.length === 12 && d.slice(2, 4) === "15") d = d.slice(0, 2) + d.slice(4);
+  if (d.length === 10 && d.startsWith("15")) d = "11" + d.slice(2);
+  if (d.length === 8) d = "11" + d;
   return d.length > 10 ? d.slice(-10) : d;
+}
+
+/** Teléfono listo para WhatsApp y Contactos: +549 + característica + número (ej. +5491127424512).
+ * Si no se puede interpretar, devuelve lo que se cargó. Igual que formatear_telefono() en SQL. */
+export function telefonoInternacional(v: string | null | undefined): string {
+  const d = normalizarTelefono(v);
+  return d.length === 10 ? `+549${d}` : String(v ?? "").trim();
 }
 
 export type OrigenLead = {
