@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ChevronDown, ChevronUp, CreditCard, GripVertical, Mail, Phone, Trash2 } from "lucide-react";
 import {
   actualizarComisionHonorariosLeadAction,
@@ -973,6 +973,39 @@ export default function KanbanBoard({
     }
   };
 
+  // Navegación horizontal del tablero (flechas, chips de columnas y teclado).
+  const tablero = useRef<HTMLDivElement>(null);
+  const [visibles, setVisibles] = useState<EstadoLead[]>([]);
+  const [puedeIzq, setPuedeIzq] = useState(false);
+  const [puedeDer, setPuedeDer] = useState(true);
+  const actualizarVisibles = () => {
+    const el = tablero.current;
+    if (!el) return;
+    const caja = el.getBoundingClientRect();
+    const vis: EstadoLead[] = [];
+    el.querySelectorAll<HTMLElement>("[data-columna]").forEach((c) => {
+      const r = c.getBoundingClientRect();
+      if (r.right > caja.left + 40 && r.left < caja.right - 40) vis.push(c.dataset.columna as EstadoLead);
+    });
+    setVisibles(vis);
+    setPuedeIzq(el.scrollLeft > 4);
+    setPuedeDer(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+  useEffect(() => {
+    actualizarVisibles();
+    window.addEventListener("resize", actualizarVisibles);
+    return () => window.removeEventListener("resize", actualizarVisibles);
+  }, []);
+  const desplazar = (dir: 1 | -1) => {
+    const el = tablero.current;
+    if (el) el.scrollBy({ left: dir * Math.max(300, el.clientWidth * 0.8), behavior: "smooth" });
+  };
+  const irAColumna = (estado: EstadoLead) => {
+    const el = tablero.current;
+    const col = el?.querySelector<HTMLElement>(`[data-columna="${estado}"]`);
+    if (el && col) el.scrollTo({ left: col.offsetLeft - el.offsetLeft, behavior: "smooth" });
+  };
+
   // El tablero es la fuente de verdad de cada lead mientras la página está
   // abierta; cada guardado exitoso en la tarjeta actualiza esta copia para
   // que no se "revierta" al mover el lead a otra columna.
@@ -981,10 +1014,57 @@ export default function KanbanBoard({
   };
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
+    <div>
+      {/* Guía para moverse hacia los costados sin mouse (touchpad, tablet o teclado). */}
+      <div className="sticky top-0 z-20 -mx-1 mb-3 flex items-center gap-2 rounded-xl bg-white/95 px-2 py-2 shadow-sm backdrop-blur">
+        <button
+          type="button"
+          aria-label="Ver columnas a la izquierda"
+          onClick={() => desplazar(-1)}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-black text-lg font-bold text-white disabled:opacity-30"
+          disabled={!puedeIzq}
+        >
+          ‹
+        </button>
+        <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
+          {columnas.map((col) => (
+            <button
+              key={col.estado}
+              type="button"
+              onClick={() => irAColumna(col.estado)}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                visibles.includes(col.estado) ? "bg-brand-green-700 text-white" : "bg-brand-black/5 text-brand-black/70 hover:bg-brand-black/10"
+              }`}
+            >
+              {col.label} <span className="opacity-70">({col.leads.length})</span>
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          aria-label="Ver columnas a la derecha"
+          onClick={() => desplazar(1)}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-black text-lg font-bold text-white disabled:opacity-30"
+          disabled={!puedeDer}
+        >
+          ›
+        </button>
+      </div>
+    <div
+      ref={tablero}
+      onScroll={actualizarVisibles}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "ArrowRight") desplazar(1);
+        if (e.key === "ArrowLeft") desplazar(-1);
+      }}
+      className="flex snap-x gap-4 overflow-x-auto scroll-smooth pb-4 focus:outline-none"
+    >
       {columnas.map((col) => (
         <div
           key={col.estado}
+          data-columna={col.estado}
           onDragOver={(e) => {
             e.preventDefault();
             setDragOver(col.estado);
@@ -996,7 +1076,7 @@ export default function KanbanBoard({
             if (id) mover(id, col.estado);
             setDragOver(null);
           }}
-          className={`flex w-72 shrink-0 flex-col rounded-2xl border-t-4 bg-brand-cream/60 p-3 ${col.color} ${
+          className={`flex w-72 shrink-0 snap-start flex-col rounded-2xl border-t-4 bg-brand-cream/60 p-3 ${col.color} ${
             dragOver === col.estado ? "ring-2 ring-brand-green-500" : ""
           }`}
         >
@@ -1027,6 +1107,7 @@ export default function KanbanBoard({
           </div>
         </div>
       ))}
+    </div>
     </div>
   );
 }
