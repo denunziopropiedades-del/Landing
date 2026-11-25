@@ -132,6 +132,8 @@ export default function ArcaFacturasManager({
   const [filtroEstado, setFiltroEstado] = useState("activas");
   const [filtroMoneda, setFiltroMoneda] = useState("");
   const [busqueda, setBusqueda] = useState("");
+  const [filtroDesde, setFiltroDesde] = useState("");
+  const [filtroHasta, setFiltroHasta] = useState("");
   const anio = new Date().getFullYear();
 
   function datosCliente(c: ClienteCrm): Partial<Form> {
@@ -152,10 +154,12 @@ export default function ArcaFacturasManager({
       if (filtroEstado === "activas" && f.estado === "descartada") return false;
       if (filtroEstado && filtroEstado !== "activas" && f.estado !== filtroEstado) return false;
       if (filtroMoneda && f.moneda !== filtroMoneda) return false;
+      if (filtroDesde && f.fecha < filtroDesde) return false;
+      if (filtroHasta && f.fecha > filtroHasta) return false;
       if (q && !`${f.receptorNombre} ${f.receptorDocNro} ${numero(f)} ${f.conceptoTipo ?? ""}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [facturas, filtroEstado, filtroMoneda, busqueda]);
+  }, [facturas, filtroEstado, filtroMoneda, busqueda, filtroDesde, filtroHasta]);
 
   const totales = useMemo(() => {
     const t = { ars: 0, usd: 0, anualPesos: 0, pendientes: 0 };
@@ -204,36 +208,6 @@ export default function ArcaFacturasManager({
     });
   }
 
-  function exportar() {
-    const filas = [
-      ["Fecha", "Tipo", "Número", "Cliente", "Documento", "Concepto", "Moneda", "Total", "Cotización", "Total en pesos", "CAE", "Vto CAE", "Estado", "Origen", "Entorno"],
-      ...visibles.map((f) => [
-        fecha(f.fecha),
-        f.tipoCbte === 13 ? "NC C" : "Factura C",
-        numero(f),
-        f.receptorNombre,
-        f.receptorDocTipo === 99 ? "" : `${DOCS.find((d) => d[0] === f.receptorDocTipo)?.[1] ?? ""} ${f.receptorDocNro}`,
-        f.conceptoTipo ?? f.items[0]?.descripcion ?? "",
-        f.moneda === "DOL" ? "USD" : "ARS",
-        (f.importeTotal * signo(f)).toFixed(2).replace(".", ","),
-        f.cotizacion.toString().replace(".", ","),
-        (f.importeTotal * signo(f) * (f.moneda === "DOL" ? f.cotizacion : 1)).toFixed(2).replace(".", ","),
-        f.cae ?? "",
-        fecha(f.caeVto),
-        ESTADO[f.estado]?.txt ?? f.estado,
-        ORIGEN[f.origen] ?? f.origen,
-        f.entorno === "produccion" ? "Producción" : "Pruebas",
-      ]),
-    ];
-    const csv = "﻿" + filas.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\r\n");
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `facturas-arca-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   const setItem = (idx: number, cambio: Partial<ItemFactura>) =>
     setForm((f) => (f ? { ...f, items: f.items.map((it, i) => (i === idx ? { ...it, ...cambio } : it)) } : f));
 
@@ -276,9 +250,12 @@ export default function ArcaFacturasManager({
         >
           <Plus className="h-4 w-4" /> ARCA - FACTURAS · Nueva factura
         </button>
-        <button type="button" onClick={exportar} className={btn}>
-          <FileText className="h-4 w-4" /> Exportar a Excel (CSV)
-        </button>
+        <a className={btn} href={`/api/admin/arca/facturas/exportar?${new URLSearchParams({ formato: "xlsx", estado: filtroEstado, moneda: filtroMoneda, q: busqueda, desde: filtroDesde, hasta: filtroHasta })}`}>
+          <FileText className="h-4 w-4" /> Exportar Excel
+        </a>
+        <a className={btn} href={`/api/admin/arca/facturas/exportar?${new URLSearchParams({ formato: "pdf", estado: filtroEstado, moneda: filtroMoneda, q: busqueda, desde: filtroDesde, hasta: filtroHasta })}`}>
+          <FileText className="h-4 w-4" /> Exportar PDF
+        </a>
         <button type="button" onClick={() => setVerConfig((v) => !v)} className={btn}>
           <Settings className="h-4 w-4" /> Datos del emisor y opciones
         </button>
@@ -538,6 +515,14 @@ export default function ArcaFacturasManager({
             <option value="PES">Pesos</option>
             <option value="DOL">Dólares</option>
           </select>
+          <label className="flex items-center gap-1 text-xs text-brand-black/60">
+            Desde
+            <input type="date" className={`${input} w-40`} value={filtroDesde} onChange={(e) => setFiltroDesde(e.target.value)} />
+          </label>
+          <label className="flex items-center gap-1 text-xs text-brand-black/60">
+            Hasta
+            <input type="date" className={`${input} w-40`} value={filtroHasta} onChange={(e) => setFiltroHasta(e.target.value)} />
+          </label>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
