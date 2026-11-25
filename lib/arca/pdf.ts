@@ -166,7 +166,11 @@ export async function generarFacturaPdf(f: Factura, config: ConfigArca): Promise
   y += 8;
   const anchoTot = 230;
   const xt = M + ancho - anchoTot;
-  if (usd) {
+  if (usd && !autorizada) {
+    doc.rect(M, y, 3, 28).fill(DORADO);
+    doc.font("Helvetica-Bold").fontSize(8.5).fillColor(MARRON).text("Tipo de cambio: se informa al emitir", M + 10, y + 2, { width: ancho - anchoTot - 30 });
+    doc.font("Helvetica").fontSize(8.5).fillColor(GRIS).text("BNA vendedor divisa del día hábil anterior (lo informa ARCA)", M + 10, doc.y + 1, { width: ancho - anchoTot - 30 });
+  } else if (usd) {
     doc.rect(M, y, 3, 40).fill(DORADO);
     doc.font("Helvetica-Bold").fontSize(8.5).fillColor(MARRON).text(`Tipo de cambio utilizado: $ ${f.cotizacion.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`, M + 10, y + 2, { width: ancho - anchoTot - 30 });
     doc.font("Helvetica").fontSize(8.5).fillColor(GRIS).text(`BNA vendedor divisa${f.cotizacionFecha ? ` del ${fechaAr(`${f.cotizacionFecha.slice(0, 4)}-${f.cotizacionFecha.slice(4, 6)}-${f.cotizacionFecha.slice(6, 8)}`)}` : ""} (informado por ARCA)`, M + 10, doc.y + 1, { width: ancho - anchoTot - 30 });

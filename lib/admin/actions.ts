@@ -23,7 +23,7 @@ import { NUMEROS_WHATSAPP_CONSULTAS } from "@/lib/whatsapp";
 import { linkMisCuotas } from "@/lib/mis-cuotas";
 import { sumarMeses } from "@/lib/fecha";
 import { posicionEnBloque, type BloqueManzana } from "@/lib/masterplan";
-import { registrarCobroFacturable } from "@/lib/arca/facturas";
+import { detalleHonorarioCuota, registrarCobroFacturable } from "@/lib/arca/facturas";
 import type { EstadoLead, EstadoLote, EstadoVisita, Rol } from "@/types/site";
 
 type ActionResult = { ok: true; aviso?: string } | { ok: false; error: string };
@@ -2038,7 +2038,7 @@ export async function marcarCuotaPagadaAction(
         .maybeSingle();
       const honorario = Number(lh?.honorario_cobranza) || 0;
       if (lh && honorario > 0 && lh.facturar_honorario !== false) {
-        const plan = lh.plan_financiacion as { cuotas?: number } | null;
+        const plan = lh.plan_financiacion as { cuotas?: number; moneda?: string } | null;
         const proyecto = (lh.proyectos as unknown as { nombre: string } | null)?.nombre ?? "";
         await registrarCobroFacturable(admin, {
           origen: "honorario_cuota",
@@ -2048,7 +2048,15 @@ export async function marcarCuotaPagadaAction(
           moneda: lh.honorario_cobranza_moneda === "ARS" ? "PES" : "DOL",
           importe: honorario,
           descripcion: "Honorarios profesionales · gestión de cobranza",
-          detalle: `Cuota ${cuota.numero}${plan?.cuotas ? ` de ${plan.cuotas}` : ""}${lh.manzana ? ` · Mz. ${lh.manzana}` : ""}${proyecto ? ` · ${proyecto}` : ""}`,
+          detalle: detalleHonorarioCuota({
+            numero: cuota.numero,
+            manzana: lh.manzana,
+            proyecto,
+            montoCuota: Number(montoPagado) || Number(cuota.monto_usd) || 0,
+            monedaCuota: plan?.moneda === "ARS" ? "ARS" : "USD",
+            honorario,
+            monedaHonorario: lh.honorario_cobranza_moneda === "ARS" ? "ARS" : "USD",
+          }),
           medioPago: medioPago || null,
           actor: actor.email,
         });

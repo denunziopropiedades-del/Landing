@@ -397,6 +397,31 @@ export async function registrarCobroFacturable(a: SupabaseClient, c: CobroFactur
   }
 }
 
+/**
+ * Detalle de la factura del honorario de una cuota, sin la cantidad total de cuotas
+ * y con el desglose del pago: cuota (desarrolladora) + honorarios de gestión.
+ */
+export function detalleHonorarioCuota(d: {
+  numero: number;
+  manzana?: string | null;
+  proyecto?: string | null;
+  montoCuota: number;
+  monedaCuota: "USD" | "ARS";
+  honorario: number;
+  monedaHonorario: "USD" | "ARS";
+}) {
+  const fmt = (v: number, m: "USD" | "ARS") =>
+    `${m === "USD" ? "US$" : "$"} ${v.toLocaleString("es-AR", { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
+  const partes = [`Cuota ${d.numero}`];
+  if (d.manzana) partes.push(`Mz. ${d.manzana}`);
+  if (d.proyecto) partes.push(d.proyecto);
+  let texto = partes.join(" · ");
+  if (d.montoCuota > d.honorario && d.monedaCuota === d.monedaHonorario) {
+    texto += `. Pago de la cuota ${fmt(d.montoCuota, d.monedaCuota)}: ${fmt(d.montoCuota - d.honorario, d.monedaCuota)} cuota del lote + ${fmt(d.honorario, d.monedaHonorario)} honorarios de gestión de cobranza`;
+  }
+  return texto;
+}
+
 /** Datos del cliente desde la ficha del CRM. */
 export async function receptorDeLead(a: SupabaseClient, leadId: string) {
   const { data } = await a.from("leads").select("nombre, apellido, dni, email, telefono").eq("id", leadId).maybeSingle();
