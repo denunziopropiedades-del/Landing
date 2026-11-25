@@ -90,7 +90,7 @@ const realEstateSchema = {
   email: "denunziopropiedades@gmail.com",
   telephone: "+54 9 11 2742-4512",
   logo: `${SITE_URL}/icon.png`,
-  founder: { "@type": "Person", name: "Matías De Nunzio", jobTitle: "Martillero Público y Corredor Público (Matrícula COL 7886)" },
+  founder: { "@type": "Person", name: "Matías De Nunzio", jobTitle: "Martillero Público y Corredor Público (Mat. 7886)" },
   knowsAbout: ["alquileres", "administración de alquileres", "venta de propiedades", "lotes en cuotas", "campos", "tasaciones"],
   areaServed: PARTIDOS.map((p) => ({ "@type": "City", name: p.nombre })),
   address: {

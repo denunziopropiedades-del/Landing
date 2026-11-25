@@ -39,7 +39,7 @@ export default async function NotaPage({ params }: { params: Promise<Params> }) 
       datePublished: nota.fecha,
       dateModified: nota.fecha,
       mainEntityOfPage: url,
-      author: { "@type": "Person", name: "Matías De Nunzio", jobTitle: "Martillero y Corredor Público (Mat. COL 7886)" },
+      author: { "@type": "Person", name: "Matías De Nunzio", jobTitle: "Martillero y Corredor Público (Mat. 7886)" },
       publisher: { "@type": "Organization", name: "De Nunzio Negocios Inmobiliarios", logo: { "@type": "ImageObject", url: `${SITE_URL}/icon.png` } },
     },
     {
@@ -70,7 +70,7 @@ export default async function NotaPage({ params }: { params: Promise<Params> }) 
           <Link href="/">Inicio</Link> › <Link href="/notas">Notas</Link>
         </nav>
         <h1 className="font-display text-3xl font-bold text-brand-black sm:text-4xl">{nota.titulo}</h1>
-        <p className="mt-2 text-sm text-brand-black/55">Por Matías De Nunzio, Martillero y Corredor Público · Mat. COL 7886</p>
+        <p className="mt-2 text-sm text-brand-black/55">Por Matías De Nunzio, Martillero y Corredor Público · Mat. 7886</p>
         <p className="mt-6 text-lg leading-relaxed text-brand-black/80">{nota.resumen}</p>
 
         {nota.secciones.map((s) => (

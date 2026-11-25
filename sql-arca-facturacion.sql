@@ -11,7 +11,7 @@ create table if not exists arca_config (
   iibb text,
   inicio_actividades date,
   condicion_iva text not null default 'Responsable Monotributo',
-  matricula text default 'Martillero y Corredor Público · COL 7886',
+  matricula text default 'Martillero y Corredor Público · Mat. 7886',
   punto_venta int not null default 8,
   entorno text not null default 'homologacion' check (entorno in ('homologacion', 'produccion')),
   emision_automatica boolean not null default false,

@@ -28,7 +28,7 @@ export const NOTAS: Nota[] = [
         titulo: "1. Que haya un martillero matriculado a cargo",
         parrafos: [
           "En la provincia de Buenos Aires, la intermediación inmobiliaria la tiene que hacer un Martillero y Corredor Público colegiado. Pedí siempre el nombre y el número de matrícula, y verificá que figure en el Colegio de Martilleros del departamento judicial que corresponde.",
-          "En De Nunzio Negocios Inmobiliarios cada operación está a cargo de Matías De Nunzio, Martillero y Corredor Público, matrícula COL 7886.",
+          "En De Nunzio Negocios Inmobiliarios cada operación está a cargo de Matías De Nunzio, Martillero y Corredor Público, Mat. 7886.",
         ],
       },
       {

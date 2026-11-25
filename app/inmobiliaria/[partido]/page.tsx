@@ -110,7 +110,7 @@ export default async function InmobiliariaLocalPage({
         <h2 className="font-display text-2xl font-bold">¿Querés alquilar o vender tu propiedad en {p.nombre}?</h2>
         <p className="mt-2 max-w-2xl text-white/80">
           Tasación sin cargo, publicación, selección de inquilinos, contratos, cobro mensual y liquidación al propietario. Atención de un
-          Martillero Público colegiado (Matrícula COL 7886).
+          Martillero Público colegiado (Mat. 7886).
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link href="/propietarios" className="rounded-full bg-brand-gold-500 px-5 py-2.5 font-semibold text-brand-black">

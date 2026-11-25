@@ -38,7 +38,7 @@ export const CONFIG_POR_DEFECTO: ConfigArca = {
   iibb: "",
   inicioActividades: null,
   condicionIva: "Responsable Monotributo",
-  matricula: "Martillero y Corredor Público · COL 7886",
+  matricula: "Martillero y Corredor Público · Mat. 7886",
   puntoVenta: 8,
   entorno: "homologacion",
   emisionAutomatica: false,

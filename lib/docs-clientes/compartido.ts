@@ -6,7 +6,7 @@ export const INSTITUCION = {
   nombre: "DE NUNZIO NEGOCIOS INMOBILIARIOS",
   titular: "Matías De Nunzio",
   titulo: "Martillero Público y Corredor Público",
-  matricula: "Matrícula COL 7886",
+  matricula: "Mat. 7886",
   whatsapp: ["11-2742-4512", "11-6136-5523"],
   whatsappIntl: "5491127424512",
   leyenda: "Todas las operaciones son gestionadas mediante la inmobiliaria.",
