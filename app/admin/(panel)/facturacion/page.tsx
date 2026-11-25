@@ -16,6 +16,12 @@ export default async function AdminFacturacionPage() {
         Ingresos, comisiones, honorarios y gastos del negocio, con reporte mensual para armar las facturas
         correspondientes.
       </p>
+      <a
+        href="/admin/arca"
+        className="mt-4 inline-flex items-center gap-2 rounded-lg bg-brand-black px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-black-soft"
+      >
+        ARCA - FACTURAS · emitir facturas electrónicas
+      </a>
       <div className="mt-8">
         <FacturacionManager leads={leads} gastos={gastos} proyectos={proyectos} />
       </div>

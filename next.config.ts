@@ -29,6 +29,11 @@ const nextConfig: NextConfig = {
     "/api/alquileres/recibo/[id]": ["./node_modules/pdfkit/js/data/**/*"],
     "/api/alquileres/liquidacion/[id]": ["./node_modules/pdfkit/js/data/**/*"],
     "/api/admin/cobranzas/[leadId]/pagares": ["./node_modules/pdfkit/js/data/**/*"],
+    "/api/admin/arca/facturas/[id]/pdf": ["./node_modules/pdfkit/js/data/**/*"],
+    "/api/factura/[token]": ["./node_modules/pdfkit/js/data/**/*"],
+    "/admin/arca": ["./node_modules/pdfkit/js/data/**/*"],
+    "/admin/cobranzas": ["./node_modules/pdfkit/js/data/**/*"],
+    "/admin/documentos-clientes": ["./node_modules/pdfkit/js/data/**/*"],
   },
 };
 

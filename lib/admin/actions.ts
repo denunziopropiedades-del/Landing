@@ -23,6 +23,7 @@ import { NUMEROS_WHATSAPP_CONSULTAS } from "@/lib/whatsapp";
 import { linkMisCuotas } from "@/lib/mis-cuotas";
 import { sumarMeses } from "@/lib/fecha";
 import { posicionEnBloque, type BloqueManzana } from "@/lib/masterplan";
+import { registrarCobroFacturable } from "@/lib/arca/facturas";
 import type { EstadoLead, EstadoLote, EstadoVisita, Rol } from "@/types/site";
 
 type ActionResult = { ok: true; aviso?: string } | { ok: false; error: string };
@@ -2027,6 +2028,35 @@ export async function marcarCuotaPagadaAction(
     revalidatePath("/admin/cobranzas");
     revalidatePath("/admin/crm");
 
+    // Facturación ARCA: si el cliente tiene honorario fijo de gestión de cobranza, se factura SOLO el honorario
+    // (la cuota es de la desarrolladora y no se factura).
+    try {
+      const { data: lh } = await admin
+        .from("leads")
+        .select("nombre, apellido, dni, email, telefono, manzana, honorario_cobranza, honorario_cobranza_moneda, plan_financiacion, proyectos(nombre)")
+        .eq("id", cuota.lead_id)
+        .maybeSingle();
+      const honorario = Number(lh?.honorario_cobranza) || 0;
+      if (lh && honorario > 0) {
+        const plan = lh.plan_financiacion as { cuotas?: number } | null;
+        const proyecto = (lh.proyectos as unknown as { nombre: string } | null)?.nombre ?? "";
+        await registrarCobroFacturable(admin, {
+          origen: "honorario_cuota",
+          origenRef: `cuota:${cuotaId}`,
+          leadId: cuota.lead_id,
+          receptor: { nombre: `${lh.apellido ?? ""} ${lh.nombre ?? ""}`.trim(), dni: lh.dni, email: lh.email, telefono: lh.telefono },
+          moneda: lh.honorario_cobranza_moneda === "ARS" ? "PES" : "DOL",
+          importe: honorario,
+          descripcion: "Honorarios profesionales · gestión de cobranza",
+          detalle: `Cuota ${cuota.numero}${plan?.cuotas ? ` de ${plan.cuotas}` : ""}${lh.manzana ? ` · Mz. ${lh.manzana}` : ""}${proyecto ? ` · ${proyecto}` : ""}`,
+          medioPago: medioPago || null,
+          actor: actor.email,
+        });
+      }
+    } catch (err) {
+      console.error("No se pudo registrar el honorario para facturar", err);
+    }
+
     try {
       const [{ data: lead }, { data: cuotasLead }] = await Promise.all([
         admin
@@ -2087,6 +2117,12 @@ export async function desmarcarCuotaPagadaAction(cuotaId: string): Promise<Actio
       .update({ pagada: false, pagado_en: null, monto_pagado_usd: null, medio_pago: null })
       .eq("id", cuotaId);
     if (error) throw new Error(error.message);
+    // Si el honorario de esa cuota quedó en borrador sin emitir, se descarta (si ya se emitió, va nota de crédito).
+    await admin
+      .from("arca_facturas")
+      .update({ estado: "descartada", origen_ref: null, actualizado_en: new Date().toISOString() })
+      .eq("origen_ref", `cuota:${cuotaId}`)
+      .in("estado", ["borrador", "rechazada"]);
 
     await registrarActividad(actor, "actualizar", "lead", cuota.lead_id, {
       ...(await contextoLead(admin, cuota.lead_id)),

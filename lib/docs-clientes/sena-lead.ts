@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DatosReserva, DocEmitido } from "@/lib/docs-clientes/compartido";
 import { guardarLeadUnificado } from "@/lib/leads";
+import { registrarCobroFacturable } from "@/lib/arca/facturas";
 
 /** Etapas del CRM anteriores al pago: al pagarse la seña la tarjeta pasa a "Pago confirmado". */
 const ESTADOS_ANTERIORES_A_PAGO = ["nuevo", "contactado", "visita_programada", "visita_realizada", "reservado"];
@@ -45,6 +46,19 @@ export async function volcarSenaEnLead(
     console.error("No se pudo volcar la seña en el CRM", error);
     return false;
   }
+
+  // Facturación ARCA: la seña cobrada queda como factura (borrador o emitida, según la configuración).
+  await registrarCobroFacturable(a, {
+    origen: "sena",
+    origenRef: `sena:${doc.id}`,
+    leadId: doc.leadId,
+    receptor: { nombre: doc.clienteNombre, dni: doc.clienteDni, email: doc.clienteEmail, telefono: doc.clienteTelefono },
+    moneda: r.monedaReserva === "USD" ? "DOL" : "PES",
+    importe: Number(pago.importe ?? r.importeReserva) || 0,
+    descripcion: "Seña / reserva",
+    detalle: `${r.inmueble} · Reserva N° ${doc.numero}`.slice(0, 280),
+    medioPago: pago.medio,
+  });
   return true;
 }
 

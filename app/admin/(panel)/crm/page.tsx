@@ -53,8 +53,16 @@ export default async function AdminCrmPage({ searchParams }: { searchParams: Pro
         Arrastrá cada tarjeta entre columnas para actualizar el estado del lead.
       </p>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap items-start gap-3">
         <LinkAltaCliente />
+        {actual && actual.rol !== "vendedor" && (
+          <a
+            href="/admin/arca"
+            className="inline-flex items-center gap-2 rounded-lg bg-brand-black px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-black-soft"
+          >
+            ARCA - FACTURAS
+          </a>
+        )}
       </div>
 
       {actual?.rol === "administrador" && (

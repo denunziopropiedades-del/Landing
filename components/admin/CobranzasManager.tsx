@@ -490,6 +490,15 @@ function TarjetaCliente({ cliente }: { cliente: ClienteCobranzas }) {
 
           <HonorariosCobranza cliente={cliente} />
 
+          <div className="px-4 pb-3">
+            <a
+              href={`/admin/arca?lead=${cliente.leadId}`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 px-3 py-1.5 text-xs font-medium hover:bg-black/5"
+            >
+              ARCA - FACTURAS · facturar a este cliente
+            </a>
+          </div>
+
           {cuotas.length > 0 && (
             <DescargarPagares
               leadId={cliente.leadId}

@@ -47,6 +47,7 @@ const nav: { href: string; label: string; icon: typeof LayoutDashboard; roles?: 
     icon: DollarSign,
     roles: ["administrador", "supervisor"],
   },
+  { href: "/admin/arca", label: "ARCA - Facturas", icon: FileText, roles: ["administrador", "supervisor"] },
   {
     href: "/admin/comisiones",
     label: "Calculadora de comisiones",

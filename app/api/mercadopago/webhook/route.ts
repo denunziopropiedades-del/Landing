@@ -127,6 +127,22 @@ export async function POST(request: Request) {
       })
       .eq("id", leadId);
 
+    // Facturación ARCA de la seña pagada por Mercado Pago (borrador o emitida según configuración).
+    {
+      const { registrarCobroFacturable } = await import("@/lib/arca/facturas");
+      await registrarCobroFacturable(supabase, {
+        origen: "sena",
+        origenRef: `sena-lead:${leadId}`,
+        leadId,
+        receptor: { nombre: `${lead.apellido ?? ""} ${lead.nombre}`.trim(), dni: lead.dni, email: lead.email, telefono: lead.telefono },
+        moneda: "PES",
+        importe: Number(importe) || 0,
+        descripcion: "Seña / reserva",
+        detalle: `${(lead.proyectos as unknown as { nombre: string } | null)?.nombre ?? ""}${lead.manzana ? ` · Mz. ${lead.manzana}` : ""} · Pago MP ${dataId}`,
+        medioPago: "mercadopago",
+      });
+    }
+
     const lotes = ((lead.lead_lotes ?? []) as unknown as { lotes: { numero: string; superficie_m2: number } | null }[])
       .map((ll) => ll.lotes)
       .filter((l): l is { numero: string; superficie_m2: number } => l !== null)
