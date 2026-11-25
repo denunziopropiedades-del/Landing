@@ -199,7 +199,7 @@ export default function ArcaFacturasManager({
       }
       if (r.ok) {
         setForm(null);
-        setMensaje({ ok: true, txt: emitir ? "Comprobante autorizado por ARCA. En producción se le envía solo por mail; en pruebas, solo si tocás "Enviar"." : "Borrador guardado." });
+        setMensaje({ ok: true, txt: emitir ? "Comprobante autorizado por ARCA. En producción se le envía solo por mail; en pruebas, solo si tocás Enviar." : "Borrador guardado." });
       } else setMensaje({ ok: false, txt: (r as { error: string }).error });
     });
   }
