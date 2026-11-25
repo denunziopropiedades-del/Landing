@@ -282,6 +282,119 @@ function FilaCuota({ cuota, honorario, faltaDespues }: { cuota: Cuota; honorario
   );
 }
 
+/** Marcar varias cuotas como pagadas de una sola vez (desde la cuota N hasta la M). */
+function MarcarPorBloque({ cliente }: { cliente: ClienteCobranzas }) {
+  const pendientes = cliente.cuotas.filter((c) => !c.pagada).sort((a, b) => a.numero - b.numero);
+  const [abierto, setAbierto] = useState(false);
+  const [desde, setDesde] = useState(String(pendientes[0]?.numero ?? ""));
+  const [hasta, setHasta] = useState(String(pendientes[0]?.numero ?? ""));
+  const [fecha, setFecha] = useState(hoyIso());
+  const [medio, setMedio] = useState<MedioPago | "">("transferencia");
+  const [progreso, setProgreso] = useState("");
+  const [pend, start] = useTransition();
+  if (!pendientes.length) return null;
+
+  const d = Number(desde);
+  const h = Number(hasta);
+  const elegidas = pendientes.filter((c) => c.numero >= d && c.numero <= h);
+  const total = elegidas.reduce((t, c) => t + c.montoUsd, 0);
+
+  const marcar = () => {
+    if (!elegidas.length) return;
+    if (!confirm(`Vas a marcar como pagadas ${elegidas.length} cuota${elegidas.length === 1 ? "" : "s"} (de la ${d} a la ${h}), con fecha ${formatearFecha(fecha)}. ¿Confirmás?`)) return;
+    start(async () => {
+      let ok = 0;
+      for (const c of elegidas) {
+        setProgreso(`Marcando cuota ${c.numero}… (${ok + 1} de ${elegidas.length})`);
+        const r = await marcarCuotaPagadaAction(c.id, "", fecha, medio || undefined);
+        if (!r.ok) {
+          setProgreso(`Se marcaron ${ok}. Falló la cuota ${c.numero}: ${r.error}`);
+          return;
+        }
+        ok++;
+      }
+      setProgreso(`Listo: ${ok} cuota${ok === 1 ? "" : "s"} marcada${ok === 1 ? "" : "s"} como pagada${ok === 1 ? "" : "s"}.`);
+      setAbierto(false);
+    });
+  };
+
+  return (
+    <div className="border-t border-black/5 px-4 py-3">
+      {!abierto ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setAbierto(true)}
+            className="rounded-full bg-brand-green-700 px-3 py-1.5 text-xs font-semibold text-white"
+          >
+            Marcar pagadas por bloque
+          </button>
+          {progreso && <span className="text-xs text-brand-black/60">{progreso}</span>}
+        </div>
+      ) : (
+        <div className="rounded-xl bg-brand-green-700/5 p-3">
+          <p className="text-xs font-semibold text-brand-black/70">Marcar varias cuotas como pagadas</p>
+          <div className="mt-2 flex flex-wrap items-end gap-2 text-xs">
+            <label className="flex flex-col gap-1">
+              Desde cuota
+              <select value={desde} onChange={(e) => setDesde(e.target.value)} className="rounded-lg border border-black/10 px-2 py-1.5 text-sm">
+                {pendientes.map((c) => (
+                  <option key={c.id} value={c.numero}>
+                    {c.numero}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1">
+              Hasta cuota
+              <select value={hasta} onChange={(e) => setHasta(e.target.value)} className="rounded-lg border border-black/10 px-2 py-1.5 text-sm">
+                {pendientes
+                  .filter((c) => c.numero >= d)
+                  .map((c) => (
+                    <option key={c.id} value={c.numero}>
+                      {c.numero}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1">
+              Fecha de pago
+              <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="rounded-lg border border-black/10 px-2 py-1.5 text-sm" />
+            </label>
+            <label className="flex flex-col gap-1">
+              Medio de pago
+              <select value={medio} onChange={(e) => setMedio(e.target.value as MedioPago | "")} className="rounded-lg border border-black/10 px-2 py-1.5 text-sm">
+                <option value="transferencia">Transferencia</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="mercadopago">Mercado Pago</option>
+                <option value="">Sin especificar</option>
+              </select>
+            </label>
+          </div>
+          <p className="mt-2 text-xs text-brand-black/60">
+            {elegidas.length} cuota{elegidas.length === 1 ? "" : "s"} · total {fmtMoneda(total, cliente.planFinanciacion?.moneda === "ARS" ? "ARS" : "USD")} · cada una por su monto
+            {cliente.honorarioCobranza && cliente.facturarHonorario ? " · se genera la factura del honorario de cada cuota" : ""}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={pend || !elegidas.length}
+              onClick={marcar}
+              className="rounded-full bg-brand-green-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+            >
+              {pend ? "Marcando…" : `Marcar ${elegidas.length} como pagada${elegidas.length === 1 ? "" : "s"}`}
+            </button>
+            <button type="button" disabled={pend} onClick={() => setAbierto(false)} className="rounded-full px-3 py-1.5 text-xs text-brand-black/60">
+              Cancelar
+            </button>
+            {progreso && <span className="text-xs text-brand-black/60">{progreso}</span>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AgregarCuota({ cliente }: { cliente: ClienteCobranzas }) {
   const ultima = cliente.cuotas[cliente.cuotas.length - 1];
   const moneda: MonedaHonorario = cliente.planFinanciacion?.moneda === "ARS" ? "ARS" : "USD";
@@ -552,6 +665,8 @@ function TarjetaCliente({ cliente }: { cliente: ClienteCobranzas }) {
               </div>
             </div>
           )}
+
+          <MarcarPorBloque cliente={cliente} />
 
           {cuotas.length > 0 ? (
             <div className="overflow-x-auto border-t border-black/5">
