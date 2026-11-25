@@ -133,7 +133,7 @@ export default async function MisCuotasPage({ params }: { params: Promise<{ toke
             </div>
 
             {/* Grilla de casilleros: una casilla por cuota */}
-            <div className="mt-3 grid grid-cols-10 gap-1 sm:grid-cols-12">
+            <div className="mt-3 grid grid-cols-10 gap-1 sm:grid-cols-15">
               {Array.from({ length: total }, (_, k) => {
                 const n = k + 1;
                 const c = portal.cuotas.find((x) => x.numero === n);
