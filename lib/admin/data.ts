@@ -538,13 +538,17 @@ export async function getClientesCobranzasAdmin(): Promise<ClienteCobranzas[]> {
 
   // Honorarios de cobranza en una consulta aparte: si todavía no se corrió
   // sql-honorarios-cobranza.sql, Cobranzas sigue funcionando igual (sin honorarios).
-  const honorarios = new Map<string, { monto: number | null; moneda: MonedaHonorario }>();
+  const honorarios = new Map<string, { monto: number | null; moneda: MonedaHonorario; facturar: boolean }>();
   const { data: hon } = await supabase
     .from("leads")
-    .select("id, honorario_cobranza, honorario_cobranza_moneda")
+    .select("id, honorario_cobranza, honorario_cobranza_moneda, facturar_honorario")
     .eq("forma_pago", "financiado");
-  for (const h of (hon ?? []) as { id: string; honorario_cobranza: unknown; honorario_cobranza_moneda: string | null }[]) {
-    honorarios.set(h.id, { monto: numOrNull(h.honorario_cobranza), moneda: h.honorario_cobranza_moneda === "ARS" ? "ARS" : "USD" });
+  for (const h of (hon ?? []) as { id: string; honorario_cobranza: unknown; honorario_cobranza_moneda: string | null; facturar_honorario?: boolean | null }[]) {
+    honorarios.set(h.id, {
+      monto: numOrNull(h.honorario_cobranza),
+      moneda: h.honorario_cobranza_moneda === "ARS" ? "ARS" : "USD",
+      facturar: h.facturar_honorario !== false,
+    });
   }
 
   const tokens = new Map<string, string>();
@@ -612,6 +616,7 @@ export async function getClientesCobranzasAdmin(): Promise<ClienteCobranzas[]> {
         senaPagoConfirmadoEn: l.pago_confirmado_en ?? null,
         honorarioCobranza: honorarios.get(l.id)?.monto ?? null,
         honorarioCobranzaMoneda: honorarios.get(l.id)?.moneda ?? "USD",
+        facturarHonorario: honorarios.get(l.id)?.facturar ?? true,
         linkPortal: linkMisCuotas(tokens.get(l.id)),
         cuotas,
       };

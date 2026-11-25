@@ -2033,11 +2033,11 @@ export async function marcarCuotaPagadaAction(
     try {
       const { data: lh } = await admin
         .from("leads")
-        .select("nombre, apellido, dni, email, telefono, manzana, honorario_cobranza, honorario_cobranza_moneda, plan_financiacion, proyectos(nombre)")
+        .select("nombre, apellido, dni, email, telefono, manzana, honorario_cobranza, honorario_cobranza_moneda, facturar_honorario, plan_financiacion, proyectos(nombre)")
         .eq("id", cuota.lead_id)
         .maybeSingle();
       const honorario = Number(lh?.honorario_cobranza) || 0;
-      if (lh && honorario > 0) {
+      if (lh && honorario > 0 && lh.facturar_honorario !== false) {
         const plan = lh.plan_financiacion as { cuotas?: number } | null;
         const proyecto = (lh.proyectos as unknown as { nombre: string } | null)?.nombre ?? "";
         await registrarCobroFacturable(admin, {
@@ -2623,6 +2623,24 @@ export async function guardarHonorarioCobranzaAction(leadId: string, monto: stri
     await registrarActividad(actor, "actualizar", "lead", leadId, {
       ...(await contextoLead(admin, leadId)),
       honorarioCobranza: valor === null ? "sin honorarios" : `${valor} ${mon} por cuota`,
+    });
+    revalidatePath("/admin/cobranzas");
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/** Facturar o no en ARCA el honorario de cobranza de este cliente (el honorario se sigue registrando igual). */
+export async function guardarFacturarHonorarioAction(leadId: string, facturar: boolean): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador", "supervisor");
+    const admin = (await getSupabaseAdminClient())!;
+    const { error } = await admin.from("leads").update({ facturar_honorario: facturar }).eq("id", leadId);
+    if (error) throw new Error(error.message);
+    await registrarActividad(actor, "actualizar", "lead", leadId, {
+      ...(await contextoLead(admin, leadId)),
+      facturarHonorario: facturar ? "sí" : "no",
     });
     revalidatePath("/admin/cobranzas");
     return { ok: true };

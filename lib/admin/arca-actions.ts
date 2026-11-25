@@ -175,7 +175,7 @@ export async function crearFacturaManualAction(d: DatosFacturaManual, emitir: bo
       refrescar();
       if (!res.ok) return { ok: false, error: `Se guardó como borrador, pero no se pudo emitir: ${res.error}` };
       factura = res.factura;
-      if (factura.receptorEmail) await enviarFacturaPorEmail(a, factura).catch((e) => console.error(e));
+      if (factura.receptorEmail && factura.entorno === "produccion") await enviarFacturaPorEmail(a, factura).catch((e) => console.error(e));
     }
     refrescar();
     return { ok: true, factura };
@@ -192,7 +192,7 @@ export async function emitirFacturaAction(id: string, enviarMail = true): Promis
     refrescar();
     if (!res.ok) return { ok: false, error: res.error };
     await registrarActividad(actor, "actualizar", "arca_factura", id, { emitida: `${res.factura.puntoVenta}-${res.factura.numero}`, cae: res.factura.cae });
-    if (enviarMail && res.factura.receptorEmail) await enviarFacturaPorEmail(a, res.factura).catch((e) => console.error(e));
+    if (enviarMail && res.factura.receptorEmail && res.factura.entorno === "produccion") await enviarFacturaPorEmail(a, res.factura).catch((e) => console.error(e));
     return { ok: true, factura: res.factura };
   } catch (err) {
     return fail(err);

@@ -386,7 +386,8 @@ export async function registrarCobroFacturable(a: SupabaseClient, c: CobroFactur
     }
     if (data && config.emisionAutomatica) {
       const res = await emitirFactura(a, data.id as string, c.actor ?? "sistema");
-      if (res.ok) {
+      // Las facturas de prueba (homologación) no se mandan solas al cliente.
+      if (res.ok && res.factura.entorno === "produccion") {
         const { enviarFacturaPorEmail } = await import("@/lib/arca/envio");
         await enviarFacturaPorEmail(a, res.factura).catch((e) => console.error("No se pudo enviar la factura por mail", e));
       }

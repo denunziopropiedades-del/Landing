@@ -9,6 +9,7 @@ import {
   editarCuotaAction,
   eliminarCuotaAction,
   guardarHonorarioCobranzaAction,
+  guardarFacturarHonorarioAction,
   marcarCuotaPagadaAction,
 } from "@/lib/admin/actions";
 import { formatArs, formatUsd } from "@/lib/utils";
@@ -328,6 +329,7 @@ function HonorariosCobranza({ cliente }: { cliente: ClienteCobranzas }) {
   const [monto, setMonto] = useState(cliente.honorarioCobranza?.toString() ?? "");
   const [moneda, setMoneda] = useState<MonedaHonorario>(cliente.honorarioCobranzaMoneda);
   const [mensaje, setMensaje] = useState("");
+  const [facturar, setFacturar] = useState(cliente.facturarHonorario);
   const [pend, start] = useTransition();
   const cambio = monto !== (cliente.honorarioCobranza?.toString() ?? "") || moneda !== cliente.honorarioCobranzaMoneda;
   const guardar = () =>
@@ -362,6 +364,25 @@ function HonorariosCobranza({ cliente }: { cliente: ClienteCobranzas }) {
         )}
         {mensaje && <span className="text-xs text-brand-black/60">{mensaje}</span>}
       </div>
+      {cliente.honorarioCobranza ? (
+        <label className="mt-2 flex items-center gap-2 text-xs text-brand-black/70">
+          <input
+            type="checkbox"
+            checked={facturar}
+            disabled={pend}
+            onChange={(e) => {
+              const v = e.target.checked;
+              setFacturar(v);
+              start(async () => {
+                const r = await guardarFacturarHonorarioAction(cliente.leadId, v);
+                setMensaje(r.ok ? (v ? "Se va a facturar en ARCA." : "No se factura en ARCA.") : r.error);
+                if (!r.ok) setFacturar(!v);
+              });
+            }}
+          />
+          Facturar este honorario en ARCA {facturar ? "(sí)" : "(no: se registra pero no se emite factura)"}
+        </label>
+      ) : null}
     </div>
   );
 }

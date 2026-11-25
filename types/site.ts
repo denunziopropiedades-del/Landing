@@ -331,6 +331,8 @@ export type ClienteCobranzas = {
   /** Honorarios de gestión de cobranza: monto fijo por cuota que se descuenta de la cuota. */
   honorarioCobranza: number | null;
   honorarioCobranzaMoneda: MonedaHonorario;
+  /** false = el honorario se registra pero no se factura en ARCA. */
+  facturarHonorario: boolean;
   /** Link personal del cliente a "Mis cuotas". */
   linkPortal?: string | null;
   cuotas: Cuota[];
