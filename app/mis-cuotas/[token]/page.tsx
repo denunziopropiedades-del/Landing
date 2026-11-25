@@ -177,7 +177,19 @@ export default async function MisCuotasPage({ params }: { params: Promise<{ toke
                 </p>
                 <p className="mt-1 font-display text-3xl font-bold">{monto(proxima.montoUsd, m)}</p>
                 {portal.honorario && portal.honorario.moneda === m && proxima.montoUsd > portal.honorario.monto && (
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                  <>
+                  <div className="mt-3 flex h-6 overflow-hidden rounded-md text-[11px] font-semibold">
+                    <div
+                      className="flex items-center bg-white/90 pl-2 text-[#0f1b2d]"
+                      style={{ flex: proxima.montoUsd - portal.honorario.monto }}
+                    >
+                      Lote
+                    </div>
+                    <div className="flex min-w-[44px] items-center justify-center bg-[#6cc72f] text-[#173404]" style={{ flex: portal.honorario.monto * 3 }}>
+                      Gestión
+                    </div>
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                     <div className="rounded-lg bg-white/10 px-3 py-2">
                       <p className="text-[11px] text-slate-300">Cuota del lote</p>
                       <p className="font-semibold">{monto(proxima.montoUsd - portal.honorario.monto, m)}</p>
@@ -187,6 +199,7 @@ export default async function MisCuotasPage({ params }: { params: Promise<{ toke
                       <p className="font-semibold">{monto(portal.honorario.monto, m)}</p>
                     </div>
                   </div>
+                  </>
                 )}
               </div>
             )}
@@ -213,17 +226,24 @@ export default async function MisCuotasPage({ params }: { params: Promise<{ toke
               </details>
             )}
 
-            {/* Próximas pendientes */}
-            {pendientes.filter((c) => !proxima || c.numero !== proxima.numero).length > 0 && (
-              <details className="mt-2 rounded-xl bg-slate-50">
-                <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm">
-                  <span className="font-semibold text-slate-800">Cuotas pendientes</span>
-                  <span className="text-xs text-slate-500">ver vencimientos ▾</span>
-                </summary>
-                <ul className="divide-y divide-slate-100 px-4 pb-2">
-                  {pendientes
-                    .filter((c) => !proxima || c.numero !== proxima.numero)
-                    .map((c) => (
+            {/* Pendientes agrupadas por año */}
+            {(() => {
+              const resto = pendientes.filter((c) => !proxima || c.numero !== proxima.numero);
+              const porAnio = new Map<string, typeof resto>();
+              for (const c of resto) {
+                const a = c.vencimiento.slice(0, 4);
+                porAnio.set(a, [...(porAnio.get(a) ?? []), c]);
+              }
+              return [...porAnio.entries()].map(([anio, cs]) => (
+                <details key={anio} className="mt-2 rounded-xl border border-slate-200">
+                  <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm">
+                    <span className="font-semibold text-slate-800">{anio}</span>
+                    <span className="text-xs text-slate-500">
+                      {cs.length} cuota{cs.length === 1 ? "" : "s"} · {monto(cs.reduce((t, c) => t + c.montoUsd, 0), m)} ▾
+                    </span>
+                  </summary>
+                  <ul className="divide-y divide-slate-100 px-4 pb-2">
+                    {cs.map((c) => (
                       <li key={c.numero} className="flex justify-between py-2 text-sm">
                         <span className={c.vencimiento < hoy ? "font-semibold text-red-700" : "text-slate-700"}>Cuota {c.numero}</span>
                         <span className="text-slate-500">
@@ -231,9 +251,10 @@ export default async function MisCuotasPage({ params }: { params: Promise<{ toke
                         </span>
                       </li>
                     ))}
-                </ul>
-              </details>
-            )}
+                  </ul>
+                </details>
+              ));
+            })()}
           </section>
         )}
 
