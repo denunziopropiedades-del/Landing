@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { getProyectos } from "@/lib/content";
 import { getPropiedades } from "@/lib/propiedades";
 import { PARTIDOS, ZONAS } from "@/lib/zonas";
+import { NOTAS } from "@/lib/notas";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://matulotes.app";
 
@@ -21,7 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.9,
     },
-    ...["/comprar", "/alquilar", "/campos", "/zonas", "/tasador", "/tasaciones", "/propietarios", "/visitas", "/postulantes", "/quienes-somos"].map((ruta) => ({
+    ...["/comprar", "/alquilar", "/campos", "/zonas", "/tasador", "/tasaciones", "/propietarios", "/visitas", "/postulantes", "/quienes-somos", "/notas"].map((ruta) => ({
       url: `${SITE_URL}${ruta}`,
       lastModified: new Date(),
       changeFrequency: "daily" as const,
@@ -38,6 +39,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "daily" as const,
       priority: 0.85,
+    })),
+    ...NOTAS.map((n) => ({
+      url: `${SITE_URL}/notas/${n.slug}`,
+      lastModified: new Date(n.fecha),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
     })),
     ...propiedades.map((p) => ({
       url: `${SITE_URL}/propiedades/${p.slug}`,

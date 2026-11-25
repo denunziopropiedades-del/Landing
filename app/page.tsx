@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, ClipboardCheck, KeyRound, LayoutGrid, Scale, Wheat } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -17,6 +18,11 @@ import { getPuntosMapa } from "@/lib/mapa";
 import MapaPuntos from "@/components/mapa/MapaPuntos";
 
 export const revalidate = 60;
+
+// La portada declara su URL canónica para que Google no la duplique con otros dominios (ej. *.vercel.app).
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 const IMAGEN_HERO = "https://images.unsplash.com/photo-1758518730083-4c12527b6742?q=80&w=2400&auto=format&fit=crop";
 

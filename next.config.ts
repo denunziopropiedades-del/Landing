@@ -14,6 +14,14 @@ const nextConfig: NextConfig = {
     return [
       { source: "/proyectos", destination: "/desarrollos", permanent: true },
       { source: "/proyectos/:slug", destination: "/desarrollos/:slug", permanent: true },
+      // SEO: el dominio viejo de Vercel redirige al dominio propio para que Google no vea dos sitios iguales.
+      // Se excluye /api para no romper crons ni webhooks (Mercado Pago, etc.) configurados con esa URL.
+      {
+        source: "/:path((?!api/).*)",
+        has: [{ type: "host", value: "landing-mu-one-22.vercel.app" }],
+        destination: "https://matulotes.app/:path",
+        permanent: true,
+      },
     ];
   },
   // Panel de inscripciones de la preventa (página estática en public/preventa/panel.html, con clave propia).
