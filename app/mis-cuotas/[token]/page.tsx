@@ -114,26 +114,11 @@ export default async function MisCuotasPage({ params }: { params: Promise<{ toke
           </section>
         )}
 
-        {proxima ? (
-          <section className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase text-amber-800">Próxima cuota</p>
-            <p className="mt-1 font-display text-2xl font-bold text-slate-900">{monto(proxima.montoUsd, m)}</p>
-            <p className="text-sm text-slate-700">
-              Cuota {proxima.numero} de {total} · vence el <b>{fecha(proxima.vencimiento)}</b>
-              {(() => {
-                const d = dias(hoy, proxima.vencimiento);
-                return d === 0 ? " (hoy)" : d === 1 ? " (mañana)" : ` (en ${d} días)`;
-              })()}
-            </p>
+        {pendientes.length === 0 && portal.cuotas.length > 0 && (
+          <section className="rounded-2xl bg-emerald-600 p-5 text-center text-white shadow-sm">
+            <p className="text-lg font-bold">¡Plan terminado!</p>
+            <p className="text-sm">Abonaste todas las cuotas de tu plan.</p>
           </section>
-        ) : (
-          pendientes.length === 0 &&
-          portal.cuotas.length > 0 && (
-            <section className="rounded-2xl bg-emerald-600 p-5 text-center text-white shadow-sm">
-              <p className="text-lg font-bold">¡Plan terminado!</p>
-              <p className="text-sm">Abonaste todas las cuotas de tu plan.</p>
-            </section>
-          )
         )}
 
         {portal.cuotas.length === 0 ? (
@@ -141,38 +126,114 @@ export default async function MisCuotasPage({ params }: { params: Promise<{ toke
             Todavía no se generaron tus cuotas. Te avisamos cuando estén listas.
           </p>
         ) : (
-          <section className="rounded-2xl bg-white p-2 shadow-sm">
-            <p className="px-3 pt-3 text-sm font-bold text-slate-900">Detalle de cuotas</p>
-            <ul className="divide-y divide-slate-100">
-              {portal.cuotas.map((c) => {
-                const vencida = !c.pagada && c.vencimiento < hoy;
+          <section className="rounded-2xl bg-white p-5 shadow-sm">
+            <div className="flex items-baseline justify-between">
+              <p className="text-base font-bold text-slate-900">Tu plan de {total} cuotas</p>
+              <p className="text-xs text-slate-500">{pct}% pago</p>
+            </div>
+
+            {/* Grilla de casilleros: una casilla por cuota */}
+            <div className="mt-3 grid grid-cols-10 gap-1 sm:grid-cols-12">
+              {Array.from({ length: total }, (_, k) => {
+                const n = k + 1;
+                const c = portal.cuotas.find((x) => x.numero === n);
+                const vencida = !!c && !c.pagada && c.vencimiento < hoy;
+                const esProxima = !!proxima && proxima.numero === n;
+                const clase = c?.pagada
+                  ? "bg-[#6cc72f] text-[#173404]"
+                  : vencida
+                    ? "bg-red-500 text-white"
+                    : esProxima
+                      ? "bg-amber-400 font-bold text-amber-950"
+                      : "bg-slate-200 text-slate-400";
+                const titulo = c
+                  ? c.pagada
+                    ? `Cuota ${n}: pagada el ${fecha(c.pagadoEn)}`
+                    : `Cuota ${n}: vence el ${fecha(c.vencimiento)}`
+                  : `Cuota ${n}`;
                 return (
-                  <li key={c.numero} className="flex items-center justify-between gap-3 px-3 py-2.5 text-sm">
-                    <div>
-                      <p className="font-medium text-slate-900">
-                        Cuota {c.numero} · {monto(c.pagada ? c.montoPagadoUsd ?? c.montoUsd : c.montoUsd, m)}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {c.pagada ? `Pagada el ${fecha(c.pagadoEn)}` : `Vence el ${fecha(c.vencimiento)}`}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        c.pagada
-                          ? "bg-emerald-100 text-emerald-800"
-                          : vencida
-                            ? "bg-red-100 text-red-800"
-                            : proxima && c.numero === proxima.numero
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {c.pagada ? "Pagada" : vencida ? "Vencida" : proxima && c.numero === proxima.numero ? "Próxima" : "Pendiente"}
-                    </span>
-                  </li>
+                  <div key={n} title={titulo} className={`flex aspect-square items-center justify-center rounded text-[10px] ${clase}`}>
+                    {n}
+                  </div>
                 );
               })}
-            </ul>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-slate-500">
+              <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-[#6cc72f]" /> Pagada</span>
+              <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-amber-400" /> Próxima</span>
+              {vencidas.length > 0 && <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-red-500" /> Vencida</span>}
+              <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-slate-200" /> Pendiente</span>
+            </div>
+
+            {/* Próxima cuota con desglose */}
+            {proxima && (
+              <div className="mt-4 rounded-xl bg-[#0f1b2d] p-4 text-white">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-[#6cc72f]">
+                  Cuota {proxima.numero} · vence el {fecha(proxima.vencimiento)}
+                  {(() => {
+                    const d = dias(hoy, proxima.vencimiento);
+                    return d === 0 ? " (hoy)" : d === 1 ? " (mañana)" : ` (en ${d} días)`;
+                  })()}
+                </p>
+                <p className="mt-1 font-display text-3xl font-bold">{monto(proxima.montoUsd, m)}</p>
+                {portal.honorario && portal.honorario.moneda === m && proxima.montoUsd > portal.honorario.monto && (
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                    <div className="rounded-lg bg-white/10 px-3 py-2">
+                      <p className="text-[11px] text-slate-300">Cuota del lote</p>
+                      <p className="font-semibold">{monto(proxima.montoUsd - portal.honorario.monto, m)}</p>
+                    </div>
+                    <div className="rounded-lg bg-white/10 px-3 py-2">
+                      <p className="text-[11px] text-slate-300">Gestión de cobranza</p>
+                      <p className="font-semibold">{monto(portal.honorario.monto, m)}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Cuotas pagadas agrupadas (desplegable) */}
+            {pagadas.length > 0 && (
+              <details className="mt-4 rounded-xl bg-emerald-50">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm">
+                  <span className="font-semibold text-emerald-900">
+                    {pagadas.length} cuota{pagadas.length === 1 ? "" : "s"} pagada{pagadas.length === 1 ? "" : "s"}
+                  </span>
+                  <span className="text-xs text-emerald-800">{monto(totalPagado, m)} · ver detalle ▾</span>
+                </summary>
+                <ul className="divide-y divide-emerald-100 px-4 pb-2">
+                  {pagadas.map((c) => (
+                    <li key={c.numero} className="flex justify-between py-2 text-sm">
+                      <span className="text-slate-700">Cuota {c.numero}</span>
+                      <span className="text-slate-500">
+                        {monto(c.montoPagadoUsd ?? c.montoUsd, m)} · {fecha(c.pagadoEn)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+
+            {/* Próximas pendientes */}
+            {pendientes.filter((c) => !proxima || c.numero !== proxima.numero).length > 0 && (
+              <details className="mt-2 rounded-xl bg-slate-50">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm">
+                  <span className="font-semibold text-slate-800">Cuotas pendientes</span>
+                  <span className="text-xs text-slate-500">ver vencimientos ▾</span>
+                </summary>
+                <ul className="divide-y divide-slate-100 px-4 pb-2">
+                  {pendientes
+                    .filter((c) => !proxima || c.numero !== proxima.numero)
+                    .map((c) => (
+                      <li key={c.numero} className="flex justify-between py-2 text-sm">
+                        <span className={c.vencimiento < hoy ? "font-semibold text-red-700" : "text-slate-700"}>Cuota {c.numero}</span>
+                        <span className="text-slate-500">
+                          {monto(c.montoUsd, m)} · {c.vencimiento < hoy ? "vencida el" : "vence el"} {fecha(c.vencimiento)}
+                        </span>
+                      </li>
+                    ))}
+                </ul>
+              </details>
+            )}
           </section>
         )}
 

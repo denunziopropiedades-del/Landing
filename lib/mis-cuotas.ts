@@ -25,6 +25,8 @@ export type PortalCuotas = {
   moneda: "USD" | "ARS";
   totalCuotas: number;
   anticipoUsd: number | null;
+  /** Honorario de gestión de cobranza incluido en cada cuota (para mostrar el desglose). */
+  honorario: { monto: number; moneda: "USD" | "ARS" } | null;
   cuotas: CuotaPortal[];
 };
 
@@ -42,6 +44,10 @@ export async function cargarPortalCuotas(admin: SupabaseClient, token: string): 
     .eq("portal_token", token)
     .maybeSingle();
   if (!l) return null;
+
+  // Honorario aparte: si la columna no existe, el portal sigue funcionando sin desglose.
+  const { data: hon } = await admin.from("leads").select("honorario_cobranza, honorario_cobranza_moneda").eq("id", l.id).maybeSingle();
+  const montoHon = Number(hon?.honorario_cobranza) || 0;
 
   const { data: cs } = await admin
     .from("cuotas")
@@ -77,6 +83,7 @@ export async function cargarPortalCuotas(admin: SupabaseClient, token: string): 
     moneda: plan?.moneda === "ARS" ? "ARS" : "USD",
     totalCuotas: Math.max(plan?.cuotas ?? 0, cuotas.length),
     anticipoUsd: plan?.anticipoUsd ?? null,
+    honorario: montoHon > 0 ? { monto: montoHon, moneda: hon?.honorario_cobranza_moneda === "ARS" ? "ARS" : "USD" } : null,
     cuotas,
   };
 }
