@@ -39,6 +39,7 @@ const nextConfig: NextConfig = {
     "/api/admin/cobranzas/[leadId]/pagares": ["./node_modules/pdfkit/js/data/**/*"],
     "/api/admin/arca/facturas/[id]/pdf": ["./node_modules/pdfkit/js/data/**/*"],
     "/api/factura/[token]": ["./node_modules/pdfkit/js/data/**/*"],
+    "/api/mis-cuotas/[token]/recibo/[numero]": ["./node_modules/pdfkit/js/data/**/*"],
     "/admin/arca": ["./node_modules/pdfkit/js/data/**/*"],
     "/admin/cobranzas": ["./node_modules/pdfkit/js/data/**/*"],
     "/admin/documentos-clientes": ["./node_modules/pdfkit/js/data/**/*"],

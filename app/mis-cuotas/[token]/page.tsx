@@ -217,8 +217,15 @@ export default async function MisCuotasPage({ params }: { params: Promise<{ toke
                   {pagadas.map((c) => (
                     <li key={c.numero} className="flex justify-between py-2 text-sm">
                       <span className="text-slate-700">Cuota {c.numero}</span>
-                      <span className="text-slate-500">
+                      <span className="flex items-center gap-3 text-slate-500">
                         {monto(c.montoPagadoUsd ?? c.montoUsd, m)} · {fecha(c.pagadoEn)}
+                        <a
+                          href={`/api/mis-cuotas/${token}/recibo/${c.numero}`}
+                          target="_blank"
+                          className="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-[#2f7d16] ring-1 ring-emerald-200"
+                        >
+                          Recibo
+                        </a>
                       </span>
                     </li>
                   ))}
