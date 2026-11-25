@@ -20,6 +20,7 @@ export default function Footer({ textos }: { textos: SiteTextos }) {
             ["/propietarios", "Alquilá o vendé tu propiedad"],
             ["/visitas", "Agendar visita"],
             ["/postulantes", "Trabajá con nosotros"],
+            ["/notas", "Notas y guías"],
           ].map(([href, label]) => (
             <Link key={href} href={href} className="hover:text-white">
               {label}
