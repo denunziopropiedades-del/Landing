@@ -110,3 +110,7 @@ alter table mensajes_canales add column if not exists pin text, add column if no
 
 -- Canales de demostración (número de prueba de Meta) para el usuario "revisor"
 alter table mensajes_canales add column if not exists demo boolean not null default false;
+
+-- Ingreso con nombre de usuario (además del email)
+alter table perfiles add column if not exists usuario text;
+create unique index if not exists perfiles_usuario_key on perfiles (usuario) where usuario is not null;

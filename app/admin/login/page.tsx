@@ -22,10 +22,12 @@ export default function AdminLoginPage() {
 
         <form action={formAction} className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-white/80">Email</label>
+            <label className="mb-1.5 block text-sm font-medium text-white/80">Email o usuario</label>
             <input
-              type="email"
+              type="text"
               name="email"
+              autoComplete="username"
+              autoCapitalize="none"
               required
               className="w-full rounded-lg border border-white/15 bg-brand-black px-4 py-2.5 text-white focus:border-brand-gold-400 focus:outline-none"
             />
