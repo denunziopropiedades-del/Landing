@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Smartphone } from "lucide-react";
-import { conectarWhatsappAction, type NumeroConectado } from "@/lib/admin/whatsapp-conexion-actions";
+import { CheckCircle2, Smartphone, RefreshCw } from "lucide-react";
+import { conectarWhatsappAction, activarNumeroAction, type NumeroConectado } from "@/lib/admin/whatsapp-conexion-actions";
 
 declare global {
   interface Window {
@@ -37,7 +37,8 @@ export default function ConectarWhatsapp({
   const [estado, setEstado] = useState<{ msg: string; tipo: "" | "ok" | "err" }>({ msg: "", tipo: "" });
   const [cargando, setCargando] = useState(false);
   const [sdkListo, setSdkListo] = useState(false);
-  const sesion = useRef<{ wabaId?: string; phoneNumberId?: string; code?: string }>({});
+  const sesion = useRef<{ wabaId?: string; phoneNumberId?: string; code?: string; coexistencia?: boolean }>({});
+  const [revisando, setRevisando] = useState<string | null>(null);
 
   useEffect(() => {
     if (window.FB) {
@@ -57,20 +58,32 @@ export default function ConectarWhatsapp({
   }, [appId]);
 
   const terminar = async () => {
-    const { code, wabaId, phoneNumberId } = sesion.current;
+    const { code, wabaId, phoneNumberId, coexistencia } = sesion.current;
     if (!code || !wabaId || !phoneNumberId) return;
     sesion.current = {};
     setEstado({ msg: "Conectando el número con el panel…", tipo: "" });
-    const r = await conectarWhatsappAction({ code, wabaId, phoneNumberId });
+    const r = await conectarWhatsappAction({ code, wabaId, phoneNumberId, coexistencia });
     setCargando(false);
     if (!r.ok) {
       setEstado({ msg: r.error, tipo: "err" });
       return;
     }
-    setEstado({ msg: `Listo: el ${numeroLindo(r.numero)} quedó conectado. Ya podés recibir y responder desde acá.`, tipo: "ok" });
+    if (r.aviso) {
+      setEstado({ msg: `El ${numeroLindo(r.numero)} quedó guardado, pero Meta no lo activó todavía: ${r.aviso}`, tipo: "err" });
+    } else {
+      setEstado({ msg: `Listo: el ${numeroLindo(r.numero)} quedó conectado. Ya podés recibir y responder desde acá.`, tipo: "ok" });
+    }
     setLista((prev) => [
       ...prev.filter((x) => x.numero !== r.numero),
-      { id: phoneNumberId, numero: r.numero, nombre: "", conectadoEn: new Date().toISOString(), tokenVence: null },
+      {
+        id: phoneNumberId,
+        numero: r.numero,
+        nombre: "",
+        conectadoEn: new Date().toISOString(),
+        tokenVence: null,
+        coexistencia: coexistencia ?? null,
+        registrado: !r.aviso,
+      },
     ]);
   };
 
@@ -86,6 +99,7 @@ export default function ConectarWhatsapp({
       }
       if (d?.type !== "WA_EMBEDDED_SIGNUP") return;
       if (d.event?.startsWith("FINISH")) {
+        sesion.current.coexistencia = d.event === "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING";
         sesion.current.wabaId = d.data?.waba_id;
         sesion.current.phoneNumberId = d.data?.phone_number_id;
         terminar();
@@ -100,6 +114,24 @@ export default function ConectarWhatsapp({
     window.addEventListener("message", oir);
     return () => window.removeEventListener("message", oir);
   });
+
+  const revisar = async (n: NumeroConectado) => {
+    setRevisando(n.id);
+    setEstado({ msg: `Consultando a Meta el estado del ${numeroLindo(n.numero)}…`, tipo: "" });
+    const r = await activarNumeroAction(n.id);
+    setRevisando(null);
+    if (!r.ok) {
+      setEstado({ msg: `Meta respondió sobre el ${numeroLindo(n.numero)}: ${r.error}`, tipo: "err" });
+      return;
+    }
+    const e = r.estado;
+    const activo = e.status === "CONNECTED" || e.plataforma === "CLOUD_API";
+    setLista((prev) => prev.map((x) => (x.id === n.id ? { ...x, registrado: activo } : x)));
+    setEstado({
+      msg: `${r.activado ? "Activé el número. " : ""}Estado en Meta: ${e.status ?? "?"} · verificación ${e.verificacion ?? "?"} · nombre ${e.nombreAprobado ?? "?"} · plataforma ${e.plataforma ?? "?"}.`,
+      tipo: activo ? "ok" : "err",
+    });
+  };
 
   const conectar = () => {
     if (!window.FB) return;
@@ -149,6 +181,16 @@ export default function ConectarWhatsapp({
             <li key={n.id} className="flex items-center gap-1.5 rounded-full bg-[#e9f9ef] px-3 py-1 text-xs font-semibold text-[#128c4a]">
               <CheckCircle2 className="h-3.5 w-3.5" />
               {numeroLindo(n.numero) || n.nombre}
+              {!n.coexistencia && !n.registrado && <span className="ml-1 text-amber-700">· sin activar</span>}
+              <button
+                onClick={() => revisar(n)}
+                disabled={revisando !== null}
+                title="Revisar estado y activar en WhatsApp"
+                className="ml-1 flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[11px] text-[#128c4a] ring-1 ring-[#128c4a]/30 disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3 w-3 ${revisando === n.id ? "animate-spin" : ""}`} />
+                {!n.coexistencia && !n.registrado ? "Activar" : "Estado"}
+              </button>
               {n.tokenVence && new Date(n.tokenVence).getTime() - Date.now() < 10 * 86400000 && (
                 <span className="ml-1 text-amber-700">· reconectar antes del {new Date(n.tokenVence).toLocaleDateString("es-AR")}</span>
               )}
