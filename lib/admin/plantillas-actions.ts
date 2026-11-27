@@ -55,14 +55,52 @@ async function puedeVer() {
   return !!p && ["administrador", "supervisor"].includes(p.rol);
 }
 
-/** Cuentas de WhatsApp Business del negocio, con sus números. */
+/** Identificadores de cuentas de WhatsApp conocidas (por si la API del negocio no las lista). */
+const WABAS_CONOCIDAS = (process.env.WHATSAPP_WABA_IDS || "1406307224250365,1631901291821979,2521041188381315")
+  .split(",")
+  .map((x) => x.trim())
+  .filter((x) => /^\d+$/.test(x));
+
+type WabaApi = {
+  id: string;
+  name?: string;
+  phone_numbers?: { data?: { id: string; display_phone_number?: string; verified_name?: string }[] };
+};
+const CAMPOS = "id,name,phone_numbers{id,display_phone_number,verified_name}";
+
+/**
+ * Cuentas de WhatsApp Business a las que tiene acceso el token, con sus números.
+ * Busca las propias del negocio, las compartidas con él y, si no aparece ninguna,
+ * las conocidas por identificador (las que tiene asignadas el usuario del sistema).
+ */
 export async function getCuentasWhatsapp(): Promise<{ cuentas: CuentaWa[]; error: string | null }> {
   if (!(await puedeVer())) return { cuentas: [], error: null };
-  try {
-    const r = await meta<{
-      data?: { id: string; name?: string; phone_numbers?: { data?: { id: string; display_phone_number?: string; verified_name?: string }[] } }[];
-    }>(`${BUSINESS_ID}/owned_whatsapp_business_accounts?fields=id,name,phone_numbers{id,display_phone_number,verified_name}`);
-    const cuentas = (r.data ?? []).map((c) => ({
+  if (!process.env.WHATSAPP_TOKEN) {
+    return { cuentas: [], error: "Falta cargar WHATSAPP_TOKEN en Vercel (token permanente del usuario del sistema)." };
+  }
+  const encontradas = new Map<string, WabaApi>();
+  let ultimoError: string | null = null;
+
+  for (const edge of ["owned_whatsapp_business_accounts", "client_whatsapp_business_accounts"]) {
+    try {
+      const r = await meta<{ data?: WabaApi[] }>(`${BUSINESS_ID}/${edge}?fields=${CAMPOS}&limit=50`);
+      for (const c of r.data ?? []) encontradas.set(c.id, c);
+    } catch (err) {
+      ultimoError = fail(err).error;
+    }
+  }
+  for (const id of WABAS_CONOCIDAS) {
+    if (encontradas.has(id)) continue;
+    try {
+      const c = await meta<WabaApi>(`${id}?fields=${CAMPOS}`);
+      if (c?.id) encontradas.set(c.id, c);
+    } catch (err) {
+      ultimoError = fail(err).error;
+    }
+  }
+
+  const cuentas = [...encontradas.values()]
+    .map((c) => ({
       id: c.id,
       nombre: c.name ?? "Cuenta de WhatsApp",
       numeros: (c.phone_numbers?.data ?? []).map((n) => ({
@@ -70,11 +108,9 @@ export async function getCuentasWhatsapp(): Promise<{ cuentas: CuentaWa[]; error
         numero: n.display_phone_number ?? "",
         nombre: n.verified_name ?? "",
       })),
-    }));
-    return { cuentas, error: null };
-  } catch (err) {
-    return { cuentas: [], error: fail(err).error };
-  }
+    }))
+    .sort((a, b) => b.numeros.length - a.numeros.length);
+  return { cuentas, error: cuentas.length ? null : ultimoError };
 }
 
 export async function getPlantillas(wabaId: string): Promise<{ plantillas: Plantilla[]; error: string | null }> {

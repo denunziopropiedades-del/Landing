@@ -18,7 +18,7 @@ export default async function AdminPlantillasPage() {
       </p>
       {error && <p className="mt-4 rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">{error}</p>}
       {!error && cuentas.length === 0 && (
-        <p className="mt-4 rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">No encontré cuentas de WhatsApp en el negocio.</p>
+        <p className="mt-4 rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">No encontré cuentas de WhatsApp con acceso para este token. Revisá que el usuario del sistema tenga asignada la cuenta de WhatsApp.</p>
       )}
       {cuentas.length > 0 && (
         <div className="mt-6">
