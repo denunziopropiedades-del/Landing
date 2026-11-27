@@ -19,7 +19,7 @@ export default async function AdminMensajesPage() {
   return (
     <div>
       <h1 className="font-display text-2xl font-bold text-brand-black">Mensajes</h1>
-      <p className="mt-1 text-sm text-brand-black/60">WhatsApp y Messenger en un solo lugar. Cada conversación queda unida a la ficha del cliente.</p>
+      <p className="mt-1 text-sm text-brand-black/60">WhatsApp, Messenger e Instagram en un solo lugar. Cada conversación queda unida a la ficha del cliente.</p>
 
       {faltaTabla && (
         <p className="mt-4 rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">

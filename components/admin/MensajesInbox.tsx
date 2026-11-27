@@ -30,7 +30,7 @@ const ESTADOS: Record<string, { label: string; cls: string }> = {
   descartado: { label: "Descartado", cls: "bg-red-100 text-red-800" },
 };
 
-type Filtro = "todos" | "sin_responder" | "whatsapp" | "messenger" | "archivadas";
+type Filtro = "todos" | "sin_responder" | "whatsapp" | "messenger" | "instagram" | "archivadas";
 
 const VENTANA_MS = 24 * 60 * 60 * 1000;
 
@@ -63,12 +63,20 @@ function numeroLindo(n: string | null | undefined) {
   return d.length === 10 ? `${d.slice(0, 2)}-${d.slice(2, 6)}-${d.slice(6)}` : n;
 }
 
+const ESTILO_CANAL = {
+  whatsapp: { color: "bg-[#25d366]", letra: "W", chip: "bg-[#e9f9ef] text-[#128c4a]", nombre: "WhatsApp" },
+  messenger: { color: "bg-[#0a7cff]", letra: "M", chip: "bg-[#e7f1ff] text-[#0a5fd1]", nombre: "Messenger" },
+  instagram: { color: "bg-[#e1306c]", letra: "I", chip: "bg-[#fdeaf1] text-[#b3164f]", nombre: "Instagram" },
+} as const;
+const estilo = (tipo: string) => ESTILO_CANAL[tipo as keyof typeof ESTILO_CANAL] ?? ESTILO_CANAL.messenger;
+
 function nombreCanal(c: CanalBandeja) {
-  return c.tipo === "whatsapp" ? `WhatsApp ${numeroLindo(c.numero) || c.nombre}` : `Messenger · ${c.nombre}`;
+  if (c.tipo === "whatsapp") return `WhatsApp ${numeroLindo(c.numero) || c.nombre}`;
+  return `${estilo(c.tipo).nombre} · ${c.nombre}`;
 }
 
 function PuntoCanal({ tipo, className = "" }: { tipo: string; className?: string }) {
-  return <span className={`inline-block h-2.5 w-2.5 rounded-full ${tipo === "whatsapp" ? "bg-[#25d366]" : "bg-[#0a7cff]"} ${className}`} />;
+  return <span className={`inline-block h-2.5 w-2.5 rounded-full ${estilo(tipo).color} ${className}`} />;
 }
 
 function Avatar({ c }: { c: ConversacionResumen }) {
@@ -77,10 +85,10 @@ function Avatar({ c }: { c: ConversacionResumen }) {
       {iniciales(c.nombre || c.telefono || "?")}
       <span
         className={`absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white text-[8px] font-black ${
-          c.canal.tipo === "whatsapp" ? "bg-[#25d366]" : "bg-[#0a7cff]"
+          estilo(c.canal.tipo).color
         }`}
       >
-        {c.canal.tipo === "whatsapp" ? "W" : "M"}
+        {estilo(c.canal.tipo).letra}
       </span>
     </div>
   );
@@ -182,6 +190,7 @@ export default function MensajesInbox({
       if (filtro === "sin_responder" && c.noLeidos === 0) return false;
       if (filtro === "whatsapp" && c.canal.tipo !== "whatsapp") return false;
       if (filtro === "messenger" && c.canal.tipo !== "messenger") return false;
+      if (filtro === "instagram" && c.canal.tipo !== "instagram") return false;
       if (canalFiltro && c.canal.id !== canalFiltro) return false;
       if (q && !`${c.nombre} ${c.telefono ?? ""} ${c.etiqueta ?? ""} ${c.ultimoTexto}`.toLowerCase().includes(q)) return false;
       return true;
@@ -235,6 +244,7 @@ export default function MensajesInbox({
     { v: "sin_responder", label: `Sin responder${sinResponder ? ` (${sinResponder})` : ""}` },
     { v: "whatsapp", label: "WhatsApp" },
     { v: "messenger", label: "Messenger" },
+    { v: "instagram", label: "Instagram" },
     { v: "archivadas", label: "Archivadas" },
   ];
 
@@ -309,15 +319,13 @@ export default function MensajesInbox({
                   <div className="mt-1 flex flex-wrap gap-1">
                     {c.etiqueta && <span className="rounded-md bg-brand-gold-100 px-1.5 py-0.5 text-[10.5px] font-bold text-brand-gold-700">{c.etiqueta}</span>}
                     <span className="rounded-md bg-brand-green-50 px-1.5 py-0.5 text-[10.5px] font-bold text-brand-green-600">
-                      {c.canal.tipo === "whatsapp" ? numeroLindo(c.canal.numero) || "WhatsApp" : "Messenger"}
+                      {c.canal.tipo === "whatsapp" ? numeroLindo(c.canal.numero) || "WhatsApp" : estilo(c.canal.tipo).nombre}
                     </span>
                   </div>
                 </div>
                 {c.noLeidos > 0 && (
                   <span
-                    className={`absolute bottom-3 right-3 rounded-full px-1.5 text-[11px] font-extrabold text-white ${
-                      c.canal.tipo === "whatsapp" ? "bg-[#25d366]" : "bg-[#0a7cff]"
-                    }`}
+                    className={`absolute bottom-3 right-3 rounded-full px-1.5 text-[11px] font-extrabold text-white ${estilo(c.canal.tipo).color}`}
                   >
                     {c.noLeidos}
                   </span>
@@ -343,12 +351,10 @@ export default function MensajesInbox({
                 <Avatar c={abierta} />
                 <div className="min-w-0">
                   <b className="block truncate text-[15px] text-brand-black">{abierta.nombre || numeroLindo(abierta.telefono) || "Sin nombre"}</b>
-                  <small className="text-xs text-brand-black/60">{abierta.telefono ? `+${abierta.telefono.replace(/\D/g, "")}` : "Messenger"}</small>
+                  <small className="text-xs text-brand-black/60">{abierta.telefono ? `+${abierta.telefono.replace(/\D/g, "")}` : estilo(abierta.canal.tipo).nombre}</small>
                 </div>
                 <span
-                  className={`ml-auto hidden items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold sm:flex ${
-                    abierta.canal.tipo === "whatsapp" ? "bg-[#e9f9ef] text-[#128c4a]" : "bg-[#e7f1ff] text-[#0a5fd1]"
-                  }`}
+                  className={`ml-auto hidden items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold sm:flex ${estilo(abierta.canal.tipo).chip}`}
                 >
                   <PuntoCanal tipo={abierta.canal.tipo} />
                   Entró por {nombreCanal(abierta.canal)}
@@ -446,11 +452,9 @@ export default function MensajesInbox({
                   className="max-h-40 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm outline-none disabled:opacity-50"
                 />
                 <span
-                  className={`hidden whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold lg:inline ${
-                    abierta.canal.tipo === "whatsapp" ? "bg-[#e9f9ef] text-[#128c4a]" : "bg-[#e7f1ff] text-[#0a5fd1]"
-                  }`}
+                  className={`hidden whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold lg:inline ${estilo(abierta.canal.tipo).chip}`}
                 >
-                  Desde {abierta.canal.tipo === "whatsapp" ? numeroLindo(abierta.canal.numero) || "WhatsApp" : "Messenger"}
+                  Desde {abierta.canal.tipo === "whatsapp" ? numeroLindo(abierta.canal.numero) || "WhatsApp" : estilo(abierta.canal.tipo).nombre}
                 </span>
                 <button
                   onClick={enviar}

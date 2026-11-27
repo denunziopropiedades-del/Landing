@@ -14,7 +14,7 @@ function fail(err: unknown): { ok: false; error: string } {
   return { ok: false, error: "Ocurrió un error inesperado. Intentá nuevamente." };
 }
 
-export type CanalBandeja = { id: string; tipo: "whatsapp" | "messenger"; nombre: string; numero: string | null };
+export type CanalBandeja = { id: string; tipo: "whatsapp" | "messenger" | "instagram"; nombre: string; numero: string | null };
 
 export type ConversacionResumen = {
   id: string;

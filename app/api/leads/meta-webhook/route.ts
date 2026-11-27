@@ -4,7 +4,7 @@ import { enviarEtapaCrm } from "@/lib/meta-capi";
 import crypto from "node:crypto";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
-import { nombreMessenger, registrarMensaje } from "@/lib/mensajeria";
+import { nombreInstagram, nombreMessenger, registrarMensaje } from "@/lib/mensajeria";
 
 export const runtime = "nodejs";
 
@@ -60,7 +60,8 @@ type EventoMessenger = {
 async function procesarMessenger(
   supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseAdminClient>>>,
   pageId: string,
-  ev: EventoMessenger
+  ev: EventoMessenger,
+  red: "messenger" | "instagram" = "messenger"
 ) {
   const m = ev.message;
   if (!m || !pageId) return;
@@ -70,9 +71,9 @@ async function procesarMessenger(
   const adjunto = m.attachments?.[0];
   const tipoAdj = adjunto?.type === "file" ? "document" : adjunto?.type;
   await registrarMensaje(supabase, {
-    canal: { tipo: "messenger", externalId: pageId },
+    canal: { tipo: red, externalId: pageId },
     contactoId: psid,
-    nombre: eco ? null : await nombreMessenger(psid),
+    nombre: eco ? null : red === "instagram" ? await nombreInstagram(psid) : await nombreMessenger(psid),
     direccion: eco ? "saliente" : "entrante",
     tipo: m.text ? "text" : tipoAdj || "otro",
     texto: m.text ?? "",
@@ -102,6 +103,7 @@ export async function POST(request: Request) {
   }
 
   let payload: {
+    object?: string;
     entry?: {
       id?: string;
       changes?: { field?: string; value?: { leadgen_id?: string } }[];
@@ -121,7 +123,7 @@ export async function POST(request: Request) {
     for (const entry of payload.entry ?? []) {
       for (const ev of entry.messaging ?? []) {
         try {
-          await procesarMessenger(supabase, entry.id ?? ev.recipient?.id ?? "", ev);
+          await procesarMessenger(supabase, entry.id ?? ev.recipient?.id ?? "", ev, payload.object === "instagram" ? "instagram" : "messenger");
         } catch (err) {
           console.error("Webhook Messenger: error procesando el mensaje", err);
         }

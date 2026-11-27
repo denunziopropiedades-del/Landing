@@ -21,7 +21,7 @@ export const META_APP_ID = process.env.NEXT_PUBLIC_META_APP_ID || "1548430039854
 export const WA_SIGNUP_CONFIG_ID = process.env.NEXT_PUBLIC_WA_SIGNUP_CONFIG_ID || "2038402450171092";
 const VENTANA_MS = 24 * 60 * 60 * 1000;
 
-export type TipoCanal = "whatsapp" | "messenger";
+export type TipoCanal = "whatsapp" | "messenger" | "instagram";
 
 export type Entrante = {
   canal: { tipo: TipoCanal; externalId: string; numero?: string | null; nombre?: string | null };
@@ -67,7 +67,12 @@ async function canalId(supabase: SupabaseClient, c: Entrante["canal"]): Promise<
   const { data: nuevo, error } = await supabase
     .from("mensajes_canales")
     .upsert(
-      { tipo: c.tipo, external_id: c.externalId, numero: c.numero ?? null, nombre: c.nombre ?? (c.tipo === "messenger" ? "Messenger" : "WhatsApp") },
+      {
+        tipo: c.tipo,
+        external_id: c.externalId,
+        numero: c.numero ?? null,
+        nombre: c.nombre ?? ({ messenger: "Messenger", instagram: "Instagram", whatsapp: "WhatsApp" } as const)[c.tipo],
+      },
       { onConflict: "external_id" }
     )
     .select("id")
@@ -105,11 +110,15 @@ async function vincularLead(
   const canalTxt =
     e.canal.tipo === "whatsapp"
       ? `WhatsApp${e.canal.numero ? ` al ${e.canal.numero}` : ""}`
-      : "Messenger de la página de Facebook";
+      : e.canal.tipo === "instagram"
+        ? "Instagram (mensaje directo)"
+        : "Messenger de la página de Facebook";
   const res = await guardarLeadYContacto(supabase, {
     tipo: "contacto",
-    origen: e.canal.tipo === "whatsapp" ? "whatsapp" : "messenger",
-    nombre: e.nombre?.trim() || (e.canal.tipo === "whatsapp" ? "Consulta por WhatsApp" : "Consulta por Messenger"),
+    origen: e.canal.tipo,
+    nombre:
+      e.nombre?.trim() ||
+      ({ whatsapp: "Consulta por WhatsApp", messenger: "Consulta por Messenger", instagram: "Consulta por Instagram" } as const)[e.canal.tipo],
     email: "",
     telefono: tel.length >= 8 ? telefonoInternacional(tel) : "",
     estado: "nuevo",
@@ -277,4 +286,18 @@ export async function nombreMessenger(psid: string): Promise<string | null> {
 export async function tokenDeCanal(supabase: SupabaseClient, canalId: string): Promise<string | null> {
   const { data } = await supabase.from("mensajes_canales").select("access_token").eq("id", canalId).maybeSingle();
   return (data?.access_token as string | null) || process.env.WHATSAPP_TOKEN || null;
+}
+
+/** Nombre de quien escribe por Instagram (nombre o @usuario), si la página tiene permiso para verlo. */
+export async function nombreInstagram(igsid: string): Promise<string | null> {
+  const token = process.env.META_PAGE_ACCESS_TOKEN;
+  if (!token) return null;
+  try {
+    const res = await fetch(`${GRAPH}/${igsid}?fields=name,username&access_token=${encodeURIComponent(token)}`);
+    if (!res.ok) return null;
+    const j = (await res.json()) as { name?: string; username?: string };
+    return j.name || (j.username ? `@${j.username}` : null);
+  } catch {
+    return null;
+  }
 }
