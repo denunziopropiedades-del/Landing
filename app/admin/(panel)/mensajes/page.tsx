@@ -1,16 +1,20 @@
 import MensajesInbox from "@/components/admin/MensajesInbox";
 import { getPerfilActual } from "@/lib/admin/auth";
 import { getBandeja, getRespuestasRapidas } from "@/lib/admin/mensajes-actions";
+import ConectarWhatsapp from "@/components/admin/ConectarWhatsapp";
+import { getNumerosConectados } from "@/lib/admin/whatsapp-conexion-actions";
+import { META_APP_ID, WA_SIGNUP_CONFIG_ID } from "@/lib/mensajeria";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminMensajesPage() {
-  const [actual, { conversaciones, canales, faltaTabla }, respuestas] = await Promise.all([
+  const [actual, { conversaciones, canales, faltaTabla }, respuestas, conectados] = await Promise.all([
     getPerfilActual(),
     getBandeja(),
     getRespuestasRapidas(),
+    getNumerosConectados(),
   ]);
-  const faltaConfig = !process.env.WHATSAPP_TOKEN || !process.env.META_APP_SECRET;
+  const esAdmin = actual?.rol === "administrador";
 
   return (
     <div>
@@ -22,11 +26,10 @@ export default async function AdminMensajesPage() {
           Falta correr <b>sql-mensajes.sql</b> en Supabase (SQL Editor) para activar la bandeja.
         </p>
       )}
-      {!faltaTabla && faltaConfig && actual?.rol === "administrador" && (
-        <p className="mt-4 rounded-lg bg-amber-100 px-3 py-2 text-sm text-amber-900">
-          Falta conectar WhatsApp: cargá <b>WHATSAPP_TOKEN</b> y <b>META_APP_SECRET</b> en Vercel y configurá el webhook (ver README,
-          sección “Bandeja de mensajes”).
-        </p>
+      {!faltaTabla && esAdmin && (
+        <div className="mt-4">
+          <ConectarWhatsapp appId={META_APP_ID} configId={WA_SIGNUP_CONFIG_ID} conectados={conectados} />
+        </div>
       )}
 
       <div className="mt-5">
