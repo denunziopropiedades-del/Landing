@@ -28,8 +28,7 @@ export async function getNumerosConectados(): Promise<NumeroConectado[]> {
     .from("mensajes_canales")
     .select("id, numero, nombre, conectado_en, token_vence, coexistencia, registrado_en")
     .eq("tipo", "whatsapp")
-    .not("conectado_en", "is", null)
-    .order("conectado_en");
+    .order("creado_en");
   if (error) return [];
   return (data ?? []).map((c) => ({
     id: c.id as string,
@@ -205,5 +204,41 @@ export async function activarNumeroAction(canalId: string): Promise<Resultado<{ 
     if (err instanceof AdminActionError) return { ok: false, error: err.message };
     console.error(err);
     return { ok: false, error: err instanceof Error ? err.message : "Error al consultar el número." };
+  }
+}
+
+/**
+ * Guarda un token de acceso para un número (por ejemplo el número de prueba de Meta,
+ * que no se conecta con el botón). Antes de guardarlo comprueba que sirva para ese número.
+ */
+export async function guardarTokenCanalAction(canalId: string, token: string): Promise<Resultado<{ numero: string }>> {
+  try {
+    const perfil = await requireRole("administrador");
+    const limpio = token.trim();
+    if (!/^EA[A-Za-z0-9]{40,}$/.test(limpio)) throw new AdminActionError("Eso no parece un token de Meta (empieza con EAA…).");
+    const admin = (await getSupabaseAdminClient())!;
+    const { data: canal, error } = await admin.from("mensajes_canales").select("external_id").eq("id", canalId).eq("tipo", "whatsapp").maybeSingle();
+    if (error) throw error;
+    if (!canal) throw new AdminActionError("No encontré ese número.");
+    const pid = canal.external_id as string;
+    const info = (await graph(`${pid}?fields=display_phone_number,verified_name`, limpio)) as { display_phone_number?: string; verified_name?: string };
+    const numero = (info.display_phone_number ?? "").replace(/\D/g, "");
+    const { error: e2 } = await admin
+      .from("mensajes_canales")
+      .update({
+        access_token: limpio,
+        token_vence: null,
+        numero: numero || undefined,
+        conectado_en: new Date().toISOString(),
+      })
+      .eq("id", canalId);
+    if (e2) throw e2;
+    await registrarActividad(perfil, "token_whatsapp", "mensajes_canal", pid, { numero });
+    revalidatePath("/admin/mensajes");
+    return { ok: true, numero };
+  } catch (err) {
+    if (err instanceof AdminActionError) return { ok: false, error: err.message };
+    console.error(err);
+    return { ok: false, error: err instanceof Error ? err.message : "No se pudo guardar el token." };
   }
 }

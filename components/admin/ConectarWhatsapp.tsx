@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Smartphone, RefreshCw } from "lucide-react";
-import { conectarWhatsappAction, activarNumeroAction, type NumeroConectado } from "@/lib/admin/whatsapp-conexion-actions";
+import { conectarWhatsappAction, activarNumeroAction, guardarTokenCanalAction, type NumeroConectado } from "@/lib/admin/whatsapp-conexion-actions";
 
 declare global {
   interface Window {
@@ -39,6 +39,22 @@ export default function ConectarWhatsapp({
   const [sdkListo, setSdkListo] = useState(false);
   const sesion = useRef<{ wabaId?: string; phoneNumberId?: string; code?: string; coexistencia?: boolean }>({});
   const [revisando, setRevisando] = useState<string | null>(null);
+  const [tokenAbierto, setTokenAbierto] = useState(false);
+  const [tokenCanal, setTokenCanal] = useState("");
+  const [tokenTexto, setTokenTexto] = useState("");
+
+  const guardarToken = async () => {
+    if (!tokenCanal || !tokenTexto.trim()) return;
+    setEstado({ msg: "Probando el token con Meta…", tipo: "" });
+    const r = await guardarTokenCanalAction(tokenCanal, tokenTexto);
+    if (!r.ok) {
+      setEstado({ msg: r.error, tipo: "err" });
+      return;
+    }
+    setTokenTexto("");
+    setTokenAbierto(false);
+    setEstado({ msg: `Listo: el ${numeroLindo(r.numero)} ya puede responder desde el panel.`, tipo: "ok" });
+  };
 
   useEffect(() => {
     if (window.FB) {
@@ -197,6 +213,44 @@ export default function ConectarWhatsapp({
             </li>
           ))}
         </ul>
+      )}
+      {lista.length > 0 && (
+        <div className="mt-3">
+          <button onClick={() => setTokenAbierto((v) => !v)} className="text-xs font-semibold text-brand-black/60 underline">
+            {tokenAbierto ? "Cerrar" : "Cargar token de un número (número de prueba de Meta)"}
+          </button>
+          {tokenAbierto && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <select
+                value={tokenCanal}
+                onChange={(e) => setTokenCanal(e.target.value)}
+                className="rounded-lg border border-black/10 px-2 py-1.5 text-sm"
+              >
+                <option value="">Elegí el número</option>
+                {lista.map((n) => (
+                  <option key={n.id} value={n.id}>
+                    {numeroLindo(n.numero) || n.nombre}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="password"
+                autoComplete="off"
+                value={tokenTexto}
+                onChange={(e) => setTokenTexto(e.target.value)}
+                placeholder="Pegá el token (EAA…)"
+                className="min-w-[220px] flex-1 rounded-lg border border-black/10 px-2 py-1.5 text-sm"
+              />
+              <button
+                onClick={guardarToken}
+                disabled={!tokenCanal || !tokenTexto.trim()}
+                className="rounded-lg bg-brand-black px-3 py-1.5 text-sm font-bold text-white disabled:opacity-40"
+              >
+                Guardar
+              </button>
+            </div>
+          )}
+        </div>
       )}
       {estado.msg && (
         <p
