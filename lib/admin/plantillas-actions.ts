@@ -35,8 +35,8 @@ function fail(err: unknown): { ok: false; error: string } {
   return { ok: false, error: err instanceof Error ? err.message : "Error inesperado." };
 }
 
-async function meta<T = Record<string, unknown>>(path: string, init?: RequestInit): Promise<T> {
-  const token = process.env.WHATSAPP_TOKEN;
+async function meta<T = Record<string, unknown>>(path: string, init?: RequestInit, tokenPropio?: string | null): Promise<T> {
+  const token = tokenPropio || process.env.WHATSAPP_TOKEN;
   if (!token) throw new AdminActionError("Falta cargar WHATSAPP_TOKEN en Vercel (token permanente del usuario del sistema).");
   const res = await fetch(`${GRAPH}/${path}`, {
     ...init,
@@ -46,6 +46,32 @@ async function meta<T = Record<string, unknown>>(path: string, init?: RequestIni
   const json = (await res.json().catch(() => ({}))) as T & { error?: { message?: string; error_user_msg?: string } };
   if (!res.ok) throw new AdminActionError(json.error?.error_user_msg || json.error?.message || "Meta rechazó el pedido.");
   return json;
+}
+
+type CanalToken = { external_id: string; waba_id: string | null; access_token: string };
+
+/** Números conectados desde el panel que tienen su propio token (incluye el número de prueba de Meta). */
+async function canalesConToken(): Promise<CanalToken[]> {
+  const admin = await getSupabaseAdminClient();
+  if (!admin) return [];
+  const { data } = await admin
+    .from("mensajes_canales")
+    .select("external_id, waba_id, access_token")
+    .eq("tipo", "whatsapp")
+    .not("access_token", "is", null);
+  return (data ?? []) as CanalToken[];
+}
+
+/** Token a usar para una cuenta de WhatsApp: el del número conectado, o WHATSAPP_TOKEN. */
+async function tokenDeWaba(wabaId: string): Promise<string | null> {
+  const c = (await canalesConToken()).find((x) => x.waba_id === wabaId);
+  return c?.access_token ?? null;
+}
+
+/** Token a usar para enviar desde un número. */
+async function tokenDeNumero(phoneNumberId: string): Promise<string | null> {
+  const c = (await canalesConToken()).find((x) => x.external_id === phoneNumberId);
+  return c?.access_token ?? null;
 }
 
 const contarVariables = (t: string) => new Set([...t.matchAll(/\{\{(\d+)\}\}/g)].map((m) => m[1])).size;
@@ -75,13 +101,22 @@ const CAMPOS = "id,name,phone_numbers{id,display_phone_number,verified_name}";
  */
 export async function getCuentasWhatsapp(): Promise<{ cuentas: CuentaWa[]; error: string | null }> {
   if (!(await puedeVer())) return { cuentas: [], error: null };
-  if (!process.env.WHATSAPP_TOKEN) {
-    return { cuentas: [], error: "Falta cargar WHATSAPP_TOKEN en Vercel (token permanente del usuario del sistema)." };
-  }
   const encontradas = new Map<string, WabaApi>();
   let ultimoError: string | null = null;
 
-  for (const edge of ["owned_whatsapp_business_accounts", "client_whatsapp_business_accounts"]) {
+  // Cuentas de los números conectados desde el panel, con su propio token.
+  for (const c of await canalesConToken()) {
+    if (!c.waba_id || encontradas.has(c.waba_id)) continue;
+    try {
+      const w = await meta<WabaApi>(`${c.waba_id}?fields=${CAMPOS}`, undefined, c.access_token);
+      if (w?.id) encontradas.set(w.id, w);
+    } catch (err) {
+      ultimoError = fail(err).error;
+    }
+  }
+
+  const conTokenGeneral = process.env.WHATSAPP_TOKEN ? ["owned_whatsapp_business_accounts", "client_whatsapp_business_accounts"] : [];
+  for (const edge of conTokenGeneral) {
     try {
       const r = await meta<{ data?: WabaApi[] }>(`${BUSINESS_ID}/${edge}?fields=${CAMPOS}&limit=50`);
       for (const c of r.data ?? []) encontradas.set(c.id, c);
@@ -89,7 +124,7 @@ export async function getCuentasWhatsapp(): Promise<{ cuentas: CuentaWa[]; error
       ultimoError = fail(err).error;
     }
   }
-  for (const id of WABAS_CONOCIDAS) {
+  for (const id of process.env.WHATSAPP_TOKEN ? WABAS_CONOCIDAS : []) {
     if (encontradas.has(id)) continue;
     try {
       const c = await meta<WabaApi>(`${id}?fields=${CAMPOS}`);
@@ -120,7 +155,7 @@ export async function getPlantillas(wabaId: string): Promise<{ plantillas: Plant
     type Comp = { type: string; text?: string };
     const r = await meta<{
       data?: { id: string; name: string; status: string; category: string; language: string; components?: Comp[]; rejected_reason?: string }[];
-    }>(`${wabaId}/message_templates?fields=id,name,status,category,language,components,rejected_reason&limit=100`);
+    }>(`${wabaId}/message_templates?fields=id,name,status,category,language,components,rejected_reason&limit=100`, undefined, await tokenDeWaba(wabaId));
     const plantillas = (r.data ?? []).map((p) => {
       const cuerpo = p.components?.find((c) => c.type === "BODY")?.text ?? "";
       return {
@@ -176,7 +211,7 @@ export async function crearPlantillaAction(datos: {
     const r = await meta<{ id: string; status: string }>(`${datos.wabaId}/message_templates`, {
       method: "POST",
       body: JSON.stringify({ name: nombre, category: datos.categoria, language: datos.idioma || "es_AR", components }),
-    });
+    }, await tokenDeWaba(datos.wabaId));
     await registrarActividad(perfil, "crear_plantilla_whatsapp", "plantilla", r.id, { nombre, categoria: datos.categoria });
     return { ok: true, id: r.id, estado: r.status };
   } catch (err) {
@@ -221,7 +256,7 @@ export async function enviarPlantillaAction(datos: {
           ...(parametros.length ? { components: [{ type: "body", parameters: parametros }] } : {}),
         },
       }),
-    });
+    }, await tokenDeNumero(datos.phoneNumberId));
 
     let texto = datos.cuerpo;
     datos.variables.forEach((v, i) => (texto = texto.split(`{{${i + 1}}}`).join(v)));
