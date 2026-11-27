@@ -61,7 +61,25 @@ export type FichaLead = {
 
 export type RespuestaRapida = { id: string; titulo: string; texto: string };
 
-const ROLES = ["administrador", "supervisor", "vendedor"] as const;
+const ROLES = ["administrador", "supervisor", "vendedor", "revisor"] as const;
+
+/** Canales de demostración (número de prueba de Meta): lo único que ve el usuario revisor. */
+async function canalesDemo(admin: NonNullable<Awaited<ReturnType<typeof getSupabaseAdminClient>>>): Promise<string[]> {
+  const { data } = await admin.from("mensajes_canales").select("id").eq("demo", true);
+  return (data ?? []).map((c) => c.id as string);
+}
+
+/** Si el usuario es revisor, verifica que la conversación sea de un canal de demostración. */
+async function verificarDemo(
+  admin: NonNullable<Awaited<ReturnType<typeof getSupabaseAdminClient>>>,
+  rol: string,
+  conversacionId: string
+) {
+  if (rol !== "revisor") return;
+  const demo = await canalesDemo(admin);
+  const { data } = await admin.from("conversaciones").select("canal_id").eq("id", conversacionId).maybeSingle();
+  if (!data || !demo.includes(data.canal_id as string)) throw new AdminActionError("No tenés acceso a esta conversación.");
+}
 
 async function staff() {
   const perfil = await getPerfilActual();
@@ -77,18 +95,24 @@ export async function getBandeja(): Promise<{
 }> {
   const vacio = { conversaciones: [], canales: [], faltaTabla: false };
   const admin = await getSupabaseAdminClient();
-  if (!admin || !(await staff())) return vacio;
+  const perfil = await staff();
+  if (!admin || !perfil) return vacio;
+  const soloDemo = perfil.rol === "revisor" ? await canalesDemo(admin) : null;
+  if (soloDemo && !soloDemo.length) return vacio;
 
-  const [{ data: canales, error: errCanales }, { data, error }] = await Promise.all([
-    admin.from("mensajes_canales").select("id, tipo, nombre, numero").eq("activo", true).order("creado_en"),
-    admin
-      .from("conversaciones")
-      .select(
-        "id, nombre, telefono, lead_id, ultimo_texto, ultimo_mensaje_en, ultimo_entrante_en, no_leidos, archivada, canal:mensajes_canales!conversaciones_canal_id_fkey(id, tipo, nombre, numero), lead:leads!conversaciones_lead_id_fkey(estado, proyecto:proyectos!leads_proyecto_id_fkey(nombre))"
-      )
-      .order("ultimo_mensaje_en", { ascending: false, nullsFirst: false })
-      .limit(300),
-  ]);
+  let qCanales = admin.from("mensajes_canales").select("id, tipo, nombre, numero").eq("activo", true).order("creado_en");
+  let qConv = admin
+    .from("conversaciones")
+    .select(
+      "id, nombre, telefono, lead_id, ultimo_texto, ultimo_mensaje_en, ultimo_entrante_en, no_leidos, archivada, canal:mensajes_canales!conversaciones_canal_id_fkey(id, tipo, nombre, numero), lead:leads!conversaciones_lead_id_fkey(estado, proyecto:proyectos!leads_proyecto_id_fkey(nombre))"
+    )
+    .order("ultimo_mensaje_en", { ascending: false, nullsFirst: false })
+    .limit(300);
+  if (soloDemo) {
+    qCanales = qCanales.in("id", soloDemo);
+    qConv = qConv.in("canal_id", soloDemo);
+  }
+  const [{ data: canales, error: errCanales }, { data, error }] = await Promise.all([qCanales, qConv]);
   if (errCanales || error) {
     const msg = (errCanales ?? error)!.message;
     return { ...vacio, faltaTabla: /mensajes_canales|conversaciones|does not exist|schema cache/i.test(msg) };
@@ -138,7 +162,13 @@ export async function getBandeja(): Promise<{
 /** Mensajes de una conversación + ficha del lead. Marca la conversación como leída. */
 export async function getConversacion(id: string): Promise<{ mensajes: MensajeBandeja[]; lead: FichaLead | null }> {
   const admin = await getSupabaseAdminClient();
-  if (!admin || !(await staff())) return { mensajes: [], lead: null };
+  const perfil = await staff();
+  if (!admin || !perfil) return { mensajes: [], lead: null };
+  try {
+    await verificarDemo(admin, perfil.rol, id);
+  } catch {
+    return { mensajes: [], lead: null };
+  }
 
   const [{ data: msgs }, { data: conv }] = await Promise.all([
     admin
@@ -219,6 +249,7 @@ export async function enviarMensajeAction(conversacionId: string, texto: string)
     const limpio = texto.trim().slice(0, 4000);
     if (!limpio) throw new AdminActionError("Escribí un mensaje.");
     const admin = (await getSupabaseAdminClient())!;
+    await verificarDemo(admin, perfil.rol, conversacionId);
 
     const { data: conv, error } = await admin
       .from("conversaciones")
@@ -301,8 +332,9 @@ export async function enviarMensajeAction(conversacionId: string, texto: string)
 
 export async function archivarConversacionAction(id: string, archivada: boolean): Promise<Resultado> {
   try {
-    await requireRole(...ROLES);
+    const perfil = await requireRole(...ROLES);
     const admin = (await getSupabaseAdminClient())!;
+    await verificarDemo(admin, perfil.rol, id);
     const { error } = await admin.from("conversaciones").update({ archivada, no_leidos: 0 }).eq("id", id);
     if (error) throw error;
     return { ok: true };
@@ -349,10 +381,9 @@ export async function borrarRespuestaRapidaAction(id: string): Promise<Resultado
 export async function contarNoLeidos(): Promise<number> {
   const admin = await getSupabaseAdminClient();
   if (!admin) return 0;
-  const { count, error } = await admin
-    .from("conversaciones")
-    .select("id", { count: "exact", head: true })
-    .gt("no_leidos", 0)
-    .eq("archivada", false);
+  const perfil = await getPerfilActual();
+  let q = admin.from("conversaciones").select("id", { count: "exact", head: true }).gt("no_leidos", 0).eq("archivada", false);
+  if (perfil?.rol === "revisor") q = q.in("canal_id", await canalesDemo(admin));
+  const { count, error } = await q;
   return error ? 0 : count ?? 0;
 }

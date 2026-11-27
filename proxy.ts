@@ -32,6 +32,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Usuario revisor (demo para Meta): solo Mensajes y Plantillas.
+  if (user && (user.app_metadata as { rol?: string } | undefined)?.rol === "revisor") {
+    const p = request.nextUrl.pathname;
+    const permitido = isLoginPage || p.startsWith("/admin/mensajes") || p.startsWith("/admin/plantillas");
+    if (!permitido) return NextResponse.redirect(new URL("/admin/mensajes", request.url));
+  }
+
   return response;
 }
 

@@ -48,7 +48,7 @@ async function meta<T = Record<string, unknown>>(path: string, init?: RequestIni
   return json;
 }
 
-type CanalToken = { external_id: string; waba_id: string | null; access_token: string };
+type CanalToken = { external_id: string; waba_id: string | null; access_token: string; demo: boolean | null };
 
 /** Números conectados desde el panel que tienen su propio token (incluye el número de prueba de Meta). */
 async function canalesConToken(): Promise<CanalToken[]> {
@@ -56,7 +56,7 @@ async function canalesConToken(): Promise<CanalToken[]> {
   if (!admin) return [];
   const { data } = await admin
     .from("mensajes_canales")
-    .select("external_id, waba_id, access_token")
+    .select("external_id, waba_id, access_token, demo")
     .eq("tipo", "whatsapp")
     .not("access_token", "is", null);
   return (data ?? []) as CanalToken[];
@@ -78,7 +78,23 @@ const contarVariables = (t: string) => new Set([...t.matchAll(/\{\{(\d+)\}\}/g)]
 
 async function puedeVer() {
   const p = await getPerfilActual();
-  return !!p && ["administrador", "supervisor"].includes(p.rol);
+  return !!p && ["administrador", "supervisor", "revisor"].includes(p.rol);
+}
+
+async function esRevisor() {
+  return (await getPerfilActual())?.rol === "revisor";
+}
+
+/** El revisor solo puede operar sobre la cuenta y el número de demostración. */
+async function verificarDemoWaba(wabaId: string) {
+  if (!(await esRevisor())) return;
+  const ok = (await canalesConToken()).some((c) => c.demo && c.waba_id === wabaId);
+  if (!ok) throw new AdminActionError("No tenés acceso a esta cuenta.");
+}
+async function verificarDemoNumero(phoneNumberId: string) {
+  if (!(await esRevisor())) return;
+  const ok = (await canalesConToken()).some((c) => c.demo && c.external_id === phoneNumberId);
+  if (!ok) throw new AdminActionError("No tenés acceso a este número.");
 }
 
 /** Identificadores de cuentas de WhatsApp conocidas (por si la API del negocio no las lista). */
@@ -104,8 +120,9 @@ export async function getCuentasWhatsapp(): Promise<{ cuentas: CuentaWa[]; error
   const encontradas = new Map<string, WabaApi>();
   let ultimoError: string | null = null;
 
+  const revisor = await esRevisor();
   // Cuentas de los números conectados desde el panel, con su propio token.
-  for (const c of await canalesConToken()) {
+  for (const c of (await canalesConToken()).filter((x) => !revisor || x.demo)) {
     if (!c.waba_id || encontradas.has(c.waba_id)) continue;
     try {
       const w = await meta<WabaApi>(`${c.waba_id}?fields=${CAMPOS}`, undefined, c.access_token);
@@ -115,7 +132,7 @@ export async function getCuentasWhatsapp(): Promise<{ cuentas: CuentaWa[]; error
     }
   }
 
-  const conTokenGeneral = process.env.WHATSAPP_TOKEN ? ["owned_whatsapp_business_accounts", "client_whatsapp_business_accounts"] : [];
+  const conTokenGeneral = process.env.WHATSAPP_TOKEN && !revisor ? ["owned_whatsapp_business_accounts", "client_whatsapp_business_accounts"] : [];
   for (const edge of conTokenGeneral) {
     try {
       const r = await meta<{ data?: WabaApi[] }>(`${BUSINESS_ID}/${edge}?fields=${CAMPOS}&limit=50`);
@@ -124,7 +141,7 @@ export async function getCuentasWhatsapp(): Promise<{ cuentas: CuentaWa[]; error
       ultimoError = fail(err).error;
     }
   }
-  for (const id of process.env.WHATSAPP_TOKEN ? WABAS_CONOCIDAS : []) {
+  for (const id of process.env.WHATSAPP_TOKEN && !revisor ? WABAS_CONOCIDAS : []) {
     if (encontradas.has(id)) continue;
     try {
       const c = await meta<WabaApi>(`${id}?fields=${CAMPOS}`);
@@ -152,6 +169,7 @@ export async function getPlantillas(wabaId: string): Promise<{ plantillas: Plant
   if (!(await puedeVer())) return { plantillas: [], error: null };
   if (!/^\d+$/.test(wabaId)) return { plantillas: [], error: "Cuenta inválida." };
   try {
+    await verificarDemoWaba(wabaId);
     type Comp = { type: string; text?: string };
     const r = await meta<{
       data?: { id: string; name: string; status: string; category: string; language: string; components?: Comp[]; rejected_reason?: string }[];
@@ -187,7 +205,8 @@ export async function crearPlantillaAction(datos: {
   pie?: string;
 }): Promise<Resultado<{ id: string; estado: string }>> {
   try {
-    const perfil = await requireRole("administrador", "supervisor");
+    const perfil = await requireRole("administrador", "supervisor", "revisor");
+    await verificarDemoWaba(datos.wabaId);
     const nombre = datos.nombre
       .normalize("NFD")
       .replace(/[̀-ͯ]/g, "")
@@ -240,7 +259,8 @@ export async function enviarPlantillaAction(datos: {
   variables: string[];
 }): Promise<Resultado> {
   try {
-    const perfil = await requireRole("administrador", "supervisor", "vendedor");
+    const perfil = await requireRole("administrador", "supervisor", "vendedor", "revisor");
+    await verificarDemoNumero(datos.phoneNumberId);
     const para = aWhatsapp(datos.para);
     if (para.length < 11) throw new AdminActionError("Revisá el número de destino.");
     const parametros = datos.variables.map((v) => ({ type: "text", text: v.trim() || "-" }));

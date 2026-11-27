@@ -10,7 +10,7 @@ import {
 } from "@/lib/admin/actions";
 import type { Perfil, Rol } from "@/types/site";
 
-const ROLES: Rol[] = ["administrador", "supervisor", "vendedor"];
+const ROLES: Rol[] = ["administrador", "supervisor", "vendedor", "revisor"];
 
 const inputClass =
   "w-full rounded-lg border border-black/10 px-3 py-2 text-sm focus:border-brand-green-600 focus:outline-none";

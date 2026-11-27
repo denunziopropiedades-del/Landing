@@ -8,7 +8,8 @@ export type Beneficio = {
   titulo: string;
 };
 
-export type Rol = "administrador" | "vendedor" | "supervisor";
+/** "revisor": acceso de demostración (p. ej. revisores de Meta): solo Mensajes y Plantillas del número de prueba. */
+export type Rol = "administrador" | "vendedor" | "supervisor" | "revisor";
 
 export type Perfil = {
   id: string;

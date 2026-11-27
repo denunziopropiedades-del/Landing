@@ -2484,6 +2484,7 @@ export async function invitarUsuarioAction(_prev: ActionResult | null, formData:
 
     if (data.user) {
       await admin.from("perfiles").update({ rol, nombre }).eq("id", data.user.id);
+      await admin.auth.admin.updateUserById(data.user.id, { app_metadata: { rol } });
     }
 
     await registrarActividad(actor, "invitar", "usuario", data.user?.id ?? null, { email, rol });
@@ -2500,6 +2501,8 @@ export async function cambiarRolUsuarioAction(id: string, rol: Rol): Promise<Act
     const admin = (await getSupabaseAdminClient())!;
     const { error } = await admin.from("perfiles").update({ rol }).eq("id", id);
     if (error) throw new Error(error.message);
+    // El rol también va en el usuario de Auth: el proxy lo usa para limitar al revisor.
+    await admin.auth.admin.updateUserById(id, { app_metadata: { rol } });
     await registrarActividad(actor, "cambiar-rol", "usuario", id, { rol });
     revalidatePath("/admin/usuarios");
     return { ok: true };
