@@ -4,7 +4,7 @@ import { HORARIOS_VISITA } from "@/lib/agenda";
 import { sendNotificationEmail } from "@/lib/email";
 import { hoyEnArgentina } from "@/lib/fecha";
 import { telefonoInternacional } from "@/lib/leads";
-import { GRAPH, dentroDeVentana, enviarWhatsapp, resumenTipo } from "@/lib/mensajeria";
+import { GRAPH, dentroDeVentana, enviarMessenger, enviarWhatsapp, resumenTipo } from "@/lib/mensajeria";
 import { horariosNoDisponibles } from "@/lib/visitas";
 import { armarCatalogo, SITIO } from "./catalogo";
 import { completar, MODELO_POR_DEFECTO, tokenGateway, type Herramienta, type MensajeLLM } from "./llm";
@@ -79,9 +79,15 @@ function hoyTexto() {
   return { iso, texto: `${DIAS[f.getUTCDay()]} ${iso}, ${hora} hs (hora de Argentina)`, hora };
 }
 
-function sistema(cfg: ConfigAsistente, catalogo: string, ficha: string): string {
+const NOMBRE_CANAL: Record<string, string> = { whatsapp: "WhatsApp", messenger: "Facebook Messenger", instagram: "Instagram Direct" };
+
+function sistema(cfg: ConfigAsistente, catalogo: string, ficha: string, canal = "whatsapp"): string {
   const hoy = hoyTexto();
-  return `Sos "${cfg.nombre_asistente}", el asistente virtual por WhatsApp de una inmobiliaria argentina. Hoy es ${hoy.texto}.
+  const extraCanal =
+    canal === "whatsapp"
+      ? ""
+      : `\n- Estás atendiendo por ${NOMBRE_CANAL[canal] ?? canal}: no tenemos el teléfono del cliente. Antes de agendar una visita pedile su WhatsApp (y pasalo en agendar_visita), y ofrecé seguir la charla por WhatsApp si le resulta más cómodo.`;
+  return `Sos "${cfg.nombre_asistente}", el asistente virtual por ${NOMBRE_CANAL[canal] ?? "WhatsApp"} de una inmobiliaria argentina. Hoy es ${hoy.texto}.${extraCanal ? `\nNOTA DEL CANAL:${extraCanal}` : ""}
 
 DATOS DEL NEGOCIO (fuente de verdad):
 ${cfg.info_negocio}
@@ -138,6 +144,7 @@ const HERRAMIENTAS: Herramienta[] = [
           horario: { type: "string" },
           producto_id: { type: "string", description: "id del desarrollo o propiedad del catálogo" },
           producto_tipo: { type: "string", enum: ["desarrollo", "propiedad"] },
+          telefono: { type: "string", description: "WhatsApp del cliente (solo si la charla no es por WhatsApp)" },
         },
         required: ["nombre", "email", "fecha", "horario"],
       },
@@ -256,7 +263,7 @@ async function ejecutar(nombre: string, args: Record<string, unknown>, ctx: Cont
     const body: Record<string, unknown> = {
       nombre: s("nombre"),
       email: s("email"),
-      telefono: telefonoInternacional(ctx.telefono) || ctx.telefono || "",
+      telefono: telefonoInternacional(s("telefono") || ctx.telefono) || s("telefono") || ctx.telefono || "",
       fecha: s("fecha"),
       horario: s("horario"),
     };
@@ -363,6 +370,7 @@ export async function generarRespuesta(opts: {
   telefono?: string | null;
   simulacion?: boolean;
   instruccionExtra?: string;
+  canal?: string;
 }): Promise<ResultadoAsistente> {
   const [{ texto: catalogo }, ficha] = await Promise.all([armarCatalogo(opts.supabase), fichaCliente(opts.supabase, opts.leadId ?? null)]);
   const ctx: Contexto = {
@@ -374,7 +382,7 @@ export async function generarRespuesta(opts: {
     acciones: [],
   };
   const mensajes: MensajeLLM[] = [
-    { role: "system", content: sistema(opts.cfg, catalogo, ficha) + (opts.instruccionExtra ? `\n\n${opts.instruccionExtra}` : "") },
+    { role: "system", content: sistema(opts.cfg, catalogo, ficha, opts.canal) + (opts.instruccionExtra ? `\n\n${opts.instruccionExtra}` : "") },
     ...opts.historial,
   ];
   let tokens = 0;
@@ -430,7 +438,10 @@ async function registrarLog(supabase: SupabaseClient, fila: Record<string, unkno
 /** Envía el texto por WhatsApp y lo deja en la bandeja como mensaje del asistente. */
 async function enviarComoAsistente(supabase: SupabaseClient, conv: ConvRow, texto: string): Promise<string | null> {
   if (!conv.canal) return "sin canal";
-  const r = await enviarWhatsapp(conv.canal.external_id, conv.contacto_id, texto, conv.canal.access_token);
+  const r =
+    conv.canal.tipo === "whatsapp"
+      ? await enviarWhatsapp(conv.canal.external_id, conv.contacto_id, texto, conv.canal.access_token)
+      : await enviarMessenger(conv.contacto_id, texto);
   if (!r.ok) return r.error;
   const ahora = new Date().toISOString();
   await supabase.from("mensajes").insert({
@@ -462,7 +473,7 @@ export async function procesarEntrante(supabase: SupabaseClient, convId: string,
   if (!token) return;
 
   const inicial = await leerConv(supabase, convId);
-  if (!inicial?.canal || inicial.canal.tipo !== "whatsapp" || inicial.bot_pausado) return;
+  if (!inicial?.canal || inicial.bot_pausado) return;
   if (!cfg.canales.includes(inicial.canal.id)) return;
   const marca = inicial.ultimo_entrante_en;
 
@@ -495,7 +506,8 @@ export async function procesarEntrante(supabase: SupabaseClient, convId: string,
       historial: historialLLM(lista),
       convId,
       leadId: conv.lead_id,
-      telefono: conv.telefono ?? conv.contacto_id,
+      telefono: conv.canal.tipo === "whatsapp" ? conv.telefono ?? conv.contacto_id : conv.telefono,
+      canal: conv.canal.tipo,
     });
     if (resultado.texto) {
       const pausado = (await leerConv(supabase, convId))?.bot_pausado;
@@ -568,14 +580,15 @@ export async function correrSeguimientos(supabase: SupabaseClient, tokenPedido: 
           ],
           convId: c.id as string,
           leadId: c.lead_id as string | null,
-          telefono: (c.telefono as string) ?? (c.contacto_id as string),
+          telefono: conv.canal.tipo === "whatsapp" ? (c.telefono as string) ?? (c.contacto_id as string) : (c.telefono as string | null),
+          canal: conv.canal.tipo,
         });
         texto = r.texto;
         if (texto) {
           if (cfg.modo === "automatico") error = await enviarComoAsistente(supabase, conv, texto);
           else await supabase.from("conversaciones").update({ borrador_ia: texto, borrador_en: new Date().toISOString() }).eq("id", c.id);
         }
-      } else if (cfg.seguimiento_plantilla) {
+      } else if (cfg.seguimiento_plantilla && conv.canal.tipo === "whatsapp") {
         // Fuera de las 24 h solo se puede escribir con una plantilla aprobada.
         const nombre = String(lead?.nombre || c.nombre || "").split(" ")[0] || "¿cómo estás?";
         const res = await fetch(`${GRAPH}/${conv.canal.external_id}/messages`, {

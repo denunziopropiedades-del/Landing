@@ -1,5 +1,6 @@
 "use server";
 
+import { completarNombresPendientes } from "@/lib/mensajeria";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { getPerfilActual, requireRole, AdminActionError } from "@/lib/admin/auth";
 import { registrarActividad } from "@/lib/admin/activity";
@@ -98,6 +99,7 @@ export async function getBandeja(): Promise<{
   const perfil = await staff();
   if (!admin || !perfil) return vacio;
   const soloDemo = perfil.rol === "revisor" ? await canalesDemo(admin) : null;
+  if (!soloDemo) await completarNombresPendientes(admin).catch(() => 0);
   if (soloDemo && !soloDemo.length) return vacio;
 
   let qCanales = admin.from("mensajes_canales").select("id, tipo, nombre, numero").eq("activo", true).order("creado_en");

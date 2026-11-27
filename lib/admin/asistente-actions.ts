@@ -16,7 +16,7 @@ function fail(err: unknown): { ok: false; error: string } {
   return { ok: false, error: err instanceof Error ? err.message : "Error inesperado." };
 }
 
-export type CanalAsistente = { id: string; numero: string | null; nombre: string; demo: boolean };
+export type CanalAsistente = { id: string; tipo: string; numero: string | null; nombre: string; demo: boolean };
 export type LogAsistente = {
   id: string;
   creadoEn: string;
@@ -39,7 +39,7 @@ export async function getAsistenteDatos(): Promise<{
   const desde = new Date(Date.now() - 30 * 86400000).toISOString();
   const [config, { data: canales }, { data: logs, error }, { data: uso }] = await Promise.all([
     leerConfig(admin),
-    admin.from("mensajes_canales").select("id, numero, nombre, demo").eq("tipo", "whatsapp").order("creado_en"),
+    admin.from("mensajes_canales").select("id, tipo, numero, nombre, demo").eq("activo", true).order("creado_en"),
     admin
       .from("asistente_log")
       .select("id, creado_en, tipo, salida, acciones, error, conv:conversaciones(nombre, telefono)")
@@ -49,7 +49,13 @@ export async function getAsistenteDatos(): Promise<{
   ]);
   return {
     config,
-    canales: (canales ?? []).map((c) => ({ id: c.id as string, numero: (c.numero as string) ?? null, nombre: (c.nombre as string) ?? "", demo: !!c.demo })),
+    canales: (canales ?? []).map((c) => ({
+      id: c.id as string,
+      tipo: (c.tipo as string) ?? "whatsapp",
+      numero: (c.numero as string) ?? null,
+      nombre: (c.nombre as string) ?? "",
+      demo: !!c.demo,
+    })),
     logs: (logs ?? []).map((l) => {
       const conv = (Array.isArray(l.conv) ? l.conv[0] : l.conv) as { nombre: string | null; telefono: string | null } | null;
       return {
@@ -88,7 +94,7 @@ export async function guardarConfigAsistenteAction(cfg: ConfigAsistente): Promis
       seguimiento_estados: (cfg.seguimiento_estados ?? []).slice(0, 12),
       actualizado_en: new Date().toISOString(),
     };
-    if (fila.activo && !fila.canales.length) throw new AdminActionError("Elegí al menos un número para que atienda el asistente.");
+    if (fila.activo && !fila.canales.length) throw new AdminActionError("Elegí al menos un canal para que atienda el asistente.");
     const { error } = await admin.from("asistente_config").upsert(fila, { onConflict: "id" });
     if (error) throw error;
     await registrarActividad(perfil, "configurar", "asistente", "1", { activo: fila.activo, modo: fila.modo, canales: fila.canales.length });

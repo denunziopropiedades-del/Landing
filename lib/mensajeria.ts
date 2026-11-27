@@ -189,7 +189,12 @@ export async function registrarMensaje(supabase: SupabaseClient, e: Entrante): P
     archivada: false,
   };
   if (leadId && !conv.lead_id) cambios.lead_id = leadId;
-  if (e.nombre && !conv.nombre) cambios.nombre = e.nombre;
+  if (e.nombre && !conv.nombre) {
+    cambios.nombre = e.nombre;
+    // La ficha del CRM se creó sin nombre ("Consulta por …"): ponerle el nombre real.
+    const lid = (conv.lead_id as string | null) ?? leadId;
+    if (lid) await supabase.from("leads").update({ nombre: e.nombre }).eq("id", lid).like("nombre", "Consulta por%");
+  }
   if (e.telefono && !conv.telefono) cambios.telefono = e.telefono;
   if (e.direccion === "entrante") {
     cambios.ultimo_entrante_en = fecha.toISOString();
@@ -291,18 +296,68 @@ export async function enviarMessenger(psid: string, texto: string): Promise<Envi
   return { ok: true, externalId: json.message_id ?? null };
 }
 
-/** Nombre del usuario de Messenger (si la página tiene permiso para verlo). */
+/**
+ * Nombre que figura en la conversación de la página (sirve aunque la API de perfil no
+ * esté habilitada). En Instagram devuelve el @usuario.
+ */
+async function nombreDesdeConversacion(id: string, plataforma: "messenger" | "instagram"): Promise<string | null> {
+  const token = process.env.META_PAGE_ACCESS_TOKEN;
+  if (!token) return null;
+  try {
+    const res = await fetch(
+      `${GRAPH}/me/conversations?platform=${plataforma}&user_id=${encodeURIComponent(id)}&fields=participants&access_token=${encodeURIComponent(token)}`
+    );
+    if (!res.ok) return null;
+    const j = (await res.json()) as { data?: { participants?: { data?: { id?: string; name?: string; username?: string }[] } }[] };
+    const p = j.data?.[0]?.participants?.data?.find((x) => x.id === id);
+    if (!p) return null;
+    return p.name || (p.username ? `@${p.username}` : null);
+  } catch {
+    return null;
+  }
+}
+
+/** Nombre del usuario de Messenger: primero el perfil, si no, el de la conversación de la página. */
 export async function nombreMessenger(psid: string): Promise<string | null> {
   const token = process.env.META_PAGE_ACCESS_TOKEN;
   if (!token) return null;
   try {
     const res = await fetch(`${GRAPH}/${psid}?fields=first_name,last_name,name&access_token=${encodeURIComponent(token)}`);
-    if (!res.ok) return null;
-    const j = (await res.json()) as { name?: string; first_name?: string; last_name?: string };
-    return j.name || [j.first_name, j.last_name].filter(Boolean).join(" ") || null;
+    if (res.ok) {
+      const j = (await res.json()) as { name?: string; first_name?: string; last_name?: string };
+      const n = j.name || [j.first_name, j.last_name].filter(Boolean).join(" ");
+      if (n) return n;
+    }
   } catch {
-    return null;
+    /* sigue con la conversación */
   }
+  return nombreDesdeConversacion(psid, "messenger");
+}
+
+/** Completa el nombre de conversaciones de Messenger/Instagram que quedaron sin nombre. */
+let ultimoCompletado = 0;
+export async function completarNombresPendientes(supabase: SupabaseClient, max = 8): Promise<number> {
+  // La bandeja se refresca seguido: intentarlo como mucho cada 5 minutos.
+  if (Date.now() - ultimoCompletado < 5 * 60 * 1000) return 0;
+  ultimoCompletado = Date.now();
+  const { data } = await supabase
+    .from("conversaciones")
+    .select("id, contacto_id, lead_id, canal:mensajes_canales!conversaciones_canal_id_fkey(tipo)")
+    .or("nombre.is.null,nombre.eq.")
+    .order("ultimo_mensaje_en", { ascending: false })
+    .limit(40);
+  let n = 0;
+  for (const c of data ?? []) {
+    if (n >= max) break;
+    const canal = (Array.isArray(c.canal) ? c.canal[0] : c.canal) as { tipo: string } | null;
+    if (!canal || canal.tipo === "whatsapp") continue;
+    const nombre = canal.tipo === "instagram" ? await nombreInstagram(c.contacto_id as string) : await nombreMessenger(c.contacto_id as string);
+    if (!nombre) continue;
+    await supabase.from("conversaciones").update({ nombre }).eq("id", c.id);
+    if (c.lead_id) await supabase.from("leads").update({ nombre }).eq("id", c.lead_id).like("nombre", "Consulta por%");
+    n++;
+  }
+  return n;
 }
 
 /** Token para usar con la API de un número: el que guardó la conexión del panel, o WHATSAPP_TOKEN. */
@@ -317,10 +372,13 @@ export async function nombreInstagram(igsid: string): Promise<string | null> {
   if (!token) return null;
   try {
     const res = await fetch(`${GRAPH}/${igsid}?fields=name,username&access_token=${encodeURIComponent(token)}`);
-    if (!res.ok) return null;
-    const j = (await res.json()) as { name?: string; username?: string };
-    return j.name || (j.username ? `@${j.username}` : null);
+    if (res.ok) {
+      const j = (await res.json()) as { name?: string; username?: string };
+      const n = j.name || (j.username ? `@${j.username}` : null);
+      if (n) return n;
+    }
   } catch {
-    return null;
+    /* sigue con la conversación */
   }
+  return nombreDesdeConversacion(igsid, "instagram");
 }
