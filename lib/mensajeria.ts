@@ -16,6 +16,9 @@ import { normalizarTelefono, telefonoInternacional } from "@/lib/leads";
  */
 
 export const GRAPH = "https://graph.facebook.com/v21.0";
+/** App de Meta "MATULOTES CMR" y configuración de alta de WhatsApp (registro insertado). Son datos públicos. */
+export const META_APP_ID = process.env.NEXT_PUBLIC_META_APP_ID || "1548430039854662";
+export const WA_SIGNUP_CONFIG_ID = process.env.NEXT_PUBLIC_WA_SIGNUP_CONFIG_ID || "2038402450171092";
 const VENTANA_MS = 24 * 60 * 60 * 1000;
 
 export type TipoCanal = "whatsapp" | "messenger";
@@ -219,9 +222,14 @@ function errorMeta(json: unknown, fallback: string): string {
   return e.error_user_msg || e.message || fallback;
 }
 
-export async function enviarWhatsapp(phoneNumberId: string, para: string, texto: string): Promise<EnvioResultado> {
-  const token = process.env.WHATSAPP_TOKEN;
-  if (!token) return { ok: false, error: "Falta configurar WHATSAPP_TOKEN en Vercel." };
+export async function enviarWhatsapp(
+  phoneNumberId: string,
+  para: string,
+  texto: string,
+  tokenCanal?: string | null
+): Promise<EnvioResultado> {
+  const token = tokenCanal || process.env.WHATSAPP_TOKEN;
+  if (!token) return { ok: false, error: "Este número no está conectado. Conectalo desde Mensajes → Conectar WhatsApp Business." };
   const res = await fetch(`${GRAPH}/${phoneNumberId}/messages`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -263,4 +271,10 @@ export async function nombreMessenger(psid: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/** Token para usar con la API de un número: el que guardó la conexión del panel, o WHATSAPP_TOKEN. */
+export async function tokenDeCanal(supabase: SupabaseClient, canalId: string): Promise<string | null> {
+  const { data } = await supabase.from("mensajes_canales").select("access_token").eq("id", canalId).maybeSingle();
+  return (data?.access_token as string | null) || process.env.WHATSAPP_TOKEN || null;
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getPerfilActual } from "@/lib/admin/auth";
 import { GRAPH } from "@/lib/mensajeria";
+import { getSupabaseAdminClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
@@ -14,8 +15,23 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!perfil) return new NextResponse("No autorizado", { status: 401 });
 
   const { id } = await params;
-  const token = process.env.WHATSAPP_TOKEN;
-  if (!token || !/^\d+$/.test(id)) return new NextResponse("No disponible", { status: 404 });
+  if (!/^\d+$/.test(id)) return new NextResponse("No disponible", { status: 404 });
+
+  // Token del número por el que llegó el archivo (conexión del panel) o WHATSAPP_TOKEN.
+  let token = process.env.WHATSAPP_TOKEN ?? null;
+  const admin = await getSupabaseAdminClient();
+  if (admin) {
+    const { data } = await admin
+      .from("mensajes")
+      .select("conversacion:conversaciones(canal:mensajes_canales(access_token))")
+      .eq("media_id", id)
+      .limit(1)
+      .maybeSingle();
+    const conv = data?.conversacion as unknown as { canal?: { access_token?: string | null } | { access_token?: string | null }[] } | null;
+    const canal = Array.isArray(conv?.canal) ? conv?.canal[0] : conv?.canal;
+    if (canal?.access_token) token = canal.access_token;
+  }
+  if (!token) return new NextResponse("No disponible", { status: 404 });
 
   const info = await fetch(`${GRAPH}/${id}`, { headers: { Authorization: `Bearer ${token}` } });
   if (!info.ok) return new NextResponse("No disponible", { status: 404 });

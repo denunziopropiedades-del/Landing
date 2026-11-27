@@ -222,11 +222,13 @@ export async function enviarMensajeAction(conversacionId: string, texto: string)
 
     const { data: conv, error } = await admin
       .from("conversaciones")
-      .select("id, contacto_id, ultimo_entrante_en, lead_id, canal:mensajes_canales(tipo, external_id)")
+      .select("id, contacto_id, ultimo_entrante_en, lead_id, canal:mensajes_canales(tipo, external_id, access_token)")
       .eq("id", conversacionId)
       .maybeSingle();
     if (error || !conv) throw new AdminActionError("No encontré la conversación.");
-    const canal = (Array.isArray(conv.canal) ? conv.canal[0] : conv.canal) as { tipo: string; external_id: string } | null;
+    const canal = (Array.isArray(conv.canal) ? conv.canal[0] : conv.canal) as
+      | { tipo: string; external_id: string; access_token: string | null }
+      | null;
     if (!canal) throw new AdminActionError("La conversación no tiene un canal conectado.");
 
     if (!dentroDeVentana(conv.ultimo_entrante_en as string | null)) {
@@ -237,7 +239,7 @@ export async function enviarMensajeAction(conversacionId: string, texto: string)
 
     const envio =
       canal.tipo === "whatsapp"
-        ? await enviarWhatsapp(canal.external_id, conv.contacto_id as string, limpio)
+        ? await enviarWhatsapp(canal.external_id, conv.contacto_id as string, limpio, canal.access_token)
         : await enviarMessenger(conv.contacto_id as string, limpio);
     if (!envio.ok) throw new AdminActionError(envio.error);
 

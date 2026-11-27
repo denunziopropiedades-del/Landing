@@ -94,3 +94,9 @@ alter table mensajes_canales enable row level security;
 alter table conversaciones enable row level security;
 alter table mensajes enable row level security;
 alter table respuestas_rapidas enable row level security;
+
+-- Conexión de números de WhatsApp Business desde el panel (coexistencia, botón "Conectar WhatsApp Business").
+alter table mensajes_canales add column if not exists waba_id text;
+alter table mensajes_canales add column if not exists access_token text;
+alter table mensajes_canales add column if not exists token_vence timestamptz;
+alter table mensajes_canales add column if not exists conectado_en timestamptz;
