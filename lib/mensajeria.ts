@@ -130,14 +130,14 @@ async function vincularLead(
 }
 
 /** Guarda un mensaje (entrante o eco de una respuesta) y actualiza la conversación. */
-export async function registrarMensaje(supabase: SupabaseClient, e: Entrante): Promise<void> {
+export async function registrarMensaje(supabase: SupabaseClient, e: Entrante): Promise<string | null> {
   if (e.externalId) {
     const { data: dup } = await supabase.from("mensajes").select("id").eq("external_id", e.externalId).maybeSingle();
-    if (dup) return; // Meta reintenta los webhooks: no duplicar
+    if (dup) return null; // Meta reintenta los webhooks: no duplicar
   }
 
   const cId = await canalId(supabase, e.canal);
-  if (!cId) return;
+  if (!cId) return null;
 
   const fecha = e.fecha ?? new Date();
   let { data: conv } = await supabase
@@ -158,11 +158,11 @@ export async function registrarMensaje(supabase: SupabaseClient, e: Entrante): P
       .single();
     if (error) {
       console.error("mensajeria: no se pudo crear la conversación", error);
-      return;
+      return null;
     }
     conv = nueva;
   }
-  if (!conv) return;
+  if (!conv) return null;
 
   const { error: errMsg } = await supabase.from("mensajes").insert({
     conversacion_id: conv.id,
@@ -178,7 +178,7 @@ export async function registrarMensaje(supabase: SupabaseClient, e: Entrante): P
   });
   if (errMsg) {
     if (!/duplicate key/i.test(errMsg.message)) console.error("mensajeria: no se pudo guardar el mensaje", errMsg);
-    return;
+    return null;
   }
 
   const leadId = await vincularLead(supabase, conv as { id: string; lead_id: string | null }, e);
@@ -194,11 +194,17 @@ export async function registrarMensaje(supabase: SupabaseClient, e: Entrante): P
   if (e.direccion === "entrante") {
     cambios.ultimo_entrante_en = fecha.toISOString();
     cambios.no_leidos = (conv.no_leidos ?? 0) + 1;
+    cambios.seguimientos = 0; // respondió: se reinician los seguimientos
   } else {
     // Si respondieron desde el celular, la conversación ya está atendida.
     cambios.no_leidos = 0;
   }
-  await supabase.from("conversaciones").update(cambios).eq("id", conv.id);
+  let { error: errConv } = await supabase.from("conversaciones").update(cambios).eq("id", conv.id);
+  if (errConv && "seguimientos" in cambios) {
+    delete cambios.seguimientos;
+    ({ error: errConv } = await supabase.from("conversaciones").update(cambios).eq("id", conv.id));
+  }
+  return conv.id as string;
 }
 
 /** Actualiza el estado de un mensaje enviado (entregado, leído, error) — WhatsApp. */

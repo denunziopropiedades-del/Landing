@@ -19,6 +19,7 @@ const secciones: { titulo: string; items: ItemNav[] }[] = [
       { href: "/admin/crm", label: "CRM (Leads)", icon: "KanbanSquare" },
       { href: "/admin/mensajes", label: "Mensajes", icon: "MessagesSquare" },
       { href: "/admin/plantillas", label: "Plantillas WhatsApp", icon: "LayoutTemplate", roles: [...STAFF, "revisor"] },
+      { href: "/admin/asistente", label: "Asistente de IA", icon: "Bot", roles: ["administrador"] },
       { href: "/admin/consultas", label: "Consultas y visitas", icon: "MessageSquareText" },
       { href: "/admin/coincidencias", label: "Coincidencias", icon: "Target" },
       { href: "/admin/reportes", label: "Reportes", icon: "FileText" },
