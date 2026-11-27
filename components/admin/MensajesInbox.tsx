@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Archive, Check, CheckCheck, Clock, MessageCircle, Plus, Search, Send, Trash2, X } from "lucide-react";
+import { Bot, Archive, Check, CheckCheck, Clock, MessageCircle, Plus, Search, Send, Trash2, X } from "lucide-react";
 import {
   archivarConversacionAction,
   borrarRespuestaRapidaAction,
@@ -12,9 +12,11 @@ import {
   type CanalBandeja,
   type ConversacionResumen,
   type FichaLead,
+  type EstadoAsistenteConv,
   type MensajeBandeja,
   type RespuestaRapida,
 } from "@/lib/admin/mensajes-actions";
+import { descartarBorradorAction, pausarAsistenteAction } from "@/lib/admin/asistente-actions";
 import { labelOrigen } from "@/lib/leads";
 
 const ESTADOS: Record<string, { label: string; cls: string }> = {
@@ -137,6 +139,7 @@ export default function MensajesInbox({
   const [abiertaId, setAbiertaId] = useState<string | null>(conversacionesIniciales.find((c) => !c.archivada)?.id ?? null);
   const [mensajes, setMensajes] = useState<MensajeBandeja[]>([]);
   const [lead, setLead] = useState<FichaLead | null>(null);
+  const [asistente, setAsistente] = useState<EstadoAsistenteConv | null>(null);
   const [texto, setTexto] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [enviando, startEnvio] = useTransition();
@@ -157,6 +160,7 @@ export default function MensajesInbox({
     const r = await getConversacion(id);
     setMensajes(r.mensajes);
     setLead(r.lead);
+    setAsistente(r.asistente ?? null);
   }, []);
 
   // Actualiza la lista y el chat abierto cada pocos segundos.
@@ -216,6 +220,25 @@ export default function MensajesInbox({
         prev.map((c) => (c.id === abierta.id ? { ...c, ultimoTexto: t, ultimoMensajeEn: r.mensaje.creadoEn, noLeidos: 0 } : c))
       );
     });
+  };
+
+  const usarBorrador = async () => {
+    if (!abierta || !asistente?.borrador) return;
+    setTexto(asistente.borrador);
+    setAsistente({ ...asistente, borrador: null });
+    await descartarBorradorAction(abierta.id);
+  };
+  const descartarBorrador = async () => {
+    if (!abierta || !asistente) return;
+    setAsistente({ ...asistente, borrador: null });
+    await descartarBorradorAction(abierta.id);
+  };
+  const alternarAsistente = async () => {
+    if (!abierta || !asistente) return;
+    const pausado = !asistente.pausado;
+    const r = await pausarAsistenteAction(abierta.id, pausado);
+    if (!r.ok) return alert(r.error);
+    setAsistente({ ...asistente, pausado, atencion: pausado ? asistente.atencion : null });
   };
 
   const archivar = async () => {
@@ -359,6 +382,16 @@ export default function MensajesInbox({
                   <PuntoCanal tipo={abierta.canal.tipo} />
                   Entró por {nombreCanal(abierta.canal)}
                 </span>
+                {abierta.canal.tipo === "whatsapp" && asistente && (
+                  <button
+                    onClick={alternarAsistente}
+                    title={asistente.pausado ? "El asistente no responde en este chat. Tocá para reactivarlo." : "Tocá para pausar el asistente en este chat"}
+                    className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${asistente.pausado ? "bg-black/5 text-brand-black/50" : "bg-[#e9f9ef] text-[#128c4a]"} ${abierta.canal.tipo === "whatsapp" ? "" : "hidden"}`}
+                  >
+                    <Bot className="h-3.5 w-3.5" />
+                    {asistente.pausado ? "IA pausada" : "IA activa"}
+                  </button>
+                )}
                 <button onClick={archivar} title={abierta.archivada ? "Desarchivar" : "Archivar"} className="rounded-lg p-2 text-brand-black/50 hover:bg-brand-cream">
                   <Archive className="h-4 w-4" />
                 </button>
@@ -375,7 +408,8 @@ export default function MensajesInbox({
                       <Adjunto m={m} />
                       {m.texto && <p className="whitespace-pre-wrap break-words">{m.texto}</p>}
                       <p className="mt-0.5 flex items-center justify-end gap-1 text-[10.5px] text-brand-black/50">
-                        {m.direccion === "saliente" && (m.enviadoDesde === "celular" ? "desde el celular ·" : m.enviadoPor ? `${m.enviadoPor} ·` : "")}
+                        {m.direccion === "saliente" &&
+                          (m.enviadoDesde === "asistente" ? "🤖 asistente ·" : m.enviadoDesde === "celular" ? "desde el celular ·" : m.enviadoPor ? `${m.enviadoPor} ·` : "")}
                         {hora(m.creadoEn)} <EstadoEnvio m={m} />
                       </p>
                       {m.estado === "error" && m.error && <p className="mt-1 text-[11px] text-red-600">{m.error}</p>}
@@ -428,6 +462,28 @@ export default function MensajesInbox({
                 </div>
               )}
 
+              {asistente?.atencion && (
+                <p className="mx-4 mb-2 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  <Bot className="h-4 w-4 shrink-0" />
+                  {asistente.atencion === "reserva" ? "El cliente quiere reservar: enviale el link de la seña." : `El asistente pidió un asesor: ${asistente.atencion}`}
+                </p>
+              )}
+              {asistente?.borrador && ventanaAbierta && (
+                <div className="mx-4 mb-2 rounded-lg border border-[#25d366]/40 bg-white p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-[#128c4a]">
+                    <Bot className="h-3.5 w-3.5" /> Respuesta sugerida por el asistente
+                  </p>
+                  <p className="whitespace-pre-wrap text-sm text-brand-black/80">{asistente.borrador}</p>
+                  <div className="mt-2 flex gap-2">
+                    <button onClick={usarBorrador} className="rounded-md bg-[#25d366] px-3 py-1 text-xs font-bold text-white">
+                      Usar (podés editarla)
+                    </button>
+                    <button onClick={descartarBorrador} className="rounded-md px-3 py-1 text-xs font-semibold text-brand-black/60">
+                      Descartar
+                    </button>
+                  </div>
+                </div>
+              )}
               {error && <p className="mx-4 mb-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
               {!ventanaAbierta && (
                 <p className="mx-4 mb-2 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">

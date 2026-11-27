@@ -160,7 +160,11 @@ export async function getBandeja(): Promise<{
 }
 
 /** Mensajes de una conversación + ficha del lead. Marca la conversación como leída. */
-export async function getConversacion(id: string): Promise<{ mensajes: MensajeBandeja[]; lead: FichaLead | null }> {
+export type EstadoAsistenteConv = { pausado: boolean; borrador: string | null; atencion: string | null };
+
+export async function getConversacion(
+  id: string
+): Promise<{ mensajes: MensajeBandeja[]; lead: FichaLead | null; asistente?: EstadoAsistenteConv | null }> {
   const admin = await getSupabaseAdminClient();
   const perfil = await staff();
   if (!admin || !perfil) return { mensajes: [], lead: null };
@@ -177,7 +181,7 @@ export async function getConversacion(id: string): Promise<{ mensajes: MensajeBa
       .eq("conversacion_id", id)
       .order("creado_en", { ascending: false })
       .limit(300),
-    admin.from("conversaciones").select("lead_id, no_leidos").eq("id", id).maybeSingle(),
+    admin.from("conversaciones").select("lead_id, no_leidos, bot_pausado, borrador_ia, atencion").eq("id", id).maybeSingle(),
   ]);
   if (conv?.no_leidos) await admin.from("conversaciones").update({ no_leidos: 0 }).eq("id", id);
 
@@ -239,7 +243,14 @@ export async function getConversacion(id: string): Promise<{ mensajes: MensajeBa
       };
     }
   }
-  return { mensajes, lead };
+  const asistente: EstadoAsistenteConv | null = conv
+    ? {
+        pausado: !!(conv as { bot_pausado?: boolean }).bot_pausado,
+        borrador: (conv as { borrador_ia?: string | null }).borrador_ia ?? null,
+        atencion: (conv as { atencion?: string | null }).atencion ?? null,
+      }
+    : null;
+  return { mensajes, lead, asistente };
 }
 
 /** Responde desde el panel por el mismo canal (y número) por el que escribió el cliente. */

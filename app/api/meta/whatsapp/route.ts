@@ -1,9 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import crypto from "node:crypto";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { actualizarEstado, registrarMensaje, type Entrante } from "@/lib/mensajeria";
+import { procesarEntrante } from "@/lib/asistente/motor";
 
 export const runtime = "nodejs";
+export const maxDuration = 120;
 
 /**
  * Webhook de WhatsApp Cloud API (objeto "whatsapp_business_account").
@@ -103,6 +105,8 @@ export async function POST(request: Request) {
 
   const supabase = await getSupabaseAdminClient();
   if (!supabase) return NextResponse.json({ ok: true });
+  const tokenIA = request.headers.get("x-vercel-oidc-token");
+  const paraAsistente = new Set<string>();
 
   for (const entry of payload.entry ?? []) {
     for (const cambio of entry.changes ?? []) {
@@ -128,7 +132,10 @@ export async function POST(request: Request) {
               externalId: m.id,
               fecha: m.timestamp ? new Date(Number(m.timestamp) * 1000) : undefined,
             };
-            if (e.contactoId) await registrarMensaje(supabase, e);
+            if (e.contactoId) {
+              const convId = await registrarMensaje(supabase, e);
+              if (convId) paraAsistente.add(convId);
+            }
           }
           for (const s of v.statuses ?? []) {
             const err = s.errors?.[0];
@@ -159,6 +166,17 @@ export async function POST(request: Request) {
         console.error("Webhook WhatsApp: error procesando el cambio", err);
       }
     }
+  }
+
+  // El asistente responde después de contestarle a Meta (no demora el webhook).
+  if (paraAsistente.size) {
+    after(async () => {
+      await Promise.all(
+        [...paraAsistente].map((id) =>
+          procesarEntrante(supabase, id, tokenIA).catch((err) => console.error("Asistente: error", err))
+        )
+      );
+    });
   }
 
   // Siempre 200: si no, Meta reintenta y termina desactivando el webhook.
