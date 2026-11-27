@@ -223,12 +223,32 @@ export async function guardarTokenCanalAction(canalId: string, token: string): P
     const pid = canal.external_id as string;
     const info = (await graph(`${pid}?fields=display_phone_number,verified_name`, limpio)) as { display_phone_number?: string; verified_name?: string };
     const numero = (info.display_phone_number ?? "").replace(/\D/g, "");
+
+    // Cuenta de WhatsApp del número (para Plantillas): la sacamos de los permisos del token.
+    let wabaId: string | undefined;
+    try {
+      const dbg = (await graph(`debug_token?input_token=${encodeURIComponent(limpio)}`, limpio)) as {
+        data?: { granular_scopes?: { scope: string; target_ids?: string[] }[] };
+      };
+      const ids = dbg.data?.granular_scopes?.find((g) => g.scope === "whatsapp_business_management")?.target_ids ?? [];
+      for (const id of ids) {
+        const w = (await graph(`${id}/phone_numbers?fields=id`, limpio).catch(() => ({}))) as { data?: { id: string }[] };
+        if (w.data?.some((n) => n.id === pid)) {
+          wabaId = id;
+          break;
+        }
+      }
+    } catch {
+      /* sin cuenta: Plantillas usará el token general */
+    }
+
     const { error: e2 } = await admin
       .from("mensajes_canales")
       .update({
         access_token: limpio,
         token_vence: null,
         numero: numero || undefined,
+        ...(wabaId ? { waba_id: wabaId } : {}),
         conectado_en: new Date().toISOString(),
       })
       .eq("id", canalId);
