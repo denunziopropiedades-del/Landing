@@ -170,6 +170,26 @@ Los leads que se generan cuando alguien completa un formulario nativo de Faceboo
 
 Sin esto configurado, el CRM sigue funcionando igual con los leads de la web (contacto, reserva, agenda de visita); simplemente no van a llegar los de Meta Ads.
 
+## Bandeja de mensajes (WhatsApp + Messenger)
+
+`/admin/mensajes` junta en un solo lugar los mensajes de los WhatsApp comerciales y del Messenger de la página, y permite responderlos desde el panel. Cada conversación se une sola a la ficha del CRM (por teléfono; si es alguien nuevo, crea el lead con origen WhatsApp o Messenger). Todo va por las APIs oficiales de Meta.
+
+**1. Base de datos.** Correr [`sql-mensajes.sql`](./sql-mensajes.sql) en Supabase → SQL Editor.
+
+**2. WhatsApp (con coexistencia: el número sigue funcionando en el celular).**
+1. Los números tienen que estar en la app **WhatsApp Business** (no en el WhatsApp común), actualizada.
+2. En Meta for Developers → la app que ya usamos para los leads → **Agregar producto → WhatsApp**.
+3. En **WhatsApp → Configuración de la API**, agregar cada número eligiendo **"Conectar un número de la app WhatsApp Business"** (coexistencia). Se confirma escaneando un QR desde el celular. Repetir para cada número.
+4. En **WhatsApp → Configuración → Webhook**: URL `https://matulotes.app/api/meta/whatsapp`, token de verificación = `META_WEBHOOK_VERIFY_TOKEN`. Suscribir los campos **messages** y **smb_message_echoes** (este último hace que lo que respondas desde el celular también aparezca en el panel).
+5. En Business Manager → **Usuarios del sistema**: crear (o usar) un usuario del sistema administrador, asignarle la app y la cuenta de WhatsApp, y generar un **token permanente** con `whatsapp_business_messaging` y `whatsapp_business_management`. Cargarlo en Vercel como `WHATSAPP_TOKEN`.
+
+**3. Messenger.** Usa el mismo webhook de la página que ya recibe los leads (`/api/leads/meta-webhook`). En **Messenger → Configuración → Webhooks** de la página, suscribir además **messages** y **message_echoes**, y que el token `META_PAGE_ACCESS_TOKEN` tenga el permiso `pages_messaging`.
+
+**Reglas de Meta para tener en cuenta**
+- Desde el panel se puede responder dentro de las **24 h** desde el último mensaje del cliente. Pasado ese plazo, el panel lo avisa y hay que escribir desde el celular.
+- Las respuestas desde la app WhatsApp Business del celular siguen siendo gratis. Las que salen por la API (desde el panel) son "mensajes de servicio": cada número tiene una cantidad gratis por mes y después se cobran por mensaje según la tarifa de Meta.
+- Los números y la página aparecen solos en la bandeja con el primer mensaje que llega.
+
 ## SEO
 
 Metadata dinámica por proyecto (`generateMetadata`), JSON-LD `RealEstateListing` por proyecto, Open Graph con imagen generada dinámicamente (`app/opengraph-image.tsx`), `sitemap.ts` que enumera todos los proyectos publicados desde Supabase, y `robots.ts` que bloquea `/admin` y `/api`.

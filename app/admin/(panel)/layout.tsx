@@ -1,74 +1,74 @@
-import Link from "next/link";
-import {
-  Activity,
-  BarChart3,
-  Briefcase,
-  Building2,
-  House as HomeIcon,
-  Calculator,
-  DollarSign,
-  FileSliders,
-  FileSignature,
-  FileText,
-  HelpCircle,
-  Image as ImageIcon,
-  Images,
-  KanbanSquare,
-  KeyRound,
-  Target,
-  LayoutDashboard,
-  LogOut,
-  Mail,
-  MessageSquareText,
-  Newspaper,
-  Receipt,
-  ShieldCheck,
-  Star,
-  Users,
-} from "lucide-react";
+import { LogOut } from "lucide-react";
+import AdminNav, { type IconoNav } from "@/components/admin/AdminNav";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { logoutAction } from "@/lib/admin/actions";
 import { getPerfilActual } from "@/lib/admin/auth";
 import MobileNavSelect from "@/components/admin/MobileNavSelect";
+import { contarNoLeidos } from "@/lib/admin/mensajes-actions";
 import type { Rol } from "@/types/site";
 
-const nav: { href: string; label: string; icon: typeof LayoutDashboard; roles?: Rol[] }[] = [
-  { href: "/admin", label: "Estadísticas", icon: LayoutDashboard },
-  { href: "/admin/crm", label: "CRM (Leads)", icon: KanbanSquare },
-  { href: "/admin/consultas", label: "Consultas y visitas", icon: MessageSquareText },
-  { href: "/admin/coincidencias", label: "Coincidencias", icon: Target },
-  { href: "/admin/reportes", label: "Reportes", icon: FileText },
-  { href: "/admin/documentos", label: "Contratos y escritos", icon: FileSignature },
-  { href: "/admin/tasador", label: "Tasador y autorizaciones", icon: Calculator, roles: ["administrador", "supervisor"] },
-  { href: "/admin/documentos-clientes", label: "Reservas y certificados", icon: ShieldCheck, roles: ["administrador", "supervisor"] },
+type ItemNav = { href: string; label: string; icon: IconoNav; roles?: Rol[] };
+const STAFF: Rol[] = ["administrador", "supervisor"];
+
+/** Menú agrupado por tareas, en el orden en que se usan en el día a día. */
+const secciones: { titulo: string; items: ItemNav[] }[] = [
   {
-    href: "/admin/facturacion",
-    label: "Facturación",
-    icon: DollarSign,
-    roles: ["administrador", "supervisor"],
+    titulo: "Ventas",
+    items: [
+      { href: "/admin", label: "Estadísticas", icon: "LayoutDashboard" },
+      { href: "/admin/crm", label: "CRM (Leads)", icon: "KanbanSquare" },
+      { href: "/admin/mensajes", label: "Mensajes", icon: "MessagesSquare" },
+      { href: "/admin/consultas", label: "Consultas y visitas", icon: "MessageSquareText" },
+      { href: "/admin/coincidencias", label: "Coincidencias", icon: "Target" },
+      { href: "/admin/reportes", label: "Reportes", icon: "FileText" },
+    ],
   },
-  { href: "/admin/arca", label: "ARCA - Facturas", icon: FileText, roles: ["administrador", "supervisor"] },
   {
-    href: "/admin/comisiones",
-    label: "Calculadora de comisiones",
-    icon: Calculator,
-    roles: ["administrador", "supervisor"],
+    titulo: "Propiedades",
+    items: [
+      { href: "/admin/propiedades", label: "Propiedades y campos", icon: "House" },
+      { href: "/admin/proyectos", label: "Desarrollos", icon: "Building2", roles: STAFF },
+      { href: "/admin/lotes", label: "Lotes y precios", icon: "BarChart3", roles: STAFF },
+      { href: "/admin/tasador", label: "Tasador y autorizaciones", icon: "Calculator", roles: STAFF },
+    ],
   },
-  { href: "/admin/cobranzas", label: "Cobranzas", icon: Receipt, roles: ["administrador", "supervisor"] },
-  { href: "/admin/alquileres", label: "Administración de alquileres", icon: KeyRound, roles: ["administrador", "supervisor"] },
-  { href: "/admin/lotes", label: "Lotes y precios", icon: BarChart3, roles: ["administrador", "supervisor"] },
-  { href: "/admin/contenido", label: "Contenido del sitio", icon: FileSliders, roles: ["administrador", "supervisor"] },
-  { href: "/admin/galeria", label: "Galería", icon: ImageIcon, roles: ["administrador", "supervisor"] },
-  { href: "/admin/banners", label: "Banners", icon: Images, roles: ["administrador", "supervisor"] },
-  { href: "/admin/testimonios", label: "Testimonios", icon: Star, roles: ["administrador", "supervisor"] },
-  { href: "/admin/faqs", label: "Preguntas frecuentes", icon: HelpCircle, roles: ["administrador", "supervisor"] },
-  { href: "/admin/novedades", label: "Novedades", icon: Newspaper, roles: ["administrador", "supervisor"] },
-  { href: "/admin/newsletter", label: "Newsletter", icon: Mail, roles: ["administrador", "supervisor"] },
-  { href: "/admin/postulantes", label: "Postulantes (RR.HH.)", icon: Briefcase, roles: ["administrador", "supervisor"] },
-  { href: "/admin/propiedades", label: "Propiedades y campos", icon: HomeIcon },
-  { href: "/admin/proyectos", label: "Desarrollos", icon: Building2, roles: ["administrador", "supervisor"] },
-  { href: "/admin/usuarios", label: "Usuarios y roles", icon: Users, roles: ["administrador"] },
-  { href: "/admin/actividad", label: "Registro de actividad", icon: Activity, roles: ["administrador", "supervisor"] },
+  {
+    titulo: "Operaciones",
+    items: [
+      { href: "/admin/documentos-clientes", label: "Reservas y certificados", icon: "ShieldCheck", roles: STAFF },
+      { href: "/admin/documentos", label: "Contratos y escritos", icon: "FileSignature" },
+      { href: "/admin/cobranzas", label: "Cobranzas", icon: "Receipt", roles: STAFF },
+      { href: "/admin/alquileres", label: "Administración de alquileres", icon: "KeyRound", roles: STAFF },
+    ],
+  },
+  {
+    titulo: "Finanzas",
+    items: [
+      { href: "/admin/facturacion", label: "Facturación", icon: "DollarSign", roles: STAFF },
+      { href: "/admin/arca", label: "ARCA - Facturas", icon: "FileText", roles: STAFF },
+      { href: "/admin/comisiones", label: "Calculadora de comisiones", icon: "Calculator", roles: STAFF },
+    ],
+  },
+  {
+    titulo: "Sitio web",
+    items: [
+      { href: "/admin/contenido", label: "Contenido del sitio", icon: "FileSliders", roles: STAFF },
+      { href: "/admin/banners", label: "Banners", icon: "Images", roles: STAFF },
+      { href: "/admin/galeria", label: "Galería", icon: "Image", roles: STAFF },
+      { href: "/admin/novedades", label: "Novedades", icon: "Newspaper", roles: STAFF },
+      { href: "/admin/testimonios", label: "Testimonios", icon: "Star", roles: STAFF },
+      { href: "/admin/faqs", label: "Preguntas frecuentes", icon: "HelpCircle", roles: STAFF },
+      { href: "/admin/newsletter", label: "Newsletter", icon: "Mail", roles: STAFF },
+    ],
+  },
+  {
+    titulo: "Equipo",
+    items: [
+      { href: "/admin/postulantes", label: "Postulantes (RR.HH.)", icon: "Briefcase", roles: STAFF },
+      { href: "/admin/usuarios", label: "Usuarios y roles", icon: "Users", roles: ["administrador"] },
+      { href: "/admin/actividad", label: "Registro de actividad", icon: "Activity", roles: STAFF },
+    ],
+  },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -76,11 +76,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const perfil = await getPerfilActual();
   const rol = perfil?.rol ?? "administrador";
 
-  const navVisible = nav.filter((item) => !item.roles || item.roles.includes(rol));
+  const seccionesVisibles = secciones
+    .map((sec) => ({ ...sec, items: sec.items.filter((item) => !item.roles || item.roles.includes(rol)) }))
+    .filter((sec) => sec.items.length > 0);
+  const noLeidos = perfil ? await contarNoLeidos().catch(() => 0) : 0;
 
   return (
     <div className="flex min-h-screen bg-brand-cream">
-      <aside className="hidden w-64 shrink-0 flex-col bg-brand-black text-white lg:flex">
+      <aside className="hidden w-64 shrink-0 flex-col bg-brand-black text-white lg:sticky lg:top-0 lg:flex lg:h-screen">
         <div className="border-b border-white/10 px-6 py-5">
           <p className="font-display text-lg font-bold">Panel Inmobiliario</p>
           <p className="text-xs text-white/50">{perfil?.email ?? "Modo demo"}</p>
@@ -90,21 +93,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </span>
           )}
         </div>
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-          {navVisible.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/75 transition hover:bg-white/5 hover:text-white"
-              >
-                <Icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <AdminNav secciones={seccionesVisibles} badges={{ "/admin/mensajes": noLeidos }} />
         <form action={logoutAction} className="border-t border-white/10 p-3">
           <button
             type="submit"
@@ -118,7 +107,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-3 border-b border-black/5 bg-white px-4 py-3 lg:hidden">
-          <MobileNavSelect items={navVisible.map(({ href, label }) => ({ href, label }))} />
+          <MobileNavSelect grupos={seccionesVisibles.map((sec) => ({ titulo: sec.titulo, items: sec.items.map(({ href, label }) => ({ href, label })) }))} />
           <form action={logoutAction}>
             <button type="submit" aria-label="Cerrar sesión" className="text-brand-black/60">
               <LogOut className="h-5 w-5" />

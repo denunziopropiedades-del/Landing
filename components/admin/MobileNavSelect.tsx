@@ -1,6 +1,8 @@
 "use client";
 
-export default function MobileNavSelect({ items }: { items: { href: string; label: string }[] }) {
+type Item = { href: string; label: string };
+
+export default function MobileNavSelect({ grupos }: { grupos: { titulo: string; items: Item[] }[] }) {
   return (
     <select
       defaultValue=""
@@ -12,10 +14,14 @@ export default function MobileNavSelect({ items }: { items: { href: string; labe
       <option value="" disabled>
         Ir a...
       </option>
-      {items.map((item) => (
-        <option key={item.href} value={item.href}>
-          {item.label}
-        </option>
+      {grupos.map((g) => (
+        <optgroup key={g.titulo} label={g.titulo}>
+          {g.items.map((item) => (
+            <option key={item.href} value={item.href}>
+              {item.label}
+            </option>
+          ))}
+        </optgroup>
       ))}
     </select>
   );
