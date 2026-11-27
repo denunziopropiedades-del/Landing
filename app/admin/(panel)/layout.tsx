@@ -18,7 +18,7 @@ const secciones: { titulo: string; items: ItemNav[] }[] = [
       { href: "/admin", label: "Estadísticas", icon: "LayoutDashboard" },
       { href: "/admin/crm", label: "CRM (Leads)", icon: "KanbanSquare" },
       { href: "/admin/mensajes", label: "Mensajes", icon: "MessagesSquare" },
-      { href: "/admin/plantillas", label: "Plantillas WhatsApp", icon: "LayoutTemplate", roles: STAFF },
+      { href: "/admin/plantillas", label: "Plantillas WhatsApp", icon: "LayoutTemplate", roles: [...STAFF, "revisor"] },
       { href: "/admin/consultas", label: "Consultas y visitas", icon: "MessageSquareText" },
       { href: "/admin/coincidencias", label: "Coincidencias", icon: "Target" },
       { href: "/admin/reportes", label: "Reportes", icon: "FileText" },
@@ -78,7 +78,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const rol = perfil?.rol ?? "administrador";
 
   const seccionesVisibles = secciones
-    .map((sec) => ({ ...sec, items: sec.items.filter((item) => !item.roles || item.roles.includes(rol)) }))
+    .map((sec) => ({
+      ...sec,
+      items: sec.items.filter((item) =>
+        rol === "revisor"
+          ? item.href === "/admin/mensajes" || item.href === "/admin/plantillas"
+          : !item.roles || item.roles.includes(rol)
+      ),
+    }))
     .filter((sec) => sec.items.length > 0);
   const noLeidos = perfil ? await contarNoLeidos().catch(() => 0) : 0;
 

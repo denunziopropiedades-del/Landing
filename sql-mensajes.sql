@@ -107,3 +107,10 @@ alter table mensajes_canales add constraint mensajes_canales_tipo_check check (t
 
 -- Alta de números que no usan la app del celular (registro en la API de WhatsApp)
 alter table mensajes_canales add column if not exists pin text, add column if not exists coexistencia boolean, add column if not exists registrado_en timestamptz;
+
+-- Canales de demostración (número de prueba de Meta) para el usuario "revisor"
+alter table mensajes_canales add column if not exists demo boolean not null default false;
+
+-- Ingreso con nombre de usuario (además del email)
+alter table perfiles add column if not exists usuario text;
+create unique index if not exists perfiles_usuario_key on perfiles (usuario) where usuario is not null;

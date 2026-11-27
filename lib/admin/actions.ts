@@ -114,7 +114,7 @@ function slugify(texto: string) {
 // ── Auth ───────────────────────────────────────────────────────────────
 
 export async function loginAction(_prevState: unknown, formData: FormData) {
-  const email = str(formData, "email");
+  const ingreso = str(formData, "email").trim();
   const password = str(formData, "password");
 
   const supabase = await getSupabaseServerClient();
@@ -122,8 +122,19 @@ export async function loginAction(_prevState: unknown, formData: FormData) {
     return { ok: false as const, error: "Supabase no está configurado en este entorno." };
   }
 
+  // Se puede entrar con el email o con un nombre de usuario (sin @).
+  let email = ingreso;
+  if (!ingreso.includes("@")) {
+    const admin = await getSupabaseAdminClient();
+    const { data } = admin
+      ? await admin.from("perfiles").select("email").eq("usuario", ingreso.toLowerCase()).maybeSingle()
+      : { data: null };
+    if (!data?.email) return { ok: false as const, error: "Usuario o contraseña incorrectos." };
+    email = data.email as string;
+  }
+
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { ok: false as const, error: "Email o contraseña incorrectos." };
+  if (error) return { ok: false as const, error: "Usuario o contraseña incorrectos." };
 
   // Al ingresar se abre directo el CRM.
   redirect("/admin/crm");
@@ -2467,6 +2478,50 @@ export async function eliminarVisitaAction(id: string): Promise<ActionResult> {
 
 // ── Usuarios y roles ─────────────────────────────────────────────────────
 
+/**
+ * Crea un usuario con nombre de usuario y contraseña (sin email de invitación).
+ * El email de Supabase es interno: <usuario>@usuarios.matulotes.app.
+ */
+export async function crearUsuarioConClaveAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  try {
+    const actor = await requireRole("administrador");
+    const admin = (await getSupabaseAdminClient())!;
+    const usuario = str(formData, "usuario").trim().toLowerCase();
+    const nombre = str(formData, "nombre").trim();
+    const password = str(formData, "password");
+    const rol = str(formData, "rol") as Rol;
+    if (!/^[a-z0-9._-]{3,30}$/.test(usuario)) {
+      return { ok: false, error: "El usuario debe tener de 3 a 30 caracteres: letras, números, punto, guion." };
+    }
+    if (password.length < 8) return { ok: false, error: "La contraseña debe tener al menos 8 caracteres." };
+    if (!["administrador", "supervisor", "vendedor", "revisor"].includes(rol)) return { ok: false, error: "Rol inválido." };
+
+    const { data: existe } = await admin.from("perfiles").select("id").eq("usuario", usuario).maybeSingle();
+    if (existe) return { ok: false, error: "Ese usuario ya existe." };
+
+    const email = `${usuario}@usuarios.matulotes.app`;
+    const { data, error } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { nombre },
+      app_metadata: { rol },
+    });
+    if (error || !data.user) throw new Error(error?.message ?? "No se pudo crear el usuario.");
+
+    const { error: e2 } = await admin
+      .from("perfiles")
+      .upsert({ id: data.user.id, email, nombre, rol, usuario, activo: true }, { onConflict: "id" });
+    if (e2) throw new Error(e2.message);
+
+    await registrarActividad(actor, "crear", "usuario", data.user.id, { usuario, rol });
+    revalidatePath("/admin/usuarios");
+    return { ok: true, aviso: `Listo: ya puede entrar con el usuario "${usuario}".` };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export async function invitarUsuarioAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   try {
     const actor = await requireRole("administrador");
@@ -2484,6 +2539,7 @@ export async function invitarUsuarioAction(_prev: ActionResult | null, formData:
 
     if (data.user) {
       await admin.from("perfiles").update({ rol, nombre }).eq("id", data.user.id);
+      await admin.auth.admin.updateUserById(data.user.id, { app_metadata: { rol } });
     }
 
     await registrarActividad(actor, "invitar", "usuario", data.user?.id ?? null, { email, rol });
@@ -2500,6 +2556,8 @@ export async function cambiarRolUsuarioAction(id: string, rol: Rol): Promise<Act
     const admin = (await getSupabaseAdminClient())!;
     const { error } = await admin.from("perfiles").update({ rol }).eq("id", id);
     if (error) throw new Error(error.message);
+    // El rol también va en el usuario de Auth: el proxy lo usa para limitar al revisor.
+    await admin.auth.admin.updateUserById(id, { app_metadata: { rol } });
     await registrarActividad(actor, "cambiar-rol", "usuario", id, { rol });
     revalidatePath("/admin/usuarios");
     return { ok: true };

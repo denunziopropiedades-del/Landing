@@ -6,11 +6,12 @@ import {
   actualizarNombreUsuarioAction,
   cambiarRolUsuarioAction,
   invitarUsuarioAction,
+  crearUsuarioConClaveAction,
   toggleActivoUsuarioAction,
 } from "@/lib/admin/actions";
 import type { Perfil, Rol } from "@/types/site";
 
-const ROLES: Rol[] = ["administrador", "supervisor", "vendedor"];
+const ROLES: Rol[] = ["administrador", "supervisor", "vendedor", "revisor"];
 
 const inputClass =
   "w-full rounded-lg border border-black/10 px-3 py-2 text-sm focus:border-brand-green-600 focus:outline-none";
@@ -18,6 +19,7 @@ const labelClass = "mb-1 block text-xs font-medium text-brand-black/70";
 
 export default function UsuariosManager({ perfiles, usuarioActualId }: { perfiles: Perfil[]; usuarioActualId: string }) {
   const [state, formAction, pending] = useActionState(invitarUsuarioAction, null);
+  const [estadoClave, accionClave, creando] = useActionState(crearUsuarioConClaveAction, null);
   const [, startTransition] = useTransition();
 
   return (
@@ -55,6 +57,47 @@ export default function UsuariosManager({ perfiles, usuarioActualId }: { perfile
         {state && !state.ok && <p className="mt-2 text-xs text-red-600">{state.error}</p>}
         <p className="mt-3 text-xs text-brand-black/50">
           Se envía un email de invitación con un link para que la persona defina su contraseña.
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 font-display text-lg font-bold text-brand-black">Crear usuario con contraseña</h2>
+        <form action={accionClave} className="flex flex-wrap items-end gap-3">
+          <div className="min-w-[150px] flex-1">
+            <label className={labelClass}>Usuario</label>
+            <input name="usuario" required autoComplete="off" autoCapitalize="none" placeholder="ej. revisor.meta" className={inputClass} />
+          </div>
+          <div className="min-w-[150px] flex-1">
+            <label className={labelClass}>Nombre</label>
+            <input name="nombre" required className={inputClass} />
+          </div>
+          <div className="min-w-[150px] flex-1">
+            <label className={labelClass}>Contraseña (mín. 8)</label>
+            <input name="password" type="password" required minLength={8} autoComplete="new-password" className={inputClass} />
+          </div>
+          <div className="w-40">
+            <label className={labelClass}>Rol</label>
+            <select name="rol" defaultValue="vendedor" className={inputClass}>
+              {ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="submit"
+            disabled={creando}
+            className="inline-flex items-center gap-2 rounded-full bg-brand-green-700 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-green-600 disabled:opacity-60"
+          >
+            <UserPlus className="h-4 w-4" />
+            Crear
+          </button>
+        </form>
+        {estadoClave && !estadoClave.ok && <p className="mt-2 text-xs text-red-600">{estadoClave.error}</p>}
+        {estadoClave?.ok && <p className="mt-2 text-xs text-green-700">{estadoClave.aviso}</p>}
+        <p className="mt-3 text-xs text-brand-black/50">
+          Entra en matulotes.app/admin/login con el usuario y la contraseña, sin email. El rol "revisor" solo ve Mensajes y Plantillas del número de prueba.
         </p>
       </div>
 
