@@ -36,7 +36,7 @@ export default async function PropietariosPage() {
         Alquilá o vendé tu casa, departamento o campo con una inmobiliaria que se ocupa de todo
       </h1>
       <p className="mt-4 max-w-2xl text-brand-black/80">
-        Somos De Nunzio Negocios Inmobiliarios, a cargo de Matías De Nunzio, Martillero Público y Corredor Público (Matrícula COL 7886).
+        Somos De Nunzio Negocios Inmobiliarios, a cargo de Matías De Nunzio, Martillero Público y Corredor Público (Mat. 7886).
         Trabajamos en La Plata, Guernica, San Vicente, Brandsen, Cañuelas, Lobos, Monte, Saladillo y toda la zona sur.
       </p>
 

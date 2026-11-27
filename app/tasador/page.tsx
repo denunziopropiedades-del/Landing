@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 const PUNTOS = [
   { icono: Clock, titulo: "En 1 minuto", texto: "Elegís el tipo de propiedad, la zona y la superficie, y ves el valor estimado al instante." },
   { icono: ClipboardCheck, titulo: "Informe comparativo", texto: "En 24 horas te enviamos el informe con propiedades comparables de tu zona." },
-  { icono: Scale, titulo: "Martillero Público", texto: "Matías De Nunzio, Matrícula COL 7886, Depto. Judicial La Plata." },
+  { icono: Scale, titulo: "Martillero Público", texto: "Matías De Nunzio, Mat. 7886, Depto. Judicial La Plata." },
   { icono: FileSignature, titulo: "Firma online", texto: "Si querés vender, firmás la autorización de venta desde tu celular." },
 ];
 

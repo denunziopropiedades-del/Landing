@@ -8,7 +8,7 @@ import type { PlanFinanciacionFijo } from "@/types/site";
 export const runtime = "nodejs";
 
 const EMISOR =
-  "Documento emitido por DE NUNZIO NEGOCIOS INMOBILIARIOS — Matías De Nunzio, Martillero Público y Corredor Inmobiliario, Mat. COL 7886 — en carácter de gestor de cobranza.";
+  "Documento emitido por DE NUNZIO NEGOCIOS INMOBILIARIOS — Matías De Nunzio, Martillero Público y Corredor Inmobiliario, Mat. 7886 — en carácter de gestor de cobranza.";
 
 const limpiar = (v: string | null, max = 160) => (v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 

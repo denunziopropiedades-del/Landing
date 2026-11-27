@@ -19,7 +19,7 @@ export default async function NotasPage() {
       <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-green-700">Notas</p>
       <h1 className="mt-2 font-display text-3xl font-bold text-brand-black sm:text-5xl">Guías inmobiliarias de Zona Sur</h1>
       <p className="mt-4 max-w-3xl text-lg text-brand-black/75">
-        Consejos claros para comprar, vender, alquilar y escriturar, escritos por un Martillero y Corredor Público (Mat. COL 7886).
+        Consejos claros para comprar, vender, alquilar y escriturar, escritos por un Martillero y Corredor Público (Mat. 7886).
       </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

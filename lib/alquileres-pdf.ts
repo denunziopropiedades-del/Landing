@@ -1,7 +1,7 @@
 import { fechaCorta, formatoMonto, nombrePeriodo, textoHonorarios, type ContratoAlq, type CuotaAlq, type LiquidacionAlq, type PersonaAlq } from "@/lib/alquileres";
 
 const EMISOR = "DE NUNZIO NEGOCIOS INMOBILIARIOS";
-const MATRICULA = "Matías De Nunzio · Martillero Público y Corredor Inmobiliario · Matrícula COL 7886";
+const MATRICULA = "Matías De Nunzio · Martillero Público y Corredor Inmobiliario · Mat. 7886";
 
 function pdfToBuffer(doc: PDFKit.PDFDocument): Promise<Buffer> {
   return new Promise((resolve, reject) => {

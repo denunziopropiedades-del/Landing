@@ -30,7 +30,7 @@ export default async function FirmaPage({ params }: { params: Promise<{ token: s
             Este link venció o ya no es válido. Pedí uno nuevo por WhatsApp al <b>11-2742-4512</b>.
           </p>
         )}
-        <p className="mt-6 text-center text-xs text-slate-400">Matías De Nunzio · Martillero Público · Matrícula COL 7886</p>
+        <p className="mt-6 text-center text-xs text-slate-400">Matías De Nunzio · Martillero Público · Mat. 7886</p>
       </div>
     </main>
   );

@@ -128,7 +128,7 @@ export default function PreventaPage() {
               <Logo w={52} h={42} />
               <span><b>DE NUNZIO</b><small>NEGOCIOS INMOBILIARIOS</small></span>
             </div>
-            <div className="mat">Matías De Nunzio · Martillero Público y Corredor Inmobiliario · Matrícula COL 7886</div>
+            <div className="mat">Matías De Nunzio · Martillero Público y Corredor Inmobiliario · Mat. 7886</div>
           </div>
           <div className="tels">
             <small>SOLICITÁ INFORMACIÓN Y REGISTRÁ TU INTERÉS</small>

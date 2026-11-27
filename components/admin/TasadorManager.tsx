@@ -205,7 +205,7 @@ function Detalle({ t, puedeEliminar }: { t: Fila; puedeEliminar: boolean }) {
     setComparables((prev) => prev.map((c, j) => (j === i ? { ...c, [campo]: valor } : c)));
 
   const mensajeInforme = link
-    ? `Hola ${t.nombre.split(" ")[0]}, te compartimos el informe de tasación de tu propiedad (${descripcionInmueble(t)}):\n\n🔗 ${link}\n\nDE NUNZIO NEGOCIOS INMOBILIARIOS\nMatías De Nunzio · Martillero Público · Matrícula COL 7886`
+    ? `Hola ${t.nombre.split(" ")[0]}, te compartimos el informe de tasación de tu propiedad (${descripcionInmueble(t)}):\n\n🔗 ${link}\n\nDE NUNZIO NEGOCIOS INMOBILIARIOS\nMatías De Nunzio · Martillero Público · Mat. 7886`
     : "";
 
   return (

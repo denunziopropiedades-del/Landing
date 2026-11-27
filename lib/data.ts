@@ -144,7 +144,7 @@ export const faqsSeed: FaqItem[] = [
     proyectoId: null,
     pregunta: "¿Mi operación es segura?",
     respuesta:
-      "Sí, 100%. Cada operación la realiza y la acompaña un profesional: Martillero Público y Corredor Inmobiliario matriculado (COL 7886). Tenés total seguridad jurídica de principio a fin: vos elegís tu propiedad y nosotros nos ocupamos de que todo esté en regla.",
+      "Sí, 100%. Cada operación la realiza y la acompaña un profesional: Martillero Público y Corredor Inmobiliario matriculado (Mat. 7886). Tenés total seguridad jurídica de principio a fin: vos elegís tu propiedad y nosotros nos ocupamos de que todo esté en regla.",
   },
   {
     id: "demo-f2",
