@@ -100,3 +100,7 @@ alter table mensajes_canales add column if not exists waba_id text;
 alter table mensajes_canales add column if not exists access_token text;
 alter table mensajes_canales add column if not exists token_vence timestamptz;
 alter table mensajes_canales add column if not exists conectado_en timestamptz;
+
+-- Instagram (mensajes directos) como tercer canal de la bandeja.
+alter table mensajes_canales drop constraint if exists mensajes_canales_tipo_check;
+alter table mensajes_canales add constraint mensajes_canales_tipo_check check (tipo in ('whatsapp', 'messenger', 'instagram'));
