@@ -1,13 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { guardarLeadYContacto } from "@/lib/leads-servidor";
 import { enviarEtapaCrm } from "@/lib/meta-capi";
 import crypto from "node:crypto";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
 import { nombreInstagram, nombreMessenger, registrarMensaje } from "@/lib/mensajeria";
+import { procesarEntrante } from "@/lib/asistente/motor";
 import { registrarComentarioFacebook, registrarComentarioInstagram, type ComentarioFb, type ComentarioIg } from "@/lib/comentarios";
 
 export const runtime = "nodejs";
+export const maxDuration = 120;
 
 const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN;
 const APP_SECRET = process.env.META_APP_SECRET;
@@ -63,15 +65,17 @@ async function procesarMessenger(
   pageId: string,
   ev: EventoMessenger,
   red: "messenger" | "instagram" = "messenger"
-) {
+): Promise<string | null> {
   const m = ev.message;
-  if (!m || !pageId) return;
+  if (!m || !pageId) return null;
   const eco = !!m.is_echo;
+  // Ecos de mensajes que mandó esta misma app (panel o asistente): ya están guardados.
+  if (eco && m.app_id && String(m.app_id) === (process.env.META_APP_ID || "1548430039854662")) return null;
   const psid = eco ? ev.recipient?.id : ev.sender?.id;
-  if (!psid) return;
+  if (!psid) return null;
   const adjunto = m.attachments?.[0];
   const tipoAdj = adjunto?.type === "file" ? "document" : adjunto?.type;
-  await registrarMensaje(supabase, {
+  const convId = await registrarMensaje(supabase, {
     canal: { tipo: red, externalId: pageId },
     contactoId: psid,
     nombre: eco ? null : red === "instagram" ? await nombreInstagram(psid) : await nombreMessenger(psid),
@@ -83,6 +87,7 @@ async function procesarMessenger(
     fecha: ev.timestamp ? new Date(ev.timestamp) : undefined,
     enviadoDesde: "celular",
   });
+  return eco ? null : convId;
 }
 
 type CampoLead = { name: string; values?: string[] };
@@ -121,14 +126,24 @@ export async function POST(request: Request) {
 
   // Mensajes de Messenger de la página → bandeja de /admin/mensajes.
   if (supabase) {
+    const paraAsistente = new Set<string>();
+    const tokenIA = request.headers.get("x-vercel-oidc-token");
     for (const entry of payload.entry ?? []) {
       for (const ev of entry.messaging ?? []) {
         try {
-          await procesarMessenger(supabase, entry.id ?? ev.recipient?.id ?? "", ev, payload.object === "instagram" ? "instagram" : "messenger");
+          const convId = await procesarMessenger(supabase, entry.id ?? ev.recipient?.id ?? "", ev, payload.object === "instagram" ? "instagram" : "messenger");
+          if (convId) paraAsistente.add(convId);
         } catch (err) {
           console.error("Webhook Messenger: error procesando el mensaje", err);
         }
       }
+    }
+    if (paraAsistente.size) {
+      after(async () => {
+        await Promise.all(
+          [...paraAsistente].map((id) => procesarEntrante(supabase, id, tokenIA).catch((err) => console.error("Asistente: error", err)))
+        );
+      });
     }
   }
 

@@ -382,11 +382,11 @@ export default function MensajesInbox({
                   <PuntoCanal tipo={abierta.canal.tipo} />
                   Entró por {nombreCanal(abierta.canal)}
                 </span>
-                {abierta.canal.tipo === "whatsapp" && asistente && (
+                {asistente && (
                   <button
                     onClick={alternarAsistente}
                     title={asistente.pausado ? "El asistente no responde en este chat. Tocá para reactivarlo." : "Tocá para pausar el asistente en este chat"}
-                    className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${asistente.pausado ? "bg-black/5 text-brand-black/50" : "bg-[#e9f9ef] text-[#128c4a]"} ${abierta.canal.tipo === "whatsapp" ? "" : "hidden"}`}
+                    className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${asistente.pausado ? "bg-black/5 text-brand-black/50" : "bg-[#e9f9ef] text-[#128c4a]"}`}
                   >
                     <Bot className="h-3.5 w-3.5" />
                     {asistente.pausado ? "IA pausada" : "IA activa"}

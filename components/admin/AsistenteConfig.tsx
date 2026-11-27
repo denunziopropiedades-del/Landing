@@ -85,7 +85,7 @@ export default function AsistenteConfig({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="font-semibold text-brand-black">Estado</p>
-              <p className="text-xs text-brand-black/60">El asistente solo atiende WhatsApp y los números que marques.</p>
+              <p className="text-xs text-brand-black/60">El asistente solo atiende los canales que marques (WhatsApp, Messenger, Instagram).</p>
             </div>
             <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
               <input type="checkbox" checked={cfg.activo} onChange={(e) => set("activo", e.target.checked)} className="h-5 w-5 accent-[#25d366]" />
@@ -110,7 +110,7 @@ export default function AsistenteConfig({
             ))}
           </div>
 
-          <p className={`${label} mt-4`}>Números que atiende</p>
+          <p className={`${label} mt-4`}>Canales que atiende</p>
           {canales.length === 0 && <p className="text-sm text-brand-black/60">Todavía no hay números de WhatsApp conectados.</p>}
           <div className="flex flex-wrap gap-2">
             {canales.map((c) => (
@@ -119,7 +119,7 @@ export default function AsistenteConfig({
                 className={`flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm ${cfg.canales.includes(c.id) ? "border-[#25d366] bg-[#e9f9ef]" : "border-black/10"}`}
               >
                 <input type="checkbox" checked={cfg.canales.includes(c.id)} onChange={() => toggleLista("canales", c.id)} />
-                {numeroLindo(c.numero) || c.nombre}
+                {c.tipo === "whatsapp" ? `WhatsApp ${numeroLindo(c.numero) || c.nombre}` : c.tipo === "messenger" ? "Facebook Messenger" : "Instagram Direct"}
                 {c.demo && <span className="rounded bg-amber-100 px-1.5 text-[10px] font-bold text-amber-800">PRUEBA</span>}
               </label>
             ))}
