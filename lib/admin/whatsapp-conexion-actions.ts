@@ -14,6 +14,8 @@ export type NumeroConectado = {
   nombre: string;
   conectadoEn: string | null;
   tokenVence: string | null;
+  coexistencia: boolean | null;
+  registrado: boolean;
 };
 
 /** Números de WhatsApp conectados desde el panel (para la tarjeta de conexión). */
@@ -24,7 +26,7 @@ export async function getNumerosConectados(): Promise<NumeroConectado[]> {
   if (!admin) return [];
   const { data, error } = await admin
     .from("mensajes_canales")
-    .select("id, numero, nombre, conectado_en, token_vence")
+    .select("id, numero, nombre, conectado_en, token_vence, coexistencia, registrado_en")
     .eq("tipo", "whatsapp")
     .not("conectado_en", "is", null)
     .order("conectado_en");
@@ -35,6 +37,8 @@ export async function getNumerosConectados(): Promise<NumeroConectado[]> {
     nombre: (c.nombre as string) ?? "",
     conectadoEn: (c.conectado_en as string) ?? null,
     tokenVence: (c.token_vence as string) ?? null,
+    coexistencia: (c.coexistencia as boolean | null) ?? null,
+    registrado: !!c.registrado_en,
   }));
 }
 
@@ -57,7 +61,9 @@ export async function conectarWhatsappAction(datos: {
   code: string;
   wabaId: string;
   phoneNumberId: string;
-}): Promise<Resultado<{ numero: string }>> {
+  /** true si Meta avisó que se conectó la app WhatsApp Business del celular. */
+  coexistencia?: boolean;
+}): Promise<Resultado<{ numero: string; aviso?: string }>> {
   try {
     const perfil = await requireRole("administrador");
     const secret = process.env.META_APP_SECRET;
@@ -96,18 +102,108 @@ export async function conectarWhatsappAction(datos: {
         access_token: token,
         token_vence: vence.toISOString(),
         conectado_en: ahora.toISOString(),
+        coexistencia: datos.coexistencia ?? null,
         activo: true,
       },
       { onConflict: "external_id" }
     );
     if (error) throw error;
 
+    // 4) Un número nuevo (no el de la app del celular) hay que darlo de alta en WhatsApp.
+    let aviso: string | undefined;
+    if (!datos.coexistencia) {
+      const r = await registrarNumero(datos.phoneNumberId, token);
+      if (!r.ok) aviso = r.error;
+    }
+
     await registrarActividad(perfil, "conectar_whatsapp", "mensajes_canal", datos.phoneNumberId, { numero });
     revalidatePath("/admin/mensajes");
-    return { ok: true, numero };
+    return { ok: true, numero, aviso };
   } catch (err) {
     if (err instanceof AdminActionError) return { ok: false, error: err.message };
     console.error(err);
     return { ok: false, error: err instanceof Error ? err.message : "Error inesperado al conectar el número." };
+  }
+}
+
+/** Da de alta el número en WhatsApp (register) con un PIN de verificación en dos pasos. */
+async function registrarNumero(phoneNumberId: string, token: string): Promise<Resultado> {
+  const admin = (await getSupabaseAdminClient())!;
+  const { data: canal } = await admin.from("mensajes_canales").select("pin").eq("external_id", phoneNumberId).maybeSingle();
+  let pin = (canal?.pin as string | null) ?? null;
+  if (!pin) {
+    pin = String(Math.floor(100000 + Math.random() * 900000));
+    await admin.from("mensajes_canales").update({ pin }).eq("external_id", phoneNumberId);
+  }
+  try {
+    await graph(`${phoneNumberId}/register`, token, {
+      method: "POST",
+      body: JSON.stringify({ messaging_product: "whatsapp", pin }),
+    });
+    await admin.from("mensajes_canales").update({ registrado_en: new Date().toISOString() }).eq("external_id", phoneNumberId);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Meta no aceptó el alta del número." };
+  }
+}
+
+export type EstadoNumero = {
+  status?: string;
+  verificacion?: string;
+  calidad?: string;
+  nombreAprobado?: string;
+  plataforma?: string;
+};
+
+/** Consulta en Meta el estado del número y, si hace falta, lo activa. */
+export async function activarNumeroAction(canalId: string): Promise<Resultado<{ estado: EstadoNumero; activado: boolean }>> {
+  try {
+    const perfil = await requireRole("administrador");
+    const admin = (await getSupabaseAdminClient())!;
+    const { data: canal, error } = await admin
+      .from("mensajes_canales")
+      .select("external_id, access_token, coexistencia")
+      .eq("id", canalId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!canal) throw new AdminActionError("No encontré ese número.");
+    const token = (canal.access_token as string | null) ?? process.env.WHATSAPP_TOKEN;
+    if (!token) throw new AdminActionError("El número no tiene token guardado. Volvé a conectarlo.");
+    const pid = canal.external_id as string;
+
+    const leer = async () =>
+      (await graph(
+        `${pid}?fields=status,code_verification_status,quality_rating,name_status,platform_type,display_phone_number`,
+        token
+      )) as { status?: string; code_verification_status?: string; quality_rating?: string; name_status?: string; platform_type?: string };
+
+    let info = await leer();
+    let activado = false;
+    const yaActivo = info.status === "CONNECTED" || info.platform_type === "CLOUD_API";
+    if (!yaActivo && canal.coexistencia !== true) {
+      const r = await registrarNumero(pid, token);
+      if (!r.ok) throw new AdminActionError(r.error);
+      activado = true;
+      info = await leer();
+    } else if (yaActivo) {
+      await admin.from("mensajes_canales").update({ registrado_en: new Date().toISOString() }).eq("id", canalId).is("registrado_en", null);
+    }
+    if (activado) await registrarActividad(perfil, "activar_whatsapp", "mensajes_canal", pid, {});
+    revalidatePath("/admin/mensajes");
+    return {
+      ok: true,
+      activado,
+      estado: {
+        status: info.status,
+        verificacion: info.code_verification_status,
+        calidad: info.quality_rating,
+        nombreAprobado: info.name_status,
+        plataforma: info.platform_type,
+      },
+    };
+  } catch (err) {
+    if (err instanceof AdminActionError) return { ok: false, error: err.message };
+    console.error(err);
+    return { ok: false, error: err instanceof Error ? err.message : "Error al consultar el número." };
   }
 }
