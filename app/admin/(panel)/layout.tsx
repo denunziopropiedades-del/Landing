@@ -5,6 +5,7 @@ import { logoutAction } from "@/lib/admin/actions";
 import { getPerfilActual } from "@/lib/admin/auth";
 import MobileNavSelect from "@/components/admin/MobileNavSelect";
 import { contarNoLeidos } from "@/lib/admin/mensajes-actions";
+import { contarComentariosPendientes } from "@/lib/admin/comentarios-actions";
 import type { Rol } from "@/types/site";
 
 type ItemNav = { href: string; label: string; icon: IconoNav; roles?: Rol[] };
@@ -18,6 +19,7 @@ const secciones: { titulo: string; items: ItemNav[] }[] = [
       { href: "/admin", label: "Estadísticas", icon: "LayoutDashboard" },
       { href: "/admin/crm", label: "CRM (Leads)", icon: "KanbanSquare" },
       { href: "/admin/mensajes", label: "Mensajes", icon: "MessagesSquare" },
+      { href: "/admin/comentarios", label: "Comentarios", icon: "MessageCircle" },
       { href: "/admin/plantillas", label: "Plantillas WhatsApp", icon: "LayoutTemplate", roles: [...STAFF, "revisor"] },
       { href: "/admin/asistente", label: "Asistente de IA", icon: "Bot", roles: ["administrador"] },
       { href: "/admin/consultas", label: "Consultas y visitas", icon: "MessageSquareText" },
@@ -89,6 +91,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     }))
     .filter((sec) => sec.items.length > 0);
   const noLeidos = perfil ? await contarNoLeidos().catch(() => 0) : 0;
+  const comentariosPend = perfil && perfil.rol !== "revisor" ? await contarComentariosPendientes().catch(() => 0) : 0;
 
   return (
     <div className="flex min-h-screen bg-brand-cream">
@@ -102,7 +105,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </span>
           )}
         </div>
-        <AdminNav secciones={seccionesVisibles} badges={{ "/admin/mensajes": noLeidos }} />
+        <AdminNav secciones={seccionesVisibles} badges={{ "/admin/mensajes": noLeidos, "/admin/comentarios": comentariosPend }} />
         <form action={logoutAction} className="border-t border-white/10 p-3">
           <button
             type="submit"

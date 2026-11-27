@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
 import { nombreInstagram, nombreMessenger, registrarMensaje } from "@/lib/mensajeria";
+import { registrarComentarioFacebook, registrarComentarioInstagram, type ComentarioFb, type ComentarioIg } from "@/lib/comentarios";
 
 export const runtime = "nodejs";
 
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
     object?: string;
     entry?: {
       id?: string;
-      changes?: { field?: string; value?: { leadgen_id?: string } }[];
+      changes?: { field?: string; value?: { leadgen_id?: string } & ComentarioFb & ComentarioIg }[];
       messaging?: EventoMessenger[];
     }[];
   };
@@ -126,6 +127,21 @@ export async function POST(request: Request) {
           await procesarMessenger(supabase, entry.id ?? ev.recipient?.id ?? "", ev, payload.object === "instagram" ? "instagram" : "messenger");
         } catch (err) {
           console.error("Webhook Messenger: error procesando el mensaje", err);
+        }
+      }
+    }
+  }
+
+  // Comentarios de la página (feed) y de Instagram (comments) → /admin/comentarios.
+  if (supabase) {
+    for (const entry of payload.entry ?? []) {
+      for (const c of entry.changes ?? []) {
+        try {
+          if (payload.object === "page" && c.field === "feed" && c.value) await registrarComentarioFacebook(supabase, entry.id ?? "", c.value);
+          if (payload.object === "instagram" && (c.field === "comments" || c.field === "live_comments") && c.value)
+            await registrarComentarioInstagram(supabase, entry.id ?? "", c.value);
+        } catch (err) {
+          console.error("Webhook: error procesando un comentario", err);
         }
       }
     }
