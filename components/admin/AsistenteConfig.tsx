@@ -11,8 +11,8 @@ import {
 } from "@/lib/admin/asistente-actions";
 
 const MODELOS = [
-  { id: "anthropic/claude-sonnet-5.5", label: "Claude Sonnet 5.5 (recomendado)" },
-  { id: "anthropic/claude-haiku-5.5", label: "Claude Haiku 5.5 (más económico)" },
+  { id: "anthropic/claude-haiku-5.5", label: "Claude Haiku 5.5 (económico, recomendado)" },
+  { id: "anthropic/claude-sonnet-5.5", label: "Claude Sonnet 5.5 (mejor redacción, ~15x más caro)" },
   { id: "anthropic/claude-opus-5.5", label: "Claude Opus 5.5 (máxima calidad, más caro)" },
 ];
 
@@ -74,8 +74,9 @@ export default function AsistenteConfig({
     });
   };
 
-  // Costo aproximado con Sonnet 5.5 (~USD 3 por millón de tokens, mezcla de entrada y salida).
-  const costo = (tokensMes / 1_000_000) * 3;
+  // Costo aproximado por millón de tokens (mezcla de entrada con caché y salida).
+  const precioMillon = cfg.modelo.includes("haiku") ? 0.15 : cfg.modelo.includes("opus") ? 4 : 2.5;
+  const costo = (tokensMes / 1_000_000) * precioMillon;
 
   return (
     <div className="grid gap-5 xl:grid-cols-[1fr_420px]">

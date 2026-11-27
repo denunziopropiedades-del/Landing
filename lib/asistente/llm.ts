@@ -8,7 +8,7 @@
  */
 
 const URL_GATEWAY = "https://ai-gateway.vercel.sh/v1/chat/completions";
-export const MODELO_POR_DEFECTO = "anthropic/claude-sonnet-5.5";
+export const MODELO_POR_DEFECTO = "anthropic/claude-haiku-5.5";
 
 export type MensajeLLM =
   | { role: "system" | "user"; content: string }
@@ -42,6 +42,8 @@ export async function completar(opts: {
       ...(opts.herramientas?.length ? { tools: opts.herramientas, tool_choice: "auto" } : {}),
       max_tokens: opts.maxTokens ?? 900,
       temperature: 0.5,
+      // Caché automática: la parte fija (datos del negocio y catálogo) se cobra mucho menos.
+      providerOptions: { gateway: { caching: "auto" } },
     }),
   });
   const json = (await res.json().catch(() => ({}))) as {
