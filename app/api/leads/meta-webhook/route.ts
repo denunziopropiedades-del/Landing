@@ -4,6 +4,7 @@ import { enviarEtapaCrm } from "@/lib/meta-capi";
 import crypto from "node:crypto";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
+import { nombreMessenger, registrarMensaje } from "@/lib/mensajeria";
 
 export const runtime = "nodejs";
 
@@ -38,6 +39,50 @@ function firmaValida(cuerpoCrudo: string, firmaHeader: string | null): boolean {
   return crypto.timingSafeEqual(a, b);
 }
 
+type EventoMessenger = {
+  sender?: { id?: string };
+  recipient?: { id?: string };
+  timestamp?: number;
+  message?: {
+    mid?: string;
+    text?: string;
+    is_echo?: boolean;
+    app_id?: number;
+    attachments?: { type?: string; payload?: { url?: string } }[];
+  };
+};
+
+/**
+ * Un mensaje de Messenger: si lo escribió el cliente, entra a la bandeja; si es un
+ * "eco" (la página respondió desde Meta Business Suite o desde el panel), se guarda
+ * como respuesta para que la conversación quede completa.
+ */
+async function procesarMessenger(
+  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseAdminClient>>>,
+  pageId: string,
+  ev: EventoMessenger
+) {
+  const m = ev.message;
+  if (!m || !pageId) return;
+  const eco = !!m.is_echo;
+  const psid = eco ? ev.recipient?.id : ev.sender?.id;
+  if (!psid) return;
+  const adjunto = m.attachments?.[0];
+  const tipoAdj = adjunto?.type === "file" ? "document" : adjunto?.type;
+  await registrarMensaje(supabase, {
+    canal: { tipo: "messenger", externalId: pageId },
+    contactoId: psid,
+    nombre: eco ? null : await nombreMessenger(psid),
+    direccion: eco ? "saliente" : "entrante",
+    tipo: m.text ? "text" : tipoAdj || "otro",
+    texto: m.text ?? "",
+    mediaUrl: adjunto?.payload?.url ?? null,
+    externalId: m.mid ?? null,
+    fecha: ev.timestamp ? new Date(ev.timestamp) : undefined,
+    enviadoDesde: "celular",
+  });
+}
+
 type CampoLead = { name: string; values?: string[] };
 
 function extraerCampo(campos: CampoLead[], ...nombres: string[]): string | undefined {
@@ -56,7 +101,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Firma inválida" }, { status: 401 });
   }
 
-  let payload: { entry?: { changes?: { field?: string; value?: { leadgen_id?: string } }[] }[] };
+  let payload: {
+    entry?: {
+      id?: string;
+      changes?: { field?: string; value?: { leadgen_id?: string } }[];
+      messaging?: EventoMessenger[];
+    }[];
+  };
   try {
     payload = JSON.parse(cuerpoCrudo);
   } catch {
@@ -64,6 +115,19 @@ export async function POST(request: Request) {
   }
 
   const supabase = await getSupabaseAdminClient();
+
+  // Mensajes de Messenger de la página → bandeja de /admin/mensajes.
+  if (supabase) {
+    for (const entry of payload.entry ?? []) {
+      for (const ev of entry.messaging ?? []) {
+        try {
+          await procesarMessenger(supabase, entry.id ?? ev.recipient?.id ?? "", ev);
+        } catch (err) {
+          console.error("Webhook Messenger: error procesando el mensaje", err);
+        }
+      }
+    }
+  }
 
   const leadgenIds = (payload.entry ?? [])
     .flatMap((entry) => entry.changes ?? [])

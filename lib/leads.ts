@@ -41,6 +41,7 @@ export const ORIGENES: { value: string; label: string }[] = [
   { value: "google", label: "Google Ads" },
   { value: "google_organico", label: "Google (búsqueda)" },
   { value: "whatsapp", label: "WhatsApp" },
+  { value: "messenger", label: "Messenger (Facebook)" },
   { value: "preventa", label: "Preventa" },
   { value: "referido_web", label: "Otra web / referido" },
   { value: "referido", label: "Referido (boca en boca)" },

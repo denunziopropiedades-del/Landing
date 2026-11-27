@@ -337,6 +337,7 @@ function LeadCard({
 
   return (
     <div
+      id={`lead-${lead.id}`}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData("text/plain", lead.id);
@@ -991,6 +992,20 @@ export default function KanbanBoard({
     setPuedeIzq(el.scrollLeft > 4);
     setPuedeDer(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
   };
+  // Link directo a una ficha (ej. desde Mensajes): /admin/crm#lead-<id>
+  useEffect(() => {
+    const id = window.location.hash.startsWith("#lead-") ? window.location.hash.slice(1) : null;
+    if (!id) return;
+    const t = setTimeout(() => {
+      const card = document.getElementById(id);
+      if (!card) return;
+      card.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+      card.classList.add("ring-2", "ring-brand-gold-500");
+      setTimeout(() => card.classList.remove("ring-2", "ring-brand-gold-500"), 4000);
+    }, 400);
+    return () => clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     actualizarVisibles();
     window.addEventListener("resize", actualizarVisibles);

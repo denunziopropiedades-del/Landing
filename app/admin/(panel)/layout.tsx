@@ -20,6 +20,7 @@ import {
   LogOut,
   Mail,
   MessageSquareText,
+  MessagesSquare,
   Newspaper,
   Receipt,
   ShieldCheck,
@@ -30,11 +31,13 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { logoutAction } from "@/lib/admin/actions";
 import { getPerfilActual } from "@/lib/admin/auth";
 import MobileNavSelect from "@/components/admin/MobileNavSelect";
+import { contarNoLeidos } from "@/lib/admin/mensajes-actions";
 import type { Rol } from "@/types/site";
 
 const nav: { href: string; label: string; icon: typeof LayoutDashboard; roles?: Rol[] }[] = [
   { href: "/admin", label: "Estadísticas", icon: LayoutDashboard },
   { href: "/admin/crm", label: "CRM (Leads)", icon: KanbanSquare },
+  { href: "/admin/mensajes", label: "Mensajes", icon: MessagesSquare },
   { href: "/admin/consultas", label: "Consultas y visitas", icon: MessageSquareText },
   { href: "/admin/coincidencias", label: "Coincidencias", icon: Target },
   { href: "/admin/reportes", label: "Reportes", icon: FileText },
@@ -77,6 +80,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const rol = perfil?.rol ?? "administrador";
 
   const navVisible = nav.filter((item) => !item.roles || item.roles.includes(rol));
+  const noLeidos = perfil ? await contarNoLeidos().catch(() => 0) : 0;
 
   return (
     <div className="flex min-h-screen bg-brand-cream">
@@ -101,6 +105,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               >
                 <Icon className="h-4 w-4" />
                 {item.label}
+                {item.href === "/admin/mensajes" && noLeidos > 0 && (
+                  <span className="ml-auto rounded-full bg-brand-gold-500 px-2 py-0.5 text-[11px] font-extrabold text-brand-black">{noLeidos}</span>
+                )}
               </Link>
             );
           })}
