@@ -239,18 +239,35 @@ export async function enviarWhatsapp(
 ): Promise<EnvioResultado> {
   const token = tokenCanal || process.env.WHATSAPP_TOKEN;
   if (!token) return { ok: false, error: "Este número no está conectado. Conectalo desde Mensajes → Conectar WhatsApp Business." };
-  const res = await fetch(`${GRAPH}/${phoneNumberId}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      recipient_type: "individual",
-      to: para,
-      type: "text",
-      text: { body: texto, preview_url: true },
-    }),
-  });
-  const json = (await res.json().catch(() => ({}))) as { messages?: { id: string }[] };
+  const intentar = async (to: string) => {
+    const res = await fetch(`${GRAPH}/${phoneNumberId}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to,
+        type: "text",
+        text: { body: texto, preview_url: true },
+      }),
+    });
+    const json = (await res.json().catch(() => ({}))) as { messages?: { id: string }[]; error?: { code?: number } };
+    return { res, json };
+  };
+
+  let { res, json } = await intentar(para);
+  // Argentina: WhatsApp informa el número como 549 + área + número, pero la lista de
+  // números de prueba de Meta lo guarda como 54 + área + 15 + número. Si Meta dice
+  // "no está en la lista permitida" (131030), probamos con ese formato.
+  const d = para.replace(/\D/g, "");
+  if (!res.ok && json.error?.code === 131030 && /^549\d{10}$/.test(d)) {
+    const resto = d.slice(3);
+    for (const largoArea of [2, 3, 4]) {
+      const alt = `54${resto.slice(0, largoArea)}15${resto.slice(largoArea)}`;
+      ({ res, json } = await intentar(alt));
+      if (res.ok || json.error?.code !== 131030) break;
+    }
+  }
   if (!res.ok) return { ok: false, error: errorMeta(json, "WhatsApp rechazó el mensaje.") };
   return { ok: true, externalId: json.messages?.[0]?.id ?? null };
 }
