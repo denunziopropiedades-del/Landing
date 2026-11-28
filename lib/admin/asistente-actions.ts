@@ -93,6 +93,7 @@ export async function guardarConfigAsistenteAction(cfg: ConfigAsistente): Promis
       seguimiento_idioma: (cfg.seguimiento_idioma || "es_AR").trim().slice(0, 10),
       seguimiento_estados: (cfg.seguimiento_estados ?? []).slice(0, 12),
       comentarios_auto: !!cfg.comentarios_auto,
+      pausa_humano_min: Math.min(Math.max(Math.round(Number(cfg.pausa_humano_min) || 0), 0), 72 * 60),
       actualizado_en: new Date().toISOString(),
     };
     if (fila.activo && !fila.canales.length) throw new AdminActionError("Elegí al menos un canal para que atienda el asistente.");

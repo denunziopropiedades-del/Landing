@@ -42,3 +42,6 @@ alter table conversaciones
 
 -- Mensaje privado automático a quien comenta en Facebook / Instagram.
 alter table asistente_config add column if not exists comentarios_auto boolean not null default false;
+
+-- Minutos que la IA espera si respondió una persona (0 = responde siempre).
+alter table asistente_config add column if not exists pausa_humano_min integer not null default 1;
