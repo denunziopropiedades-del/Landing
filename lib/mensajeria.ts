@@ -1,4 +1,4 @@
-import { tokenPagina } from "@/lib/meta-token";
+import { tokenPagina, META_PAGE_ID } from "@/lib/meta-token";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { guardarLeadYContacto } from "@/lib/leads-servidor";
 import { normalizarTelefono, telefonoInternacional } from "@/lib/leads";
@@ -287,7 +287,7 @@ export async function enviarWhatsapp(
 export async function enviarMessenger(psid: string, texto: string): Promise<EnvioResultado> {
   const token = await tokenPagina();
   if (!token) return { ok: false, error: "Falta configurar META_PAGE_ACCESS_TOKEN en Vercel." };
-  const res = await fetch(`${GRAPH}/me/messages?access_token=${encodeURIComponent(token)}`, {
+  const res = await fetch(`${GRAPH}/${META_PAGE_ID}/messages?access_token=${encodeURIComponent(token)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ recipient: { id: psid }, messaging_type: "RESPONSE", message: { text: texto } }),

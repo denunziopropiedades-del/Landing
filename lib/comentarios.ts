@@ -1,4 +1,4 @@
-import { tokenPagina } from "@/lib/meta-token";
+import { tokenPagina, META_PAGE_ID } from "@/lib/meta-token";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { GRAPH } from "@/lib/mensajeria";
 
@@ -117,7 +117,7 @@ export async function responderEnPublico(red: "facebook" | "instagram", comentar
 export async function responderEnPrivado(comentarioId: string, texto: string) {
   const token = await TOKEN_PAGINA();
   if (!token) return { ok: false as const, error: "Falta META_PAGE_ACCESS_TOKEN en Vercel." };
-  const res = await fetch(`${GRAPH}/me/messages?access_token=${encodeURIComponent(token)}`, {
+  const res = await fetch(`${GRAPH}/${META_PAGE_ID}/messages?access_token=${encodeURIComponent(token)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ recipient: { comment_id: comentarioId }, message: { text: texto } }),
