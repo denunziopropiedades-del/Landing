@@ -1,3 +1,4 @@
+import { tokenPagina } from "@/lib/meta-token";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { guardarLeadYContacto } from "@/lib/leads-servidor";
 import { normalizarTelefono, telefonoInternacional } from "@/lib/leads";
@@ -284,7 +285,7 @@ export async function enviarWhatsapp(
 }
 
 export async function enviarMessenger(psid: string, texto: string): Promise<EnvioResultado> {
-  const token = process.env.META_PAGE_ACCESS_TOKEN;
+  const token = await tokenPagina();
   if (!token) return { ok: false, error: "Falta configurar META_PAGE_ACCESS_TOKEN en Vercel." };
   const res = await fetch(`${GRAPH}/me/messages?access_token=${encodeURIComponent(token)}`, {
     method: "POST",
@@ -301,7 +302,7 @@ export async function enviarMessenger(psid: string, texto: string): Promise<Envi
  * esté habilitada). En Instagram devuelve el @usuario.
  */
 async function nombreDesdeConversacion(id: string, plataforma: "messenger" | "instagram"): Promise<string | null> {
-  const token = process.env.META_PAGE_ACCESS_TOKEN;
+  const token = await tokenPagina();
   if (!token) return null;
   try {
     const res = await fetch(
@@ -319,7 +320,7 @@ async function nombreDesdeConversacion(id: string, plataforma: "messenger" | "in
 
 /** Nombre del usuario de Messenger: primero el perfil, si no, el de la conversación de la página. */
 export async function nombreMessenger(psid: string): Promise<string | null> {
-  const token = process.env.META_PAGE_ACCESS_TOKEN;
+  const token = await tokenPagina();
   if (!token) return null;
   try {
     const res = await fetch(`${GRAPH}/${psid}?fields=first_name,last_name,name&access_token=${encodeURIComponent(token)}`);
@@ -368,7 +369,7 @@ export async function tokenDeCanal(supabase: SupabaseClient, canalId: string): P
 
 /** Nombre de quien escribe por Instagram (nombre o @usuario), si la página tiene permiso para verlo. */
 export async function nombreInstagram(igsid: string): Promise<string | null> {
-  const token = process.env.META_PAGE_ACCESS_TOKEN;
+  const token = await tokenPagina();
   if (!token) return null;
   try {
     const res = await fetch(`${GRAPH}/${igsid}?fields=name,username&access_token=${encodeURIComponent(token)}`);

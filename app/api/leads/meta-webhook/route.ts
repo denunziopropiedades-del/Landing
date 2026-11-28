@@ -6,6 +6,7 @@ import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { sendNotificationEmail } from "@/lib/email";
 import { nombreInstagram, nombreMessenger, registrarMensaje } from "@/lib/mensajeria";
 import { procesarEntrante } from "@/lib/asistente/motor";
+import { tokenPagina } from "@/lib/meta-token";
 import { registrarComentarioFacebook, registrarComentarioInstagram, type ComentarioFb, type ComentarioIg } from "@/lib/comentarios";
 
 export const runtime = "nodejs";
@@ -13,7 +14,6 @@ export const maxDuration = 120;
 
 const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN;
 const APP_SECRET = process.env.META_APP_SECRET;
-const PAGE_ACCESS_TOKEN = process.env.META_PAGE_ACCESS_TOKEN;
 const GRAPH_VERSION = "v21.0";
 
 /**
@@ -178,6 +178,7 @@ export async function POST(request: Request) {
         if (existente) continue; // ya lo procesamos (Meta puede reenviar el mismo evento)
       }
 
+      const PAGE_ACCESS_TOKEN = await tokenPagina();
       if (!PAGE_ACCESS_TOKEN) continue;
 
       const res = await fetch(
