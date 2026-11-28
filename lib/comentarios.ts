@@ -71,6 +71,7 @@ export async function registrarComentarioFacebook(supabase: SupabaseClient, page
     },
     { onConflict: "comentario_id", ignoreDuplicates: true }
   );
+  return v.comment_id;
 }
 
 /** Comentario nuevo en una publicación de Instagram. */
@@ -96,6 +97,7 @@ export async function registrarComentarioInstagram(supabase: SupabaseClient, igI
     },
     { onConflict: "comentario_id", ignoreDuplicates: true }
   );
+  return v.id;
 }
 
 /** Responde un comentario en público (debajo del comentario). */
@@ -122,7 +124,7 @@ export async function responderEnPrivado(comentarioId: string, texto: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ recipient: { comment_id: comentarioId }, message: { text: texto } }),
   });
-  const j = (await res.json().catch(() => ({}))) as { error?: { message?: string; error_user_msg?: string } };
+  const j = (await res.json().catch(() => ({}))) as { recipient_id?: string; message_id?: string; error?: { message?: string; error_user_msg?: string } };
   if (!res.ok) return { ok: false as const, error: j.error?.error_user_msg || j.error?.message || "Meta rechazó el mensaje privado." };
-  return { ok: true as const };
+  return { ok: true as const, recipientId: j.recipient_id ?? null, messageId: j.message_id ?? null };
 }

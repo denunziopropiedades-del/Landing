@@ -34,6 +34,7 @@ export type ConfigAsistente = {
   seguimiento_plantilla: string;
   seguimiento_idioma: string;
   seguimiento_estados: string[];
+  comentarios_auto: boolean;
 };
 
 export const INFO_NEGOCIO_DEFECTO = `DE NUNZIO NEGOCIOS INMOBILIARIOS — marca MATULOTES (web: matulotes.app).
@@ -59,6 +60,7 @@ export const CONFIG_DEFECTO: ConfigAsistente = {
   seguimiento_plantilla: "",
   seguimiento_idioma: "es_AR",
   seguimiento_estados: ["nuevo", "contactado", "visita_realizada"],
+  comentarios_auto: false,
 };
 
 export async function leerConfig(supabase: SupabaseClient): Promise<ConfigAsistente> {

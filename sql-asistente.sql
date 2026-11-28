@@ -39,3 +39,6 @@ alter table conversaciones
   add column if not exists borrador_en timestamptz,
   add column if not exists seguimientos int not null default 0,
   add column if not exists ultimo_seguimiento_en timestamptz;
+
+-- Mensaje privado automático a quien comenta en Facebook / Instagram.
+alter table asistente_config add column if not exists comentarios_auto boolean not null default false;
