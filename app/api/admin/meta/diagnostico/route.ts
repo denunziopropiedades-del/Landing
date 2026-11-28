@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getPerfilActual } from "@/lib/admin/auth";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { GRAPH, META_APP_ID } from "@/lib/mensajeria";
+import { tokenPagina } from "@/lib/meta-token";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,11 +16,12 @@ export async function GET() {
   const perfil = await getPerfilActual();
   if (!perfil || perfil.rol !== "administrador") return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
 
-  const token = process.env.META_PAGE_ACCESS_TOKEN;
+  const base = process.env.META_PAGE_ACCESS_TOKEN;
+  const token = await tokenPagina();
   const secret = process.env.META_APP_SECRET;
   if (!token) return NextResponse.json({ error: "Falta META_PAGE_ACCESS_TOKEN" });
 
-  const salida: Record<string, unknown> = {};
+  const salida: Record<string, unknown> = { tokenCargado: base ? "usuario del sistema o página" : "falta", seConvirtioATokenDePagina: token !== base };
   const q = (u: string) => fetch(u).then(async (r) => ({ ok: r.ok, json: await r.json().catch(() => ({})) }));
 
   if (secret) {

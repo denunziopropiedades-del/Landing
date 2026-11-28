@@ -1,3 +1,4 @@
+import { tokenPagina } from "@/lib/meta-token";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { GRAPH } from "@/lib/mensajeria";
 
@@ -6,7 +7,7 @@ import { GRAPH } from "@/lib/mensajeria";
  * Se guardan para responderlos desde el panel, en público o por privado.
  */
 
-const TOKEN_PAGINA = () => process.env.META_PAGE_ACCESS_TOKEN;
+const TOKEN_PAGINA = () => tokenPagina();
 
 export type ComentarioFb = {
   item?: string;
@@ -29,7 +30,7 @@ export type ComentarioIg = {
 };
 
 async function datosPublicacion(red: "facebook" | "instagram", postId: string): Promise<{ link: string | null; texto: string | null }> {
-  const token = TOKEN_PAGINA();
+  const token = await TOKEN_PAGINA();
   if (!token || !postId) return { link: null, texto: null };
   try {
     const campos = red === "instagram" ? "permalink,caption" : "permalink_url,message";
@@ -99,7 +100,7 @@ export async function registrarComentarioInstagram(supabase: SupabaseClient, igI
 
 /** Responde un comentario en público (debajo del comentario). */
 export async function responderEnPublico(red: "facebook" | "instagram", comentarioId: string, texto: string) {
-  const token = TOKEN_PAGINA();
+  const token = await TOKEN_PAGINA();
   if (!token) return { ok: false as const, error: "Falta META_PAGE_ACCESS_TOKEN en Vercel." };
   const ruta = red === "instagram" ? `${comentarioId}/replies` : `${comentarioId}/comments`;
   const res = await fetch(`${GRAPH}/${ruta}?access_token=${encodeURIComponent(token)}`, {
@@ -114,7 +115,7 @@ export async function responderEnPublico(red: "facebook" | "instagram", comentar
 
 /** Responde un comentario por mensaje privado (Messenger o Instagram Direct). Meta permite uno por comentario. */
 export async function responderEnPrivado(comentarioId: string, texto: string) {
-  const token = TOKEN_PAGINA();
+  const token = await TOKEN_PAGINA();
   if (!token) return { ok: false as const, error: "Falta META_PAGE_ACCESS_TOKEN en Vercel." };
   const res = await fetch(`${GRAPH}/me/messages?access_token=${encodeURIComponent(token)}`, {
     method: "POST",
