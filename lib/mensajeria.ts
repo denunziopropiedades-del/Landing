@@ -235,12 +235,13 @@ export function dentroDeVentana(ultimoEntrante: string | null | undefined): bool
 type EnvioResultado = { ok: true; externalId: string | null } | { ok: false; error: string };
 
 function errorMeta(json: unknown, fallback: string): string {
-  const e = (json as { error?: { message?: string; error_user_msg?: string; code?: number } })?.error;
+  const e = (json as { error?: { message?: string; error_user_msg?: string; code?: number; error_subcode?: number } })?.error;
   if (!e) return fallback;
-  if (e.code === 131047 || e.code === 10) {
+  if (e.code === 131047 || (e.code === 10 && e.error_subcode === 2018278)) {
     return "Pasaron más de 24 h desde el último mensaje del cliente: Meta solo deja responder dentro de ese plazo. Escribile desde el celular.";
   }
-  return e.error_user_msg || e.message || fallback;
+  const detalle = e.error_user_msg || e.message || fallback;
+  return e.code ? `${detalle} (código ${e.code}${e.error_subcode ? `/${e.error_subcode}` : ""})` : detalle;
 }
 
 export async function enviarWhatsapp(

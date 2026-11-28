@@ -97,7 +97,7 @@ export default function AsistenteConfig({
             {(
               [
                 ["borrador", "Sugerir respuestas", "Escribe la respuesta y un asesor la envía con un clic. Recomendado para empezar."],
-                ["automatico", "Responder solo", "Contesta al instante. Si un asesor respondió en las últimas 12 h, solo sugiere."],
+                ["automatico", "Responder solo", "Contesta al instante a cada mensaje que llega."],
               ] as const
             ).map(([id, titulo, desc]) => (
               <label key={id} className={`cursor-pointer rounded-lg border p-3 ${cfg.modo === id ? "border-brand-black bg-brand-cream" : "border-black/10"}`}>
@@ -109,6 +109,24 @@ export default function AsistenteConfig({
               </label>
             ))}
           </div>
+
+          {cfg.modo === "automatico" && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+              <span>Si respondés vos, la IA espera</span>
+              <input
+                type="number"
+                min={0}
+                max={4320}
+                className="w-20 rounded-lg border border-black/15 px-2 py-1"
+                value={cfg.pausa_humano_min ?? 1}
+                onChange={(e) => set("pausa_humano_min", Number(e.target.value))}
+              />
+              <span>minutos antes de volver a contestar sola.</span>
+              <span className="w-full text-xs text-brand-black/60">
+                Con 0 responde siempre, aunque vos estés hablando. Para frenarla en una charla puntual usá “IA pausada” en Mensajes.
+              </span>
+            </div>
+          )}
 
           <p className={`${label} mt-4`}>Canales que atiende</p>
           {canales.length === 0 && <p className="text-sm text-brand-black/60">Todavía no hay números de WhatsApp conectados.</p>}

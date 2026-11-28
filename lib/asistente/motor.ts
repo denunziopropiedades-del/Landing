@@ -35,6 +35,8 @@ export type ConfigAsistente = {
   seguimiento_idioma: string;
   seguimiento_estados: string[];
   comentarios_auto: boolean;
+  /** Si un asesor respondió hace menos de estos minutos, la IA solo sugiere. 0 = responde siempre. */
+  pausa_humano_min: number;
 };
 
 export const INFO_NEGOCIO_DEFECTO = `DE NUNZIO NEGOCIOS INMOBILIARIOS — marca MATULOTES (web: matulotes.app).
@@ -61,6 +63,7 @@ export const CONFIG_DEFECTO: ConfigAsistente = {
   seguimiento_idioma: "es_AR",
   seguimiento_estados: ["nuevo", "contactado", "visita_realizada"],
   comentarios_auto: false,
+  pausa_humano_min: 1,
 };
 
 export async function leerConfig(supabase: SupabaseClient): Promise<ConfigAsistente> {
@@ -70,7 +73,6 @@ export async function leerConfig(supabase: SupabaseClient): Promise<ConfigAsiste
 }
 
 const ESPERA_MS = 8000; // junta varios mensajes seguidos del cliente en una sola respuesta
-const PAUSA_HUMANO_MS = 12 * 60 * 60 * 1000; // si un asesor respondió hace poco, solo sugiere
 
 const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 function hoyTexto() {
@@ -493,9 +495,10 @@ export async function procesarEntrante(supabase: SupabaseClient, convId: string,
   const lista = (msgs ?? []).reverse() as { direccion: string; texto: string; tipo: string; enviado_desde: string | null; creado_en: string }[];
   if (!lista.length || lista[lista.length - 1].direccion !== "entrante") return;
 
-  const humanoReciente = lista.some(
-    (m) => m.direccion === "saliente" && m.enviado_desde !== "asistente" && Date.now() - new Date(m.creado_en).getTime() < PAUSA_HUMANO_MS
-  );
+  const pausaMs = Math.max(Number(cfg.pausa_humano_min) || 0, 0) * 60 * 1000;
+  const humanoReciente =
+    pausaMs > 0 &&
+    lista.some((m) => m.direccion === "saliente" && m.enviado_desde !== "asistente" && Date.now() - new Date(m.creado_en).getTime() < pausaMs);
   const automatico = cfg.modo === "automatico" && !humanoReciente;
 
   let resultado: ResultadoAsistente | null = null;
