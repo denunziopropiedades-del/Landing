@@ -165,6 +165,20 @@ export default function AsistenteConfig({
         <section className={card}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
+              <p className="font-semibold text-brand-black">Comentarios de Facebook e Instagram</p>
+              <p className="text-xs text-brand-black/60">
+                Cuando alguien comenta una publicación o anuncio, el asistente le escribe solo por privado (Messenger o Instagram Direct) y arranca la charla. Un mensaje por persona cada 24 h.
+              </p>
+            </div>
+            <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
+              <input type="checkbox" checked={!!cfg.comentarios_auto} onChange={(e) => set("comentarios_auto", e.target.checked)} className="h-5 w-5" />
+              {cfg.comentarios_auto ? "Activado" : "Apagado"}
+            </label>
+          </div>
+        </section>
+        <section className={card}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
               <p className="font-semibold text-brand-black">Seguimientos</p>
               <p className="text-xs text-brand-black/60">Una vez por día escribe a quien dejó de responder (máximo según lo que elijas).</p>
             </div>

@@ -7,6 +7,7 @@ import { sendNotificationEmail } from "@/lib/email";
 import { nombreInstagram, nombreMessenger, registrarMensaje } from "@/lib/mensajeria";
 import { procesarEntrante } from "@/lib/asistente/motor";
 import { tokenPagina } from "@/lib/meta-token";
+import { abrirCharlaDesdeComentario } from "@/lib/asistente/comentarios";
 import { registrarComentarioFacebook, registrarComentarioInstagram, type ComentarioFb, type ComentarioIg } from "@/lib/comentarios";
 
 export const runtime = "nodejs";
@@ -149,16 +150,26 @@ export async function POST(request: Request) {
 
   // Comentarios de la página (feed) y de Instagram (comments) → /admin/comentarios.
   if (supabase) {
+    const nuevos: string[] = [];
     for (const entry of payload.entry ?? []) {
       for (const c of entry.changes ?? []) {
         try {
-          if (payload.object === "page" && c.field === "feed" && c.value) await registrarComentarioFacebook(supabase, entry.id ?? "", c.value);
+          let id: string | undefined;
+          if (payload.object === "page" && c.field === "feed" && c.value) id = await registrarComentarioFacebook(supabase, entry.id ?? "", c.value);
           if (payload.object === "instagram" && (c.field === "comments" || c.field === "live_comments") && c.value)
-            await registrarComentarioInstagram(supabase, entry.id ?? "", c.value);
+            id = await registrarComentarioInstagram(supabase, entry.id ?? "", c.value);
+          if (id) nuevos.push(id);
         } catch (err) {
           console.error("Webhook: error procesando un comentario", err);
         }
       }
+    }
+    // El asistente le escribe por privado a quien comentó (si está activado).
+    if (nuevos.length) {
+      const tokenIA = request.headers.get("x-vercel-oidc-token");
+      after(async () => {
+        for (const id of nuevos) await abrirCharlaDesdeComentario(supabase, id, tokenIA).catch((err) => console.error("Asistente comentarios: error", err));
+      });
     }
   }
 

@@ -37,7 +37,7 @@ export type Entrante = {
   externalId?: string | null;
   fecha?: Date;
   /** Solo para salientes que no salieron del panel (eco del celular / Business Suite). */
-  enviadoDesde?: "panel" | "celular";
+  enviadoDesde?: "panel" | "celular" | "asistente";
 };
 
 /** Texto que se muestra en la lista para mensajes que no son de texto. */
